@@ -8,6 +8,9 @@ import (
 func main() {
 	cfg := config{
 		addr: os.Getenv("ADDR"),
+		db: dbConfig{
+			url: os.Getenv("DB_URL"),
+		},
 	}
 
 	app := &application{

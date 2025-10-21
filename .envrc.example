@@ -3,4 +3,4 @@ export GOBIN=$PWD/bin
 export PATH=$GOBIN:$PATH
 
 export ADDR="localhost:8080"
-export DB_ADDR="postgres://admin:adminpassword@localhost/social?sslmode=disable"
+export DB_ADDR="postgres://admin:adminpassword@localhost/satuapotek?sslmode=disable"

@@ -4,6 +4,7 @@ Backend for Satu Apotek
 ## Pre-requisites
 - Go 1.25.3
 - direnv 2.35.0
+- Justfiles 1.41.0
 
 ## Dev Tools
 - air
@@ -11,7 +12,9 @@ Backend for Satu Apotek
 - sqlc
 
 ## Install dev tools
-- `cp .envrc.example .envrc`
-- `direnv allow .`
-- `chmod +x bin/install_tools`
-- `./bin/install_tools`
+```
+cp .envrc.example .envrc \
+&& direnv allow . \
+&& chmod +x bin/install_tools \
+&& ./bin/install_tools
+```

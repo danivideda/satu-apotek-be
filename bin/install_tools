@@ -3,7 +3,7 @@
 cd internal/tools
 
 go install \
-  -tags "pgx/5" github.com/golang-migrate/migrate/v4/cmd/migrate
+  -tags "pgx5" github.com/golang-migrate/migrate/v4/cmd/migrate
 
 go install \
   github.com/sqlc-dev/sqlc/cmd/sqlc \
