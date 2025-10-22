@@ -10,23 +10,23 @@ migrate-create name:
 
 # Run migration
 migrate-up:
-    @migrate -path={{migration_path}} -database=${DATABASE_URL} up
+    @migrate -path={{migration_path}} -database=${MIGRATE_URL} up
 
 # Reverse migration 'n' times
 migrate-down n='':
-    @migrate -path={{migration_path}} -database=${DATABASE_URL} down {{n}}
+    @migrate -path={{migration_path}} -database=${MIGRATE_URL} down {{n}}
 
 # Check current migration version
 migrate-version:
-    @migrate -path={{migration_path}} -database=${DATABASE_URL} version
+    @migrate -path={{migration_path}} -database=${MIGRATE_URL} version
 
 # Force migration to specified version
 migrate-force version:
-    @migrate -path={{migration_path}} -database=${DATABASE_URL} force {{version}}
+    @migrate -path={{migration_path}} -database=${MIGRATE_URL} force {{version}}
 
 # Migrate to specified version
 migrate-goto version:
-    @migrate -path={{migration_path}} -database=${DATABASE_URL} goto {{version}}
+    @migrate -path={{migration_path}} -database=${MIGRATE_URL} goto {{version}}
 
 # Seed the database
 seed:
