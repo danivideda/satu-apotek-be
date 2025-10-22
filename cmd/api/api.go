@@ -5,17 +5,19 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/danivideda/satu-apotek-be/internal/http/handler"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
 type application struct {
-	config config
+	config  config
+	handler handler.Handler
 }
 
 type config struct {
 	addr string
-	db dbConfig
+	db   dbConfig
 }
 
 type dbConfig struct {
@@ -40,8 +42,15 @@ func (app *application) mount() http.Handler {
 		w.Write([]byte("Hello world!"))
 	})
 
-	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Health check: OK\n"))
+	r.Route("/v1", func(r chi.Router) {
+		r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte("Health check: OK\n"))
+		})
+
+		r.Route("/owners", func(r chi.Router) {
+			r.Get("/", app.handler.GetAllOwners)
+			r.Post("/create", app.handler.CreateOwner)
+		})
 	})
 
 	return r
