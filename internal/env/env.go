@@ -1,0 +1,31 @@
+package env
+
+import (
+	"log"
+	"os"
+	"strconv"
+)
+
+func GetString(key, fallback string) string {
+	val, ok := os.LookupEnv(key)
+	if !ok {
+		return fallback
+	}
+
+	return val
+}
+
+func GetInt(key string, fallback int) int {
+	val, ok := os.LookupEnv(key)
+	if !ok {
+		return fallback
+	}
+
+	valInt, err := strconv.Atoi(val)
+	if err != nil {
+		log.Printf("%s. Returning the fallback val", err.Error())
+		return fallback
+	}
+
+	return valInt
+}

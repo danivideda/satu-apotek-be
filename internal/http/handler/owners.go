@@ -9,23 +9,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (h *Handler) GetAllOwners(w http.ResponseWriter, r *http.Request) {
-	owners, err := h.store.ListOwners(r.Context())
-	if err != nil {
-		log.Printf("Error: %s", err)
-	}
-
-	if err := json.ResponseJSON(w, http.StatusCreated, owners); err != nil {
-		log.Printf("Error occured: %s", err)
-	}
-}
-
-type CreateOwnerPayload struct {
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
 func (h *Handler) CreateOwner(w http.ResponseWriter, r *http.Request) {
 	var payload CreateOwnerPayload
 	if err := json.ReadJSON(w, r, &payload); err != nil {
@@ -54,3 +37,21 @@ func (h *Handler) CreateOwner(w http.ResponseWriter, r *http.Request) {
 		json.ResponseJSONError(w, http.StatusBadRequest, err.Error())
 	}
 }
+
+func (h *Handler) GetAllOwners(w http.ResponseWriter, r *http.Request) {
+	owners, err := h.store.ListOwners(r.Context())
+	if err != nil {
+		log.Printf("Error: %s", err)
+	}
+
+	if err := json.ResponseJSON(w, http.StatusCreated, owners); err != nil {
+		log.Printf("Error occured: %s", err)
+	}
+}
+
+type CreateOwnerPayload struct {
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+

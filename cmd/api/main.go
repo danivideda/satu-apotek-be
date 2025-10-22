@@ -2,17 +2,17 @@ package main
 
 import (
 	"log"
-	"os"
 
 	"github.com/danivideda/satu-apotek-be/internal/db"
+	"github.com/danivideda/satu-apotek-be/internal/env"
 	"github.com/danivideda/satu-apotek-be/internal/http/handler"
 )
 
 func main() {
 	cfg := config{
-		addr: os.Getenv("ADDR"),
+		addr: env.GetString("ADDR", "localhost:8080"),
 		db: dbConfig{
-			url: os.Getenv("DATABASE_URL"),
+			url: env.GetString("DATABASE_URL", "admin:adminpassword@localhost/satuapotek?sslmode=disable"),
 		},
 	}
 
