@@ -10,7 +10,7 @@ type OwnerStore struct {
 	db dbsqlc.DBTX
 }
 
-func (s *OwnerStore) CreateOwner(ctx context.Context, createOwnerParams dbsqlc.CreateOwnerParams) (*dbsqlc.Owner, error) {
+func (s *OwnerStore) CreateOwner(ctx context.Context, createOwnerParams dbsqlc.CreateOwnerParams) (*dbsqlc.CreateOwnerRow, error) {
 	return nil, nil
 }
 

@@ -48,7 +48,7 @@ func (app *application) mount() http.Handler {
 		})
 
 		r.Route("/owners", func(r chi.Router) {
-			r.Get("/", app.handler.GetAllOwners)
+			r.Get("/", app.handler.GetOwnerByID)
 			r.Post("/create", app.handler.CreateOwner)
 		})
 	})

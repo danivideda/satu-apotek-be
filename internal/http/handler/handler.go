@@ -1,13 +1,15 @@
 package handler
 
-import "github.com/danivideda/satu-apotek-be/internal/dbsqlc"
+import (
+	"github.com/danivideda/satu-apotek-be/internal/store"
+)
 
 type Handler struct {
-	store dbsqlc.Querier
+	store store.Storage
 }
 
-func New(db dbsqlc.DBTX) Handler {
+func New(store store.Storage) Handler {
 	return Handler{
-		store: dbsqlc.New(db),
+		store: store,
 	}
 }

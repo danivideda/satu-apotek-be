@@ -17,5 +17,9 @@ func New(addr string) (*pgxpool.Pool, error) {
 		return nil, err
 	}
 
+	if err := dbpool.Ping(context.Background()); err != nil {
+		return nil, err
+	}
+
 	return dbpool, nil
 }

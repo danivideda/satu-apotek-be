@@ -9,7 +9,15 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type CreateOwnerPayload struct {
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
 func (h *Handler) CreateOwner(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	var payload CreateOwnerPayload
 	if err := json.ReadJSON(w, r, &payload); err != nil {
 		log.Printf("error response: %s", err.Error())
@@ -27,7 +35,7 @@ func (h *Handler) CreateOwner(w http.ResponseWriter, r *http.Request) {
 		Email:    payload.Email,
 		Password: hashedPassword,
 	}
-	owner, err := h.store.CreateOwner(r.Context(), param)
+	owner, err := h.store.Owners.CreateOwner(ctx, param)
 	if err != nil {
 		log.Printf("Error: %s", err)
 	}
@@ -38,8 +46,11 @@ func (h *Handler) CreateOwner(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) GetAllOwners(w http.ResponseWriter, r *http.Request) {
-	owners, err := h.store.ListOwners(r.Context())
+func (h *Handler) GetOwnerByID(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	ownerID := 1
+	owners, err := h.store.Owners.GetOwnerByID(ctx, ownerID)
 	if err != nil {
 		log.Printf("Error: %s", err)
 	}
@@ -48,10 +59,3 @@ func (h *Handler) GetAllOwners(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Error occured: %s", err)
 	}
 }
-
-type CreateOwnerPayload struct {
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
