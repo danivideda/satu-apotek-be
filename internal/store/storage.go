@@ -14,7 +14,9 @@ type Storage struct {
 }
 
 func NewStorage(db dbsqlc.DBTX) Storage {
+	queries := dbsqlc.New(db)
+	
 	return Storage{
-		Owners: &OwnerStore{db: db},
+		Owners: &OwnerStore{queries: queries},
 	}
 }

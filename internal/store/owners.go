@@ -7,7 +7,7 @@ import (
 )
 
 type OwnerStore struct {
-	db dbsqlc.DBTX
+	queries *dbsqlc.Queries
 }
 
 func (s *OwnerStore) CreateOwner(ctx context.Context, createOwnerParams dbsqlc.CreateOwnerParams) (*dbsqlc.CreateOwnerRow, error) {
@@ -15,5 +15,7 @@ func (s *OwnerStore) CreateOwner(ctx context.Context, createOwnerParams dbsqlc.C
 }
 
 func (s *OwnerStore) GetOwnerByID(ctx context.Context, id int) (*dbsqlc.Owner, error) {
-	return nil, nil
+	owner, err := s.queries.GetOwnerByID(ctx, int32(id))
+
+	return &owner, err
 }

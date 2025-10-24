@@ -6,8 +6,9 @@ import (
 	"time"
 
 	"github.com/danivideda/satu-apotek-be/internal/http/handler"
+	"github.com/danivideda/satu-apotek-be/internal/http/middleware"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	cm "github.com/go-chi/chi/v5/middleware"
 )
 
 type application struct {
@@ -28,15 +29,15 @@ func (app *application) mount() http.Handler {
 	r := chi.NewRouter()
 
 	// A good base middleware stack
-	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
+	r.Use(cm.RequestID)
+	r.Use(cm.RealIP)
+	r.Use(cm.Logger)
+	r.Use(cm.Recoverer)
 
 	// Set a timeout value on the request context (ctx), that will signal
 	// through ctx.Done() that the request has timed out and further
 	// processing should be stopped.
-	r.Use(middleware.Timeout(60 * time.Second))
+	r.Use(cm.Timeout(60 * time.Second))
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Hello world!"))
@@ -47,10 +48,15 @@ func (app *application) mount() http.Handler {
 			w.Write([]byte("Health check: OK\n"))
 		})
 
-		r.Route("/owners", func(r chi.Router) {
-			r.Get("/", app.handler.GetOwnerByID)
-			r.Post("/create", app.handler.CreateOwner)
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.Auth)
+
+			r.Post("/register", app.handler.RegisterOwner)
+			r.Route("/owners", func(r chi.Router) {
+				r.Get("/", app.handler.GetOwnerByID)
+			})
 		})
+
 	})
 
 	return r
