@@ -10,6 +10,7 @@ type Storage struct {
 	Owners interface {
 		GetOwnerByID(context.Context, int) (*dbsqlc.Owner, error)
 		CreateOwner(context.Context, dbsqlc.CreateOwnerParams) (*dbsqlc.CreateOwnerRow, error)
+		GetOwnerByUsername(context.Context, string) (*dbsqlc.GetOwnerByUsernameRow, error)
 	}
 }
 

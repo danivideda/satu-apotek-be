@@ -45,3 +45,39 @@ func (h *Handler) RegisterOwner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+type loginOwnerPayload struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+func (h *Handler) LoginOwner(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var payload loginOwnerPayload
+	if err := json.Read(w, r, &payload); err != nil {
+		badRequestResponse(w, r, err)
+		return
+	}
+
+	owner, err := h.store.Owners.GetOwnerByUsername(ctx, payload.Username)
+	if err != nil {
+		badRequestResponse(w, r, err)
+		return
+	}
+
+	if err := bcrypt.CompareHashAndPassword(owner.Password, []byte(payload.Password)); err != nil {
+		badRequestResponse(w, r, err)
+		return
+	}
+
+	response := struct {
+		Username string `json:"username"`
+		Message string `json:"message"`
+	}{Username: payload.Username, Message: "Login success"}
+
+	if err := json.WriteResponse(w, http.StatusOK, response); err != nil {
+		internalServerErrorResponse(w, r, err)
+		return
+	}
+}

@@ -8,5 +8,8 @@ VALUES ($1, $2, $3) RETURNING id, email, username, created_at, updated_at;
 
 -- name: GetOwnerByID :one
 SELECT * FROM owners
-WHERE id = @id
-ORDER BY id;
+WHERE id = @id;
+
+-- name: GetOwnerByUsername :one
+SELECT id, username, password FROM owners
+WHERE username = @username;

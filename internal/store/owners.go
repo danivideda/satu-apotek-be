@@ -16,6 +16,10 @@ func (s *OwnerStore) CreateOwner(ctx context.Context, createOwnerParams dbsqlc.C
 
 func (s *OwnerStore) GetOwnerByID(ctx context.Context, id int) (*dbsqlc.Owner, error) {
 	owner, err := s.queries.GetOwnerByID(ctx, int32(id))
+	return &owner, err
+}
 
+func (s *OwnerStore) GetOwnerByUsername(ctx context.Context, username string) (*dbsqlc.GetOwnerByUsernameRow, error) {
+	owner, err := s.queries.GetOwnerByUsername(ctx, username)
 	return &owner, err
 }
