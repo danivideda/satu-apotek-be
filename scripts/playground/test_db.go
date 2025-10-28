@@ -9,7 +9,7 @@ import (
 	"github.com/danivideda/satu-apotek-be/internal/db"
 )
 
-func main() {
+func runScript1() {
 	dbUrl := os.Getenv("DATABASE_URL")
 	parsedUrl, err := url.Parse(dbUrl)
 	if err != nil {
