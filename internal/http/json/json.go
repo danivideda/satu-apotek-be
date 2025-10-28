@@ -6,7 +6,7 @@ import (
 	"slices"
 )
 
-func WriteJSON(w http.ResponseWriter, status int, data any) error {
+func Write(w http.ResponseWriter, status int, data any) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 
@@ -25,7 +25,8 @@ func WriteJSON(w http.ResponseWriter, status int, data any) error {
 	return nil
 }
 
-func ReadJSON(w http.ResponseWriter, r *http.Request, data any) error {
+// Read from ResponseWriter body
+func Read(w http.ResponseWriter, r *http.Request, data any) error {
 	maxBytes := 1_048_576 // 1 Mega Bytes
 	http.MaxBytesReader(w, r.Body, int64(maxBytes))
 
@@ -34,18 +35,18 @@ func ReadJSON(w http.ResponseWriter, r *http.Request, data any) error {
 	return decoder.Decode(data)
 }
 
-func ResponseJSONError(w http.ResponseWriter, status int, message string) error {
+func WriteResponseErr(w http.ResponseWriter, status int, message string) error {
 	type envelope struct {
 		Error string `json:"error"`
 	}
 
-	return WriteJSON(w, status, &envelope{Error: message})
+	return Write(w, status, &envelope{Error: message})
 }
 
-func ResponseJSON(w http.ResponseWriter, status int, data any) error {
+func WriteResponse(w http.ResponseWriter, status int, data any) error {
 	type envelope struct {
 		Data any `json:"data"`
 	}
 
-	return WriteJSON(w, status, &envelope{Data: data})
+	return Write(w, status, &envelope{Data: data})
 }

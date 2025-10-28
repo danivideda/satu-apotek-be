@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/danivideda/satu-apotek-be/internal/dbsqlc"
@@ -19,15 +18,15 @@ func (h *Handler) RegisterOwner(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var payload registerOwnerPayload
-	if err := json.ReadJSON(w, r, &payload); err != nil {
-		log.Printf("error response: %s", err.Error())
-		json.ResponseJSONError(w, http.StatusBadRequest, err.Error())
+	if err := json.Read(w, r, &payload); err != nil {
+		badRequestResponse(w, r, err)
+		return
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(payload.Password), bcrypt.DefaultCost)
 	if err != nil {
-		log.Printf("error response: %s", err.Error())
-		json.ResponseJSONError(w, http.StatusBadRequest, err.Error())
+		badRequestResponse(w, r, err)
+		return
 	}
 
 	param := dbsqlc.CreateOwnerParams{
@@ -37,11 +36,12 @@ func (h *Handler) RegisterOwner(w http.ResponseWriter, r *http.Request) {
 	}
 	owner, err := h.store.Owners.CreateOwner(ctx, param)
 	if err != nil {
-		log.Printf("Error: %s", err)
+		badRequestResponse(w, r, err)
+		return
 	}
 
-	if err := json.ResponseJSON(w, http.StatusCreated, owner); err != nil {
-		log.Printf("error response: %s", err.Error())
-		json.ResponseJSONError(w, http.StatusBadRequest, err.Error())
+	if err := json.WriteResponse(w, http.StatusCreated, owner); err != nil {
+		internalServerErrorResponse(w, r, err)
+		return
 	}
 }
