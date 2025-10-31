@@ -11,7 +11,8 @@ type OwnerStore struct {
 }
 
 func (s *OwnerStore) CreateOwner(ctx context.Context, createOwnerParams dbsqlc.CreateOwnerParams) (*dbsqlc.CreateOwnerRow, error) {
-	return nil, nil
+	owner, err := s.queries.CreateOwner(ctx, createOwnerParams)
+	return &owner, err
 }
 
 func (s *OwnerStore) GetOwnerByID(ctx context.Context, id int) (*dbsqlc.Owner, error) {

@@ -36,5 +36,5 @@ func generate(id string, exp time.Time, signKey string) (string, error) {
 	}
 
 	t := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return t.SignedString(signKey)
+	return t.SignedString([]byte(signKey))
 }

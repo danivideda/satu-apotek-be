@@ -2,11 +2,18 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/danivideda/satu-apotek-be/internal/dbsqlc"
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
+	"github.com/danivideda/satu-apotek-be/internal/http/jwt"
 	"golang.org/x/crypto/bcrypt"
 )
+
+type authToken struct {
+	RefreshToken string `json:"refresh_token"`
+	AccessToken  string `json:"access_token"`
+}
 
 type registerOwnerPayload struct {
 	Username string `json:"username"`
@@ -40,7 +47,21 @@ func (h *Handler) RegisterOwner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := json.WriteResponse(w, http.StatusCreated, owner); err != nil {
+	token, err := newAuthToken(owner.ID)
+	if err != nil {
+		internalServerErrorResponse(w, r, err)
+		return
+	}
+
+	responseData := struct {
+		*dbsqlc.CreateOwnerRow
+		*authToken
+	}{
+		CreateOwnerRow: owner,
+		authToken:      token,
+	}
+
+	if err := json.WriteResponse(w, http.StatusCreated, responseData); err != nil {
 		internalServerErrorResponse(w, r, err)
 		return
 	}
@@ -71,13 +92,42 @@ func (h *Handler) LoginOwner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	token, err := newAuthToken(owner.ID)
+	if err != nil {
+		internalServerErrorResponse(w, r, err)
+		return
+	}
 	response := struct {
 		Username string `json:"username"`
-		Message string `json:"message"`
-	}{Username: payload.Username, Message: "Login success"}
+		Message  string `json:"message"`
+		*authToken
+	}{
+		Username:  payload.Username,
+		Message:   "Login success",
+		authToken: token,
+	}
 
 	if err := json.WriteResponse(w, http.StatusOK, response); err != nil {
 		internalServerErrorResponse(w, r, err)
 		return
 	}
+}
+
+func newAuthToken(id int32) (*authToken, error) {
+	ownerID := strconv.Itoa(int(id))
+	refreshToken, err := jwt.NewRefreshToken(ownerID)
+	if err != nil {
+		return nil, err
+	}
+	accessToken, err := jwt.NewAccessToken(ownerID)
+	if err != nil {
+		return nil, err
+	}
+
+	token := authToken{
+		RefreshToken: refreshToken,
+		AccessToken:  accessToken,
+	}
+	
+	return &token, nil
 }
