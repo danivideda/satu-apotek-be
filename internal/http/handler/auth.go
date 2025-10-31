@@ -10,19 +10,14 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type authToken struct {
-	RefreshToken string `json:"refresh_token"`
-	AccessToken  string `json:"access_token"`
-}
-
-type registerOwnerPayload struct {
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
 func (h *Handler) RegisterOwner(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+
+	type registerOwnerPayload struct {
+		Username string `json:"username"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
 
 	var payload registerOwnerPayload
 	if err := json.Read(w, r, &payload); err != nil {
@@ -67,13 +62,13 @@ func (h *Handler) RegisterOwner(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-type loginOwnerPayload struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
 func (h *Handler) LoginOwner(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+
+	type loginOwnerPayload struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
 
 	var payload loginOwnerPayload
 	if err := json.Read(w, r, &payload); err != nil {
@@ -113,6 +108,11 @@ func (h *Handler) LoginOwner(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type authToken struct {
+	RefreshToken string `json:"refresh_token"`
+	AccessToken  string `json:"access_token"`
+}
+
 func newAuthToken(id int32) (*authToken, error) {
 	ownerID := strconv.Itoa(int(id))
 	refreshToken, err := jwt.NewRefreshToken(ownerID)
@@ -128,6 +128,6 @@ func newAuthToken(id int32) (*authToken, error) {
 		RefreshToken: refreshToken,
 		AccessToken:  accessToken,
 	}
-	
+
 	return &token, nil
 }
