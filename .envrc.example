@@ -7,3 +7,6 @@ export ADDR="localhost:8080"
 postgres_addr="admin:adminpassword@localhost/satuapotek?sslmode=disable"
 export DATABASE_URL="postgres://$postgres_addr"
 export MIGRATE_URL="pgx5://$postgres_addr"
+
+export JWT_REFRESH_SECRET="refresh-token-secret"
+export JWT_ACCESS_SECRET="access-token-secret"
