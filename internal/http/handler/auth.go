@@ -10,6 +10,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type authToken struct {
+	RefreshToken string `json:"refresh_token"`
+	AccessToken  string `json:"access_token"`
+}
+
 func (h *Handler) RegisterOwner(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -106,11 +111,6 @@ func (h *Handler) LoginOwner(w http.ResponseWriter, r *http.Request) {
 		internalServerErrorResponse(w, r, err)
 		return
 	}
-}
-
-type authToken struct {
-	RefreshToken string `json:"refresh_token"`
-	AccessToken  string `json:"access_token"`
 }
 
 func newAuthToken(id int32) (*authToken, error) {
