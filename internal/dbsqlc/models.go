@@ -23,18 +23,18 @@ type Pharmacy struct {
 	Name    pgtype.Text `json:"name"`
 }
 
-type RevokedToken struct {
-	ID           int32              `json:"id"`
-	RefreshToken string             `json:"refresh_token"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+type RevokedRefreshToken struct {
+	ID        int32              `json:"id"`
+	Token     string             `json:"token"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
 type User struct {
-	ID         int32              `json:"id"`
-	Username   string             `json:"username"`
-	Password   []byte             `json:"password"`
-	PharmacyID int32              `json:"pharmacy_id"`
-	CreatedAt  pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+	ID           int32              `json:"id"`
+	Username     string             `json:"username"`
+	PasswordHash []byte             `json:"password_hash"`
+	PharmacyID   int32              `json:"pharmacy_id"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }

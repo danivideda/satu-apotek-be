@@ -1,1 +1,1 @@
-DROP TABLE IF EXISTS revoked_tokens;
+DROP TABLE IF EXISTS revoked_refresh_tokens;
