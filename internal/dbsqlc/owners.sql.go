@@ -12,14 +12,14 @@ import (
 )
 
 const createOwner = `-- name: CreateOwner :one
-INSERT INTO owners (username, email, password) 
+INSERT INTO owners (username, email, password_hash) 
 VALUES ($1, $2, $3) RETURNING id, email, username, created_at, updated_at
 `
 
 type CreateOwnerParams struct {
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Password []byte `json:"password"`
+	Username     string `json:"username"`
+	Email        string `json:"email"`
+	PasswordHash []byte `json:"password_hash"`
 }
 
 type CreateOwnerRow struct {
@@ -31,7 +31,7 @@ type CreateOwnerRow struct {
 }
 
 func (q *Queries) CreateOwner(ctx context.Context, arg CreateOwnerParams) (CreateOwnerRow, error) {
-	row := q.db.QueryRow(ctx, createOwner, arg.Username, arg.Email, arg.Password)
+	row := q.db.QueryRow(ctx, createOwner, arg.Username, arg.Email, arg.PasswordHash)
 	var i CreateOwnerRow
 	err := row.Scan(
 		&i.ID,
@@ -44,7 +44,7 @@ func (q *Queries) CreateOwner(ctx context.Context, arg CreateOwnerParams) (Creat
 }
 
 const getOwnerByID = `-- name: GetOwnerByID :one
-SELECT id, email, username, password, created_at, updated_at FROM owners
+SELECT id, email, username, password_hash, created_at, updated_at FROM owners
 WHERE id = $1
 `
 
@@ -55,7 +55,7 @@ func (q *Queries) GetOwnerByID(ctx context.Context, id int32) (Owner, error) {
 		&i.ID,
 		&i.Email,
 		&i.Username,
-		&i.Password,
+		&i.PasswordHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -63,25 +63,25 @@ func (q *Queries) GetOwnerByID(ctx context.Context, id int32) (Owner, error) {
 }
 
 const getOwnerByUsername = `-- name: GetOwnerByUsername :one
-SELECT id, username, password FROM owners
+SELECT id, username, password_hash FROM owners
 WHERE username = $1
 `
 
 type GetOwnerByUsernameRow struct {
-	ID       int32  `json:"id"`
-	Username string `json:"username"`
-	Password []byte `json:"password"`
+	ID           int32  `json:"id"`
+	Username     string `json:"username"`
+	PasswordHash []byte `json:"password_hash"`
 }
 
 func (q *Queries) GetOwnerByUsername(ctx context.Context, username string) (GetOwnerByUsernameRow, error) {
 	row := q.db.QueryRow(ctx, getOwnerByUsername, username)
 	var i GetOwnerByUsernameRow
-	err := row.Scan(&i.ID, &i.Username, &i.Password)
+	err := row.Scan(&i.ID, &i.Username, &i.PasswordHash)
 	return i, err
 }
 
 const listOwners = `-- name: ListOwners :many
-SELECT id, email, username, password, created_at, updated_at FROM owners
+SELECT id, email, username, password_hash, created_at, updated_at FROM owners
 ORDER BY id
 `
 
@@ -98,7 +98,7 @@ func (q *Queries) ListOwners(ctx context.Context) ([]Owner, error) {
 			&i.ID,
 			&i.Email,
 			&i.Username,
-			&i.Password,
+			&i.PasswordHash,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

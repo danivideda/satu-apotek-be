@@ -9,18 +9,25 @@ import (
 )
 
 type Owner struct {
-	ID        int32              `json:"id"`
-	Email     string             `json:"email"`
-	Username  string             `json:"username"`
-	Password  []byte             `json:"password"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	ID           int32              `json:"id"`
+	Email        string             `json:"email"`
+	Username     string             `json:"username"`
+	PasswordHash []byte             `json:"password_hash"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }
 
 type Pharmacy struct {
 	ID      int32       `json:"id"`
 	OwnerID int32       `json:"owner_id"`
 	Name    pgtype.Text `json:"name"`
+}
+
+type RevokedToken struct {
+	ID           int32              `json:"id"`
+	RefreshToken string             `json:"refresh_token"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }
 
 type User struct {

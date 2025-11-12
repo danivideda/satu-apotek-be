@@ -1,10 +1,15 @@
 package handler
 
 import (
+	"errors"
 	"log"
 	"net/http"
 
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
+)
+
+var (
+	ErrInvalidPassword = errors.New("invalid password given")
 )
 
 func internalServerErrorResponse(w http.ResponseWriter, r *http.Request, err error) {

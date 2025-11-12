@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/alexedwards/argon2id"
 	"github.com/danivideda/satu-apotek-be/internal/dbsqlc"
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
 	"github.com/danivideda/satu-apotek-be/internal/http/jwt"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type authToken struct {
@@ -30,7 +30,11 @@ func (h *Handler) RegisterOwner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(payload.Password), bcrypt.DefaultCost)
+	// CreateHash returns an Argon2id hash of a plain-text password using the
+	// provided algorithm parameters. The returned hash follows the format used
+	// by the Argon2 reference C implementation and looks like this:
+	// $argon2id$v=19$m=65536,t=3,p=2$c29tZXNhbHQ$RdescudvJCsgt3ub+b+dWRWJTmaaJObG
+	hashedPassword, err := argon2id.CreateHash(payload.Password, argon2id.DefaultParams)
 	if err != nil {
 		badRequestResponse(w, r, err)
 		return
@@ -39,7 +43,7 @@ func (h *Handler) RegisterOwner(w http.ResponseWriter, r *http.Request) {
 	param := dbsqlc.CreateOwnerParams{
 		Username: payload.Username,
 		Email:    payload.Email,
-		Password: hashedPassword,
+		PasswordHash: []byte(hashedPassword),
 	}
 	owner, err := h.store.Owners.CreateOwner(ctx, param)
 	if err != nil {
@@ -53,7 +57,7 @@ func (h *Handler) RegisterOwner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	responseData := struct {
+	response := struct {
 		*dbsqlc.CreateOwnerRow
 		*authToken
 	}{
@@ -61,7 +65,7 @@ func (h *Handler) RegisterOwner(w http.ResponseWriter, r *http.Request) {
 		authToken:      token,
 	}
 
-	if err := json.WriteResponse(w, http.StatusCreated, responseData); err != nil {
+	if err := json.WriteResponse(w, http.StatusCreated, response); err != nil {
 		internalServerErrorResponse(w, r, err)
 		return
 	}
@@ -87,8 +91,18 @@ func (h *Handler) LoginOwner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := bcrypt.CompareHashAndPassword(owner.Password, []byte(payload.Password)); err != nil {
+	// ComparePasswordAndHash performs a constant-time comparison between a
+	// plain-text password and Argon2id hash, using the parameters and salt
+	// contained in the hash. It returns true if they match, otherwise it returns
+	// false.
+	match, err := argon2id.ComparePasswordAndHash(payload.Password, string(owner.PasswordHash))
+	if err != nil {
 		badRequestResponse(w, r, err)
+		return
+	}
+
+	if !match {
+		badRequestResponse(w, r, ErrInvalidPassword)
 		return
 	}
 
