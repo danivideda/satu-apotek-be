@@ -7,8 +7,12 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var refreshTokenKey = env.GetString("JWT_REFRESH_SECRET", "refresh-token-secret")
-var accessTokenKey = env.GetString("JWT_ACCESS_SECRET", "access-token-secret")
+var (
+	refreshTokenKey = env.GetString("JWT_REFRESH_SECRET", "refresh-token-secret")
+	accessTokenKey  = env.GetString("JWT_ACCESS_SECRET", "access-token-secret")
+	refreshTokenTTL = env.GetString("REFRESH_TTL", "168h")
+	accessTokenTTL  = env.GetString("ACCESS_TTL", "5m")
+)
 
 type myClaim struct {
 	ID string `json:"id"`
@@ -16,12 +20,20 @@ type myClaim struct {
 }
 
 func NewRefreshToken(id string) (string, error) {
-	exp := time.Now().Add(24 * time.Hour)
+	ttl, err := time.ParseDuration(refreshTokenTTL)
+	if err != nil {
+		return "", err
+	}
+	exp := time.Now().Add(ttl)
 	return generate(id, exp, refreshTokenKey)
 }
 
 func NewAccessToken(id string) (string, error) {
-	exp := time.Now().Add(1 * time.Minute)
+	ttl, err := time.ParseDuration(accessTokenTTL)
+	if err != nil {
+		return "", err
+	}
+	exp := time.Now().Add(ttl)
 	return generate(id, exp, accessTokenKey)
 }
 

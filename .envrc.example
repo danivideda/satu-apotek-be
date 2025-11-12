@@ -4,9 +4,15 @@ export PATH=$GOBIN:$PATH
 
 export ADDR="localhost:8080"
 
+# postgres database
 postgres_addr="admin:adminpassword@localhost/satuapotek?sslmode=disable"
 export DATABASE_URL="postgres://$postgres_addr"
 export MIGRATE_URL="pgx5://$postgres_addr"
 
-export JWT_REFRESH_SECRET="refresh-token-secret"
-export JWT_ACCESS_SECRET="access-token-secret"
+# JWT secret
+export JWT_REFRESH_SECRET="secret-refresh-token"
+export JWT_ACCESS_SECRET="secret-access-token"
+
+# JWT Time-to-Live
+export REFRESH_TTL="168h" # 7days
+export ACCESS_TTL="5m" # 5minutes
