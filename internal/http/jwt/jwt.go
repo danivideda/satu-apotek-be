@@ -19,13 +19,14 @@ type myClaim struct {
 	jwt.RegisteredClaims
 }
 
-func NewRefreshToken(id string) (string, error) {
+func NewRefreshToken(id string) (*time.Time, string, error) {
 	ttl, err := time.ParseDuration(refreshTokenTTL)
 	if err != nil {
-		return "", err
+		return nil, "", err
 	}
 	exp := time.Now().Add(ttl)
-	return generate(id, exp, refreshTokenKey)
+	signed, err := generate(id, exp, refreshTokenKey)
+	return &exp, signed, err 
 }
 
 func NewAccessToken(id string) (string, error) {

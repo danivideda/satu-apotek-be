@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/alexedwards/argon2id"
 	"github.com/danivideda/satu-apotek-be/internal/dbsqlc"
@@ -15,7 +16,7 @@ type authToken struct {
 	AccessToken  string `json:"access_token"`
 }
 
-func (h *Handler) RegisterOwner(w http.ResponseWriter, r *http.Request) {
+func (h *authHandler) RegisterOwner(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	type registerOwnerPayload struct {
@@ -51,11 +52,22 @@ func (h *Handler) RegisterOwner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := newAuthToken(owner.ID)
+	token, exp, err := newAuthToken(owner.ID)
 	if err != nil {
 		internalServerErrorResponse(w, r, err)
 		return
 	}
+
+	authCookie := http.Cookie{
+		Name:    "refresh_token",
+		Value:   token.RefreshToken,
+		Path:    "/v1/refresh",
+		Domain:  "localhost", // Or your actual domain
+		Expires: *exp,
+		Secure:  false, // Set to true for HTTPS
+		HttpOnly: true, // Prevent client-side script access
+	}
+	http.SetCookie(w, &authCookie)
 
 	response := struct {
 		*dbsqlc.CreateOwnerRow
@@ -71,7 +83,7 @@ func (h *Handler) RegisterOwner(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) LoginOwner(w http.ResponseWriter, r *http.Request) {
+func (h *authHandler) LoginOwner(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	type loginOwnerPayload struct {
@@ -106,11 +118,23 @@ func (h *Handler) LoginOwner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := newAuthToken(owner.ID)
+	token, exp, err := newAuthToken(owner.ID)
 	if err != nil {
 		internalServerErrorResponse(w, r, err)
 		return
 	}
+
+	authCookie := http.Cookie{
+		Name:    "refresh_token",
+		Value:   token.RefreshToken,
+		Path:    "/v1/refresh",
+		Domain:  "localhost", // Or your actual domain
+		Expires: *exp,
+		Secure:  false, // Set to true for HTTPS
+		HttpOnly: true, // Prevent client-side script access
+	}
+	http.SetCookie(w, &authCookie)
+
 	response := struct {
 		Username string `json:"username"`
 		Message  string `json:"message"`
@@ -127,15 +151,15 @@ func (h *Handler) LoginOwner(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func newAuthToken(id int32) (*authToken, error) {
+func newAuthToken(id int32) (*authToken, *time.Time, error) {
 	ownerID := strconv.Itoa(int(id))
-	refreshToken, err := jwt.NewRefreshToken(ownerID)
+	exp, refreshToken, err := jwt.NewRefreshToken(ownerID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	accessToken, err := jwt.NewAccessToken(ownerID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	token := authToken{
@@ -143,5 +167,18 @@ func newAuthToken(id int32) (*authToken, error) {
 		AccessToken:  accessToken,
 	}
 
-	return &token, nil
+	return &token, exp, nil
+}
+
+func (h *authHandler) Refresh(w http.ResponseWriter, r *http.Request) {
+	refreshToken, err := r.Cookie("refresh_token")
+	if err != nil {
+		badRequestResponse(w, r, err)
+		return
+	}
+
+	if err := json.WriteResponse(w, http.StatusOK, refreshToken.String()); err != nil {
+		internalServerErrorResponse(w, r, err)
+		return
+	}
 }

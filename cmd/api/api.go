@@ -51,12 +51,13 @@ func (app *application) mount() http.Handler {
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.Auth)
 
-			r.Post("/register", app.handler.RegisterOwner)
-			r.Post("/login", app.handler.LoginOwner)
+			r.Post("/register", app.handler.Auth.RegisterOwner)
+			r.Post("/login", app.handler.Auth.LoginOwner)
+			r.Get("/refresh", app.handler.Auth.Refresh)
+		})
 
-			r.Route("/owners", func(r chi.Router) {
-				r.Get("/", app.handler.GetOwnerByID)
-			})
+		r.Route("/owners", func(r chi.Router) {
+			r.Get("/", app.handler.Owner.GetByID)
 		})
 
 	})

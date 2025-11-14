@@ -6,7 +6,7 @@ import (
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
 )
 
-func (h *Handler) GetOwnerByID(w http.ResponseWriter, r *http.Request) {
+func (h *ownerHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	ownerID := 3
