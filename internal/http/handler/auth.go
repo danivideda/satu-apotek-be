@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"net/http"
 	"strconv"
 	"time"
@@ -139,12 +141,17 @@ func (h *authHandler) LoginOwner(w http.ResponseWriter, r *http.Request) {
 }
 
 func newAuthToken(id int32) (*authToken, *time.Time, error) {
-	ID := strconv.Itoa(int(id))
-	exp, refreshToken, err := jwt.NewRefreshToken(ID, jwt.RoleOwner)
+	idString := strconv.Itoa(int(id))
+	sessionID, err := generateSessionID()
 	if err != nil {
 		return nil, nil, err
 	}
-	accessToken, err := jwt.NewAccessToken(ID, jwt.RoleOwner)
+
+	exp, refreshToken, err := jwt.NewRefreshToken(idString, jwt.RoleOwner, sessionID)
+	if err != nil {
+		return nil, nil, err
+	}
+	accessToken, err := jwt.NewAccessToken(idString, jwt.RoleOwner, sessionID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -157,6 +164,14 @@ func newAuthToken(id int32) (*authToken, *time.Time, error) {
 	return &token, exp, nil
 }
 
+func generateSessionID() (string, error) {
+	b := make([]byte, 32) // 32 bytes for a 256-bit ID
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return base64.URLEncoding.EncodeToString(b), nil
+}
+
 func setCookies(w http.ResponseWriter, refreshToken string, exp time.Time) {
 	authCookie := http.Cookie{
 		Name:     "refresh_token",
@@ -167,16 +182,6 @@ func setCookies(w http.ResponseWriter, refreshToken string, exp time.Time) {
 		HttpOnly: true,  // Prevent client-side script access
 	}
 	http.SetCookie(w, &authCookie)
-
-	logoutCookie := http.Cookie{
-		Name:     "refresh_token",
-		Value:    refreshToken,
-		Path:     "/v1/auth/logout",
-		Expires:  exp,
-		Secure:   false, // Set to true for HTTPS
-		HttpOnly: true,  // Prevent client-side script access
-	}
-	http.SetCookie(w, &logoutCookie)
 }
 
 func (h *authHandler) Refresh(w http.ResponseWriter, r *http.Request) {
@@ -192,7 +197,7 @@ func (h *authHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessToken, err := jwt.NewAccessToken(claims.ID, jwt.RoleOwner)
+	accessToken, err := jwt.NewAccessToken(claims.ID, jwt.RoleOwner, claims.SessionID)
 	if err != nil {
 		badRequestResponse(w, r, err)
 		return

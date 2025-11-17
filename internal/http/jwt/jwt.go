@@ -22,35 +22,36 @@ var (
 )
 
 type MyClaim struct {
-	ID   string     `json:"id"`
-	Role roleClaims `json:"role"`
-	SessionID string `json:"sid"`
+	ID        string     `json:"id"`
+	Role      roleClaims `json:"role"`
+	SessionID string     `json:"sid"`
 	jwt.RegisteredClaims
 }
 
-func NewRefreshToken(id string, role roleClaims) (*time.Time, string, error) {
+func NewRefreshToken(id string, role roleClaims, sessionID string) (*time.Time, string, error) {
 	ttl, err := time.ParseDuration(refreshTokenTTL)
 	if err != nil {
 		return nil, "", err
 	}
 	exp := time.Now().Add(ttl)
-	signed, err := generate(id, role, exp, refreshTokenKey)
+	signed, err := generate(id, role, sessionID, exp, refreshTokenKey)
 	return &exp, signed, err
 }
 
-func NewAccessToken(id string, role roleClaims) (string, error) {
+func NewAccessToken(id string, role roleClaims, sessionID string) (string, error) {
 	ttl, err := time.ParseDuration(accessTokenTTL)
 	if err != nil {
 		return "", err
 	}
 	exp := time.Now().Add(ttl)
-	return generate(id, role, exp, accessTokenKey)
+	return generate(id, role, sessionID, exp, accessTokenKey)
 }
 
-func generate(id string, role roleClaims, exp time.Time, signKey string) (string, error) {
+func generate(id string, role roleClaims, sessionID string, exp time.Time, signKey string) (string, error) {
 	claims := MyClaim{
 		ID:   id,
 		Role: role,
+		SessionID: sessionID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    "satu-apotek-api",
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
