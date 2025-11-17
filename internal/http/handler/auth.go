@@ -9,8 +9,10 @@ import (
 
 	"github.com/alexedwards/argon2id"
 	"github.com/danivideda/satu-apotek-be/internal/dbsqlc"
+	"github.com/danivideda/satu-apotek-be/internal/http/auth"
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
-	"github.com/danivideda/satu-apotek-be/internal/http/jwt"
+	"github.com/danivideda/satu-apotek-be/internal/http/middleware"
+	"github.com/danivideda/satu-apotek-be/internal/http/response"
 	"github.com/danivideda/satu-apotek-be/internal/store"
 )
 
@@ -34,7 +36,7 @@ func (h *authHandler) RegisterOwner(w http.ResponseWriter, r *http.Request) {
 
 	var payload registerOwnerPayload
 	if err := json.Read(w, r, &payload); err != nil {
-		badRequestResponse(w, r, err)
+		response.BadRequestResponse(w, r, err)
 		return
 	}
 
@@ -44,7 +46,7 @@ func (h *authHandler) RegisterOwner(w http.ResponseWriter, r *http.Request) {
 	// $argon2id$v=19$m=65536,t=3,p=2$c29tZXNhbHQ$RdescudvJCsgt3ub+b+dWRWJTmaaJObG
 	hashedPassword, err := argon2id.CreateHash(payload.Password, argon2id.DefaultParams)
 	if err != nil {
-		badRequestResponse(w, r, err)
+		response.BadRequestResponse(w, r, err)
 		return
 	}
 
@@ -55,19 +57,19 @@ func (h *authHandler) RegisterOwner(w http.ResponseWriter, r *http.Request) {
 	}
 	owner, err := h.store.Owners.CreateOwner(ctx, param)
 	if err != nil {
-		badRequestResponse(w, r, err)
+		response.BadRequestResponse(w, r, err)
 		return
 	}
 
 	token, exp, err := newAuthToken(owner.ID)
 	if err != nil {
-		internalServerErrorResponse(w, r, err)
+		response.InternalServerErrorResponse(w, r, err)
 		return
 	}
 
 	setCookies(w, token.RefreshToken, *exp)
 
-	response := struct {
+	res := struct {
 		*dbsqlc.CreateOwnerRow
 		*authToken
 	}{
@@ -75,8 +77,8 @@ func (h *authHandler) RegisterOwner(w http.ResponseWriter, r *http.Request) {
 		authToken:      token,
 	}
 
-	if err := json.WriteResponse(w, http.StatusCreated, response); err != nil {
-		internalServerErrorResponse(w, r, err)
+	if err := json.WriteResponse(w, http.StatusCreated, res); err != nil {
+		response.InternalServerErrorResponse(w, r, err)
 		return
 	}
 }
@@ -91,13 +93,13 @@ func (h *authHandler) LoginOwner(w http.ResponseWriter, r *http.Request) {
 
 	var payload loginOwnerPayload
 	if err := json.Read(w, r, &payload); err != nil {
-		badRequestResponse(w, r, err)
+		response.BadRequestResponse(w, r, err)
 		return
 	}
 
 	owner, err := h.store.Owners.GetOwnerByUsername(ctx, payload.Username)
 	if err != nil {
-		badRequestResponse(w, r, err)
+		response.BadRequestResponse(w, r, err)
 		return
 	}
 
@@ -107,35 +109,35 @@ func (h *authHandler) LoginOwner(w http.ResponseWriter, r *http.Request) {
 	// false.
 	match, err := argon2id.ComparePasswordAndHash(payload.Password, string(owner.PasswordHash))
 	if err != nil {
-		badRequestResponse(w, r, err)
+		response.BadRequestResponse(w, r, err)
 		return
 	}
 
 	if !match {
-		badRequestResponse(w, r, ErrInvalidPassword)
+		response.BadRequestResponse(w, r, ErrInvalidPassword)
 		return
 	}
 
 	token, exp, err := newAuthToken(owner.ID)
 	if err != nil {
-		internalServerErrorResponse(w, r, err)
+		response.InternalServerErrorResponse(w, r, err)
 		return
 	}
 
 	setCookies(w, token.RefreshToken, *exp)
 
-	response := struct {
-		Username string `json:"username"`
-		Message  string `json:"message"`
+	res := struct {
+		Username    string `json:"username"`
+		Message     string `json:"message"`
 		AccessToken string `json:"access_token"`
 	}{
-		Username:  payload.Username,
-		Message:   "Login success",
+		Username:    payload.Username,
+		Message:     "Login success",
 		AccessToken: token.AccessToken,
 	}
 
-	if err := json.WriteResponse(w, http.StatusOK, response); err != nil {
-		internalServerErrorResponse(w, r, err)
+	if err := json.WriteResponse(w, http.StatusOK, res); err != nil {
+		response.InternalServerErrorResponse(w, r, err)
 		return
 	}
 }
@@ -147,11 +149,11 @@ func newAuthToken(id int32) (*authToken, *time.Time, error) {
 		return nil, nil, err
 	}
 
-	exp, refreshToken, err := jwt.NewRefreshToken(idString, jwt.RoleOwner, sessionID)
+	exp, refreshToken, err := auth.NewRefreshToken(idString, auth.RoleOwner, sessionID)
 	if err != nil {
 		return nil, nil, err
 	}
-	accessToken, err := jwt.NewAccessToken(idString, jwt.RoleOwner, sessionID)
+	accessToken, err := auth.NewAccessToken(idString, auth.RoleOwner, sessionID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -187,45 +189,44 @@ func setCookies(w http.ResponseWriter, refreshToken string, exp time.Time) {
 func (h *authHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	refreshToken, err := r.Cookie("refresh_token")
 	if err != nil {
-		badRequestResponse(w, r, err)
+		response.BadRequestResponse(w, r, err)
 		return
 	}
 
-	_, claims, err := jwt.ValidateRefreshToken(refreshToken.Value)
+	claims, err := auth.ValidateRefreshToken(refreshToken.Value)
 	if err != nil {
-		badRequestResponse(w, r, err)
+		response.BadRequestResponse(w, r, err)
 		return
 	}
 
-	accessToken, err := jwt.NewAccessToken(claims.ID, jwt.RoleOwner, claims.SessionID)
+	accessToken, err := auth.NewAccessToken(claims.ID, auth.RoleOwner, claims.SessionID)
 	if err != nil {
-		badRequestResponse(w, r, err)
+		response.BadRequestResponse(w, r, err)
 		return
 	}
 
-	response := struct {
+	res := struct {
 		AccessToken string `json:"access_token"`
 	}{
 		AccessToken: accessToken,
 	}
-	if err := json.WriteResponse(w, http.StatusOK, response); err != nil {
-		internalServerErrorResponse(w, r, err)
+	if err := json.WriteResponse(w, http.StatusOK, res); err != nil {
+		response.InternalServerErrorResponse(w, r, err)
 		return
 	}
 }
 
 func (h *authHandler) LogoutOwner(w http.ResponseWriter, r *http.Request) {
-	// ctx := r.Context()
-
-	type logoutOwnerPayload struct {
-		AccessToken string `json:"access_token"`
-	}
-
-	var payload logoutOwnerPayload
-	if err := json.Read(w, r, &payload); err != nil {
-		badRequestResponse(w, r, err)
+	ctx := r.Context()
+	
+	claims, ok := ctx.Value(middleware.AuthClaimsCtx).(*auth.AuthClaims)
+	if !ok {
+		response.InternalServerErrorResponse(w, r, ErrInvalidAuthToken)
 		return
 	}
 
-	jwt.ValidateAccessToken(payload.AccessToken)
+	if err := json.WriteResponse(w, http.StatusOK, claims.SessionID); err != nil {
+		response.InternalServerErrorResponse(w, r, err)
+		return
+	}
 }

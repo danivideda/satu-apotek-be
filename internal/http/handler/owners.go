@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
+	"github.com/danivideda/satu-apotek-be/internal/http/response"
 	"github.com/danivideda/satu-apotek-be/internal/store"
 )
 
@@ -17,12 +18,12 @@ func (h *ownerHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	ownerID := 3
 	owners, err := h.store.Owners.GetOwnerByID(ctx, ownerID)
 	if err != nil {
-		badRequestResponse(w, r, err)
+		response.BadRequestResponse(w, r, err)
 		return
 	}
 
 	if err := json.WriteResponse(w, http.StatusOK, owners); err != nil {
-		internalServerErrorResponse(w, r, err)
+		response.InternalServerErrorResponse(w, r, err)
 		return
 	}
 }

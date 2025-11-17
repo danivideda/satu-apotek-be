@@ -1,4 +1,4 @@
-package jwt
+package auth
 
 import (
 	"time"
@@ -21,7 +21,7 @@ var (
 	accessTokenTTL  = env.GetString("ACCESS_TTL", "5m")
 )
 
-type MyClaim struct {
+type AuthClaims struct {
 	ID        string     `json:"id"`
 	Role      roleClaims `json:"role"`
 	SessionID string     `json:"sid"`
@@ -48,7 +48,7 @@ func NewAccessToken(id string, role roleClaims, sessionID string) (string, error
 }
 
 func generate(id string, role roleClaims, sessionID string, exp time.Time, signKey string) (string, error) {
-	claims := MyClaim{
+	claims := AuthClaims{
 		ID:        id,
 		Role:      role,
 		SessionID: sessionID,
@@ -63,25 +63,25 @@ func generate(id string, role roleClaims, sessionID string, exp time.Time, signK
 	return t.SignedString([]byte(signKey))
 }
 
-func ValidateRefreshToken(t string) (*jwt.Token, *MyClaim, error) {
+func ValidateRefreshToken(t string) (*AuthClaims, error) {
 	return validate(t, refreshTokenKey)
 }
 
-func ValidateAccessToken(t string) (*jwt.Token, *MyClaim, error) {
+func ValidateAccessToken(t string) (*AuthClaims, error) {
 	return validate(t, accessTokenKey)
 }
 
-func validate(t, signKey string) (*jwt.Token, *MyClaim, error) {
-	token, err := jwt.ParseWithClaims(t, &MyClaim{}, func(t *jwt.Token) (any, error) {
+func validate(t, signKey string) (*AuthClaims, error) {
+	token, err := jwt.ParseWithClaims(t, &AuthClaims{}, func(t *jwt.Token) (any, error) {
 		return []byte(signKey), nil
 	})
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	if claims, ok := token.Claims.(*MyClaim); !ok {
-		return nil, nil, ErrInvalidClaims
+	if claims, ok := token.Claims.(*AuthClaims); !ok {
+		return nil, ErrClaimsInvalid
 	} else {
-		return token, claims, nil
+		return claims, nil
 	}
 }
