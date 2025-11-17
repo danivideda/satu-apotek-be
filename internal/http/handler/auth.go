@@ -9,7 +9,7 @@ import (
 
 	"github.com/alexedwards/argon2id"
 	"github.com/danivideda/satu-apotek-be/internal/dbsqlc"
-	"github.com/danivideda/satu-apotek-be/internal/http/auth"
+	"github.com/danivideda/satu-apotek-be/internal/http/jwt"
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
 	"github.com/danivideda/satu-apotek-be/internal/http/middleware"
 	"github.com/danivideda/satu-apotek-be/internal/http/response"
@@ -149,11 +149,11 @@ func newAuthToken(id int32) (*authToken, *time.Time, error) {
 		return nil, nil, err
 	}
 
-	exp, refreshToken, err := auth.NewRefreshToken(idString, auth.RoleOwner, sessionID)
+	exp, refreshToken, err := jwt.NewRefreshToken(idString, jwt.RoleOwner, sessionID)
 	if err != nil {
 		return nil, nil, err
 	}
-	accessToken, err := auth.NewAccessToken(idString, auth.RoleOwner, sessionID)
+	accessToken, err := jwt.NewAccessToken(idString, jwt.RoleOwner, sessionID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -193,13 +193,13 @@ func (h *authHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	claims, err := auth.ValidateRefreshToken(refreshToken.Value)
+	claims, err := jwt.ValidateRefreshToken(refreshToken.Value)
 	if err != nil {
 		response.BadRequestResponse(w, r, err)
 		return
 	}
 
-	accessToken, err := auth.NewAccessToken(claims.ID, auth.RoleOwner, claims.SessionID)
+	accessToken, err := jwt.NewAccessToken(claims.ID, jwt.RoleOwner, claims.SessionID)
 	if err != nil {
 		response.BadRequestResponse(w, r, err)
 		return
@@ -219,7 +219,7 @@ func (h *authHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 func (h *authHandler) LogoutOwner(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	
-	claims, ok := ctx.Value(middleware.AuthClaimsCtx).(*auth.AuthClaims)
+	claims, ok := ctx.Value(middleware.AuthClaimsCtx).(*jwt.AuthClaims)
 	if !ok {
 		response.InternalServerErrorResponse(w, r, ErrInvalidAuthToken)
 		return

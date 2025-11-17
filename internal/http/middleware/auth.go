@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/danivideda/satu-apotek-be/internal/http/auth"
+	"github.com/danivideda/satu-apotek-be/internal/http/jwt"
 	"github.com/danivideda/satu-apotek-be/internal/http/response"
 )
 
@@ -23,7 +23,7 @@ func Auth(next http.Handler) http.Handler {
 			return
 		}
 
-		claims, err := auth.ValidateAccessToken(tokenString)
+		claims, err := jwt.ValidateAccessToken(tokenString)
 		if err != nil {
 			response.NotAuthorizedResponse(w, r, err)
 			return
