@@ -49,8 +49,8 @@ func NewAccessToken(id string, role roleClaims, sessionID string) (string, error
 
 func generate(id string, role roleClaims, sessionID string, exp time.Time, signKey string) (string, error) {
 	claims := MyClaim{
-		ID:   id,
-		Role: role,
+		ID:        id,
+		Role:      role,
 		SessionID: sessionID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    "satu-apotek-api",

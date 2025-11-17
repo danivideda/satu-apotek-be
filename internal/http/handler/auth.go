@@ -127,11 +127,11 @@ func (h *authHandler) LoginOwner(w http.ResponseWriter, r *http.Request) {
 	response := struct {
 		Username string `json:"username"`
 		Message  string `json:"message"`
-		*authToken
+		AccessToken string `json:"access_token"`
 	}{
 		Username:  payload.Username,
 		Message:   "Login success",
-		authToken: token,
+		AccessToken: token.AccessToken,
 	}
 
 	if err := json.WriteResponse(w, http.StatusOK, response); err != nil {
