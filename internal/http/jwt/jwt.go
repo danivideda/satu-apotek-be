@@ -7,6 +7,13 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+type roleClaims string
+
+const (
+	RoleOwner roleClaims = "owner"
+	RoleUser  roleClaims = "user"
+)
+
 var (
 	refreshTokenKey = env.GetString("JWT_REFRESH_SECRET", "refresh-token-secret")
 	accessTokenKey  = env.GetString("JWT_ACCESS_SECRET", "access-token-secret")
@@ -14,33 +21,36 @@ var (
 	accessTokenTTL  = env.GetString("ACCESS_TTL", "5m")
 )
 
-type myClaim struct {
-	ID string `json:"id"`
+type MyClaim struct {
+	ID   string     `json:"id"`
+	Role roleClaims `json:"role"`
+	SessionID string `json:"sid"`
 	jwt.RegisteredClaims
 }
 
-func NewRefreshToken(id string) (*time.Time, string, error) {
+func NewRefreshToken(id string, role roleClaims) (*time.Time, string, error) {
 	ttl, err := time.ParseDuration(refreshTokenTTL)
 	if err != nil {
 		return nil, "", err
 	}
 	exp := time.Now().Add(ttl)
-	signed, err := generate(id, exp, refreshTokenKey)
-	return &exp, signed, err 
+	signed, err := generate(id, role, exp, refreshTokenKey)
+	return &exp, signed, err
 }
 
-func NewAccessToken(id string) (string, error) {
+func NewAccessToken(id string, role roleClaims) (string, error) {
 	ttl, err := time.ParseDuration(accessTokenTTL)
 	if err != nil {
 		return "", err
 	}
 	exp := time.Now().Add(ttl)
-	return generate(id, exp, accessTokenKey)
+	return generate(id, role, exp, accessTokenKey)
 }
 
-func generate(id string, exp time.Time, signKey string) (string, error) {
-	claims := myClaim{
-		ID: id,
+func generate(id string, role roleClaims, exp time.Time, signKey string) (string, error) {
+	claims := MyClaim{
+		ID:   id,
+		Role: role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    "satu-apotek-api",
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -50,4 +60,27 @@ func generate(id string, exp time.Time, signKey string) (string, error) {
 
 	t := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return t.SignedString([]byte(signKey))
+}
+
+func ValidateRefreshToken(t string) (*jwt.Token, *MyClaim, error) {
+	return validate(t, refreshTokenKey)
+}
+
+func ValidateAccessToken(t string) (*jwt.Token, *MyClaim, error) {
+	return validate(t, accessTokenKey)
+}
+
+func validate(t, signKey string) (*jwt.Token, *MyClaim, error) {
+	token, err := jwt.ParseWithClaims(t, &MyClaim{}, func(t *jwt.Token) (any, error) {
+		return []byte(signKey), nil
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if claims, ok := token.Claims.(*MyClaim); !ok {
+		return nil, nil, ErrInvalidClaims
+	} else {
+		return token, claims, nil
+	}
 }

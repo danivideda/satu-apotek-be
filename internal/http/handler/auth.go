@@ -9,7 +9,12 @@ import (
 	"github.com/danivideda/satu-apotek-be/internal/dbsqlc"
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
 	"github.com/danivideda/satu-apotek-be/internal/http/jwt"
+	"github.com/danivideda/satu-apotek-be/internal/store"
 )
+
+type authHandler struct {
+	store store.Storage
+}
 
 type authToken struct {
 	RefreshToken string `json:"refresh_token"`
@@ -42,8 +47,8 @@ func (h *authHandler) RegisterOwner(w http.ResponseWriter, r *http.Request) {
 	}
 
 	param := dbsqlc.CreateOwnerParams{
-		Username: payload.Username,
-		Email:    payload.Email,
+		Username:     payload.Username,
+		Email:        payload.Email,
 		PasswordHash: []byte(hashedPassword),
 	}
 	owner, err := h.store.Owners.CreateOwner(ctx, param)
@@ -58,16 +63,7 @@ func (h *authHandler) RegisterOwner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authCookie := http.Cookie{
-		Name:    "refresh_token",
-		Value:   token.RefreshToken,
-		Path:    "/v1/refresh",
-		Domain:  "localhost", // Or your actual domain
-		Expires: *exp,
-		Secure:  false, // Set to true for HTTPS
-		HttpOnly: true, // Prevent client-side script access
-	}
-	http.SetCookie(w, &authCookie)
+	setCookies(w, token.RefreshToken, *exp)
 
 	response := struct {
 		*dbsqlc.CreateOwnerRow
@@ -124,16 +120,7 @@ func (h *authHandler) LoginOwner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authCookie := http.Cookie{
-		Name:    "refresh_token",
-		Value:   token.RefreshToken,
-		Path:    "/v1/refresh",
-		Domain:  "localhost", // Or your actual domain
-		Expires: *exp,
-		Secure:  false, // Set to true for HTTPS
-		HttpOnly: true, // Prevent client-side script access
-	}
-	http.SetCookie(w, &authCookie)
+	setCookies(w, token.RefreshToken, *exp)
 
 	response := struct {
 		Username string `json:"username"`
@@ -152,12 +139,12 @@ func (h *authHandler) LoginOwner(w http.ResponseWriter, r *http.Request) {
 }
 
 func newAuthToken(id int32) (*authToken, *time.Time, error) {
-	ownerID := strconv.Itoa(int(id))
-	exp, refreshToken, err := jwt.NewRefreshToken(ownerID)
+	ID := strconv.Itoa(int(id))
+	exp, refreshToken, err := jwt.NewRefreshToken(ID, jwt.RoleOwner)
 	if err != nil {
 		return nil, nil, err
 	}
-	accessToken, err := jwt.NewAccessToken(ownerID)
+	accessToken, err := jwt.NewAccessToken(ID, jwt.RoleOwner)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -170,6 +157,28 @@ func newAuthToken(id int32) (*authToken, *time.Time, error) {
 	return &token, exp, nil
 }
 
+func setCookies(w http.ResponseWriter, refreshToken string, exp time.Time) {
+	authCookie := http.Cookie{
+		Name:     "refresh_token",
+		Value:    refreshToken,
+		Path:     "/v1/auth/refresh",
+		Expires:  exp,
+		Secure:   false, // Set to true for HTTPS
+		HttpOnly: true,  // Prevent client-side script access
+	}
+	http.SetCookie(w, &authCookie)
+
+	logoutCookie := http.Cookie{
+		Name:     "refresh_token",
+		Value:    refreshToken,
+		Path:     "/v1/auth/logout",
+		Expires:  exp,
+		Secure:   false, // Set to true for HTTPS
+		HttpOnly: true,  // Prevent client-side script access
+	}
+	http.SetCookie(w, &logoutCookie)
+}
+
 func (h *authHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	refreshToken, err := r.Cookie("refresh_token")
 	if err != nil {
@@ -177,8 +186,41 @@ func (h *authHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := json.WriteResponse(w, http.StatusOK, refreshToken.String()); err != nil {
+	_, claims, err := jwt.ValidateRefreshToken(refreshToken.Value)
+	if err != nil {
+		badRequestResponse(w, r, err)
+		return
+	}
+
+	accessToken, err := jwt.NewAccessToken(claims.ID, jwt.RoleOwner)
+	if err != nil {
+		badRequestResponse(w, r, err)
+		return
+	}
+
+	response := struct {
+		AccessToken string `json:"access_token"`
+	}{
+		AccessToken: accessToken,
+	}
+	if err := json.WriteResponse(w, http.StatusOK, response); err != nil {
 		internalServerErrorResponse(w, r, err)
 		return
 	}
+}
+
+func (h *authHandler) LogoutOwner(w http.ResponseWriter, r *http.Request) {
+	// ctx := r.Context()
+
+	type logoutOwnerPayload struct {
+		AccessToken string `json:"access_token"`
+	}
+
+	var payload logoutOwnerPayload
+	if err := json.Read(w, r, &payload); err != nil {
+		badRequestResponse(w, r, err)
+		return
+	}
+
+	jwt.ValidateAccessToken(payload.AccessToken)
 }

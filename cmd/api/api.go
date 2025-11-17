@@ -48,12 +48,13 @@ func (app *application) mount() http.Handler {
 			w.Write([]byte("Health check: OK\n"))
 		})
 
-		r.Group(func(r chi.Router) {
+		r.Route("/auth", func(r chi.Router) {
 			r.Use(middleware.Auth)
 
 			r.Post("/register", app.handler.Auth.RegisterOwner)
 			r.Post("/login", app.handler.Auth.LoginOwner)
 			r.Get("/refresh", app.handler.Auth.Refresh)
+			r.Post("/logout", app.handler.Auth.LogoutOwner)
 		})
 
 		r.Route("/owners", func(r chi.Router) {

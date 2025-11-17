@@ -6,21 +6,12 @@ import (
 
 type Handler struct {
 	Owner *ownerHandler
-	Auth *authHandler
+	Auth  *authHandler
 }
 
 func New(store store.Storage) Handler {
 	return Handler{
-		Auth: &authHandler{store: store},
+		Auth:  &authHandler{store: store},
 		Owner: &ownerHandler{store: store},
 	}
 }
-
-type ownerHandler struct {
-	store store.Storage
-}
-
-type authHandler struct {
-	store store.Storage
-}
-
