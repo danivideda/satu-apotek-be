@@ -33,3 +33,21 @@ func (q *Queries) CreateRevokedSession(ctx context.Context, arg CreateRevokedSes
 	)
 	return i, err
 }
+
+const getRevokedSessionBySessionID = `-- name: GetRevokedSessionBySessionID :one
+SELECT id, session_id, expires, created_at, updated_at FROM revoked_sessions
+WHERE session_id = $1
+`
+
+func (q *Queries) GetRevokedSessionBySessionID(ctx context.Context, sessionID string) (RevokedSession, error) {
+	row := q.db.QueryRow(ctx, getRevokedSessionBySessionID, sessionID)
+	var i RevokedSession
+	err := row.Scan(
+		&i.ID,
+		&i.SessionID,
+		&i.Expires,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}

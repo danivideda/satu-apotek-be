@@ -36,7 +36,7 @@ func Auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
-func FromAuthClaimsCtx(ctx context.Context) *jwt.AuthClaims {
+func AuthClaimsFromContext(ctx context.Context) *jwt.AuthClaims {
 	claims, ok := ctx.Value(AuthClaimsCtx).(*jwt.AuthClaims)
 	if !ok {
 		return nil

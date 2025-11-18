@@ -8,9 +8,14 @@ import (
 
 type Storage struct {
 	Owners interface {
-		GetOwnerByID(context.Context, int) (*dbsqlc.Owner, error)
-		CreateOwner(context.Context, dbsqlc.CreateOwnerParams) (*dbsqlc.CreateOwnerRow, error)
-		GetOwnerByUsername(context.Context, string) (*dbsqlc.GetOwnerByUsernameRow, error)
+		GetByID(context.Context, int) (*dbsqlc.Owner, error)
+		Create(context.Context, dbsqlc.CreateOwnerParams) (*dbsqlc.CreateOwnerRow, error)
+		GetByUsername(context.Context, string) (*dbsqlc.GetOwnerByUsernameRow, error)
+	}
+
+	RevokedSessions interface {
+		Create(context.Context, string) (*dbsqlc.RevokedSession, error)
+		GetBySessionID(context.Context, string) (*dbsqlc.RevokedSession, error)
 	}
 }
 
@@ -19,5 +24,6 @@ func NewStorage(db dbsqlc.DBTX) Storage {
 
 	return Storage{
 		Owners: &OwnerStore{queries: queries},
+		RevokedSessions: &RevokedSessionStore{queries: queries},
 	}
 }

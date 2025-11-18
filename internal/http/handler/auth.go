@@ -1,8 +1,10 @@
 package handler
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"errors"
 	"net/http"
 	"strconv"
 	"time"
@@ -14,6 +16,7 @@ import (
 	"github.com/danivideda/satu-apotek-be/internal/http/middleware"
 	"github.com/danivideda/satu-apotek-be/internal/http/response"
 	"github.com/danivideda/satu-apotek-be/internal/store"
+	"github.com/jackc/pgx/v5"
 )
 
 type authHandler struct {
@@ -60,7 +63,7 @@ func (h *authHandler) RegisterOwner(w http.ResponseWriter, r *http.Request) {
 		Email:        payload.Email,
 		PasswordHash: []byte(hashedPassword),
 	}
-	owner, err := h.store.Owners.CreateOwner(ctx, param)
+	owner, err := h.store.Owners.Create(ctx, param)
 	if err != nil {
 		response.BadRequestResponse(w, r, err)
 		return
@@ -102,7 +105,7 @@ func (h *authHandler) LoginOwner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	owner, err := h.store.Owners.GetOwnerByUsername(ctx, payload.Username)
+	owner, err := h.store.Owners.GetByUsername(ctx, payload.Username)
 	if err != nil {
 		response.BadRequestResponse(w, r, err)
 		return
@@ -148,6 +151,8 @@ func (h *authHandler) LoginOwner(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *authHandler) Refresh(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	refreshToken, err := r.Cookie("refresh_token")
 	if err != nil {
 		response.BadRequestResponse(w, r, err)
@@ -158,6 +163,16 @@ func (h *authHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		response.BadRequestResponse(w, r, err)
 		return
+	}
+
+	if err := sessionIsValid(ctx, h.store, claims.SessionID); err != nil {
+		if errors.Is(err, ErrRevokedAuthToken) {
+			response.NotAuthorizedResponse(w, r, err)
+			return
+		} else {
+			response.InternalServerErrorResponse(w, r, err)
+			return
+		}
 	}
 
 	accessToken, err := jwt.NewAccessToken(claims.ID, claims.Role, claims.SessionID)
@@ -180,13 +195,32 @@ func (h *authHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 func (h *authHandler) LogoutOwner(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	claims := middleware.FromAuthClaimsCtx(ctx)
+	claims := middleware.AuthClaimsFromContext(ctx)
 	if claims == nil {
 		response.InternalServerErrorResponse(w, r, ErrInvalidAuthToken)
 		return
 	}
 
-	if err := json.WriteResponse(w, http.StatusOK, claims.SessionID); err != nil {
+	if err := sessionIsValid(ctx, h.store, claims.SessionID); err != nil {
+		if errors.Is(err, ErrRevokedAuthToken) {
+			response.NotAuthorizedResponse(w, r, err)
+			return
+		} else {
+			response.InternalServerErrorResponse(w, r, err)
+			return
+		}
+	}
+	revokedSession, err := h.store.RevokedSessions.Create(ctx, claims.SessionID)
+	if err != nil {
+		response.InternalServerErrorResponse(w, r, err)
+		return
+	}
+
+	res := map[string]string{
+		"revoked_session_id": revokedSession.SessionID,
+	}
+
+	if err := json.WriteResponse(w, http.StatusOK, res); err != nil {
 		response.InternalServerErrorResponse(w, r, err)
 		return
 	}
@@ -234,4 +268,18 @@ func setCookies(w http.ResponseWriter, refreshToken string, exp time.Time) {
 		HttpOnly: true,  // Prevent client-side script access
 	}
 	http.SetCookie(w, &authCookie)
+}
+
+func sessionIsValid(ctx context.Context, store store.Storage, sessionID string) error {
+	_, err := store.RevokedSessions.GetBySessionID(ctx, sessionID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			// session id not found, so the session is still valid
+			return nil
+		} else {
+			return err
+		}
+	}
+	// session id found, so the session is already revoked
+	return ErrRevokedAuthToken
 }

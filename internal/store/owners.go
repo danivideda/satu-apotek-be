@@ -10,17 +10,26 @@ type OwnerStore struct {
 	queries *dbsqlc.Queries
 }
 
-func (s *OwnerStore) CreateOwner(ctx context.Context, createOwnerParams dbsqlc.CreateOwnerParams) (*dbsqlc.CreateOwnerRow, error) {
+func (s *OwnerStore) Create(ctx context.Context, createOwnerParams dbsqlc.CreateOwnerParams) (*dbsqlc.CreateOwnerRow, error) {
 	owner, err := s.queries.CreateOwner(ctx, createOwnerParams)
-	return &owner, err
+	if err != nil {
+		return nil, err
+	}
+	return &owner, nil
 }
 
-func (s *OwnerStore) GetOwnerByID(ctx context.Context, id int) (*dbsqlc.Owner, error) {
+func (s *OwnerStore) GetByID(ctx context.Context, id int) (*dbsqlc.Owner, error) {
 	owner, err := s.queries.GetOwnerByID(ctx, int32(id))
-	return &owner, err
+	if err != nil {
+		return nil, err
+	}
+	return &owner, nil
 }
 
-func (s *OwnerStore) GetOwnerByUsername(ctx context.Context, username string) (*dbsqlc.GetOwnerByUsernameRow, error) {
+func (s *OwnerStore) GetByUsername(ctx context.Context, username string) (*dbsqlc.GetOwnerByUsernameRow, error) {
 	owner, err := s.queries.GetOwnerByUsername(ctx, username)
-	return &owner, err
+	if err != nil {
+		return nil, err
+	}
+	return &owner, nil
 }

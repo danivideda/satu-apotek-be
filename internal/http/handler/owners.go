@@ -16,7 +16,7 @@ func (h *ownerHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	ownerID := 3
-	owners, err := h.store.Owners.GetOwnerByID(ctx, ownerID)
+	owners, err := h.store.Owners.GetByID(ctx, ownerID)
 	if err != nil {
 		response.BadRequestResponse(w, r, err)
 		return

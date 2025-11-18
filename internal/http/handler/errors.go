@@ -6,5 +6,6 @@ import (
 
 var (
 	ErrInvalidPassword  = errors.New("invalid password given")
-	ErrInvalidAuthToken = errors.New("auth token is invalid")
+	ErrInvalidAuthToken = errors.New("invalid auth token")
+	ErrRevokedAuthToken = errors.New("auth session already revoked")
 )
