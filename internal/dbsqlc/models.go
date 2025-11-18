@@ -23,9 +23,10 @@ type Pharmacy struct {
 	Name    pgtype.Text `json:"name"`
 }
 
-type RevokedRefreshToken struct {
+type RevokedSession struct {
 	ID        int32              `json:"id"`
-	Token     string             `json:"token"`
+	SessionID string             `json:"session_id"`
+	Expires   pgtype.Timestamptz `json:"expires"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }

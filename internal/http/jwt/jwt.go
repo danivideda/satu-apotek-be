@@ -7,12 +7,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-type roleClaims string
-
-const (
-	RoleOwner roleClaims = "owner"
-	RoleUser  roleClaims = "user"
-)
+type RoleClaims string
 
 var (
 	refreshTokenKey = env.GetString("JWT_REFRESH_SECRET", "refresh-token-secret")
@@ -23,12 +18,12 @@ var (
 
 type AuthClaims struct {
 	ID        string     `json:"id"`
-	Role      roleClaims `json:"role"`
+	Role      RoleClaims `json:"role"`
 	SessionID string     `json:"sid"`
 	jwt.RegisteredClaims
 }
 
-func NewRefreshToken(id string, role roleClaims, sessionID string) (*time.Time, string, error) {
+func NewRefreshToken(id string, role RoleClaims, sessionID string) (*time.Time, string, error) {
 	ttl, err := time.ParseDuration(refreshTokenTTL)
 	if err != nil {
 		return nil, "", err
@@ -38,7 +33,7 @@ func NewRefreshToken(id string, role roleClaims, sessionID string) (*time.Time, 
 	return &exp, signed, err
 }
 
-func NewAccessToken(id string, role roleClaims, sessionID string) (string, error) {
+func NewAccessToken(id string, role RoleClaims, sessionID string) (string, error) {
 	ttl, err := time.ParseDuration(accessTokenTTL)
 	if err != nil {
 		return "", err
@@ -47,7 +42,7 @@ func NewAccessToken(id string, role roleClaims, sessionID string) (string, error
 	return generate(id, role, sessionID, exp, accessTokenKey)
 }
 
-func generate(id string, role roleClaims, sessionID string, exp time.Time, signKey string) (string, error) {
+func generate(id string, role RoleClaims, sessionID string, exp time.Time, signKey string) (string, error) {
 	claims := AuthClaims{
 		ID:        id,
 		Role:      role,

@@ -9,8 +9,8 @@ import (
 
 	"github.com/alexedwards/argon2id"
 	"github.com/danivideda/satu-apotek-be/internal/dbsqlc"
-	"github.com/danivideda/satu-apotek-be/internal/http/jwt"
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
+	"github.com/danivideda/satu-apotek-be/internal/http/jwt"
 	"github.com/danivideda/satu-apotek-be/internal/http/middleware"
 	"github.com/danivideda/satu-apotek-be/internal/http/response"
 	"github.com/danivideda/satu-apotek-be/internal/store"
@@ -24,6 +24,11 @@ type authToken struct {
 	RefreshToken string `json:"refresh_token"`
 	AccessToken  string `json:"access_token"`
 }
+
+const (
+	RoleOwner jwt.RoleClaims = "owner"
+	RoleUser  jwt.RoleClaims = "user"
+)
 
 func (h *authHandler) RegisterOwner(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -61,7 +66,7 @@ func (h *authHandler) RegisterOwner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, exp, err := newAuthToken(owner.ID)
+	token, exp, err := newAuthToken(owner.ID, RoleOwner)
 	if err != nil {
 		response.InternalServerErrorResponse(w, r, err)
 		return
@@ -118,7 +123,7 @@ func (h *authHandler) LoginOwner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, exp, err := newAuthToken(owner.ID)
+	token, exp, err := newAuthToken(owner.ID, RoleOwner)
 	if err != nil {
 		response.InternalServerErrorResponse(w, r, err)
 		return
@@ -142,18 +147,63 @@ func (h *authHandler) LoginOwner(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func newAuthToken(id int32) (*authToken, *time.Time, error) {
+func (h *authHandler) Refresh(w http.ResponseWriter, r *http.Request) {
+	refreshToken, err := r.Cookie("refresh_token")
+	if err != nil {
+		response.BadRequestResponse(w, r, err)
+		return
+	}
+
+	claims, err := jwt.ValidateRefreshToken(refreshToken.Value)
+	if err != nil {
+		response.BadRequestResponse(w, r, err)
+		return
+	}
+
+	accessToken, err := jwt.NewAccessToken(claims.ID, claims.Role, claims.SessionID)
+	if err != nil {
+		response.BadRequestResponse(w, r, err)
+		return
+	}
+
+	res := struct {
+		AccessToken string `json:"access_token"`
+	}{
+		AccessToken: accessToken,
+	}
+	if err := json.WriteResponse(w, http.StatusOK, res); err != nil {
+		response.InternalServerErrorResponse(w, r, err)
+		return
+	}
+}
+
+func (h *authHandler) LogoutOwner(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	claims := middleware.FromAuthClaimsCtx(ctx)
+	if claims == nil {
+		response.InternalServerErrorResponse(w, r, ErrInvalidAuthToken)
+		return
+	}
+
+	if err := json.WriteResponse(w, http.StatusOK, claims.SessionID); err != nil {
+		response.InternalServerErrorResponse(w, r, err)
+		return
+	}
+}
+
+func newAuthToken(id int32, role jwt.RoleClaims) (*authToken, *time.Time, error) {
 	idString := strconv.Itoa(int(id))
 	sessionID, err := generateSessionID()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	exp, refreshToken, err := jwt.NewRefreshToken(idString, jwt.RoleOwner, sessionID)
+	exp, refreshToken, err := jwt.NewRefreshToken(idString, role, sessionID)
 	if err != nil {
 		return nil, nil, err
 	}
-	accessToken, err := jwt.NewAccessToken(idString, jwt.RoleOwner, sessionID)
+	accessToken, err := jwt.NewAccessToken(idString, role, sessionID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -184,49 +234,4 @@ func setCookies(w http.ResponseWriter, refreshToken string, exp time.Time) {
 		HttpOnly: true,  // Prevent client-side script access
 	}
 	http.SetCookie(w, &authCookie)
-}
-
-func (h *authHandler) Refresh(w http.ResponseWriter, r *http.Request) {
-	refreshToken, err := r.Cookie("refresh_token")
-	if err != nil {
-		response.BadRequestResponse(w, r, err)
-		return
-	}
-
-	claims, err := jwt.ValidateRefreshToken(refreshToken.Value)
-	if err != nil {
-		response.BadRequestResponse(w, r, err)
-		return
-	}
-
-	accessToken, err := jwt.NewAccessToken(claims.ID, jwt.RoleOwner, claims.SessionID)
-	if err != nil {
-		response.BadRequestResponse(w, r, err)
-		return
-	}
-
-	res := struct {
-		AccessToken string `json:"access_token"`
-	}{
-		AccessToken: accessToken,
-	}
-	if err := json.WriteResponse(w, http.StatusOK, res); err != nil {
-		response.InternalServerErrorResponse(w, r, err)
-		return
-	}
-}
-
-func (h *authHandler) LogoutOwner(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	
-	claims, ok := ctx.Value(middleware.AuthClaimsCtx).(*jwt.AuthClaims)
-	if !ok {
-		response.InternalServerErrorResponse(w, r, ErrInvalidAuthToken)
-		return
-	}
-
-	if err := json.WriteResponse(w, http.StatusOK, claims.SessionID); err != nil {
-		response.InternalServerErrorResponse(w, r, err)
-		return
-	}
 }
