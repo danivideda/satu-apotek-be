@@ -9,7 +9,7 @@ import (
 )
 
 type Owner struct {
-	ID           int32              `json:"id"`
+	ID           pgtype.UUID        `json:"id"`
 	Email        string             `json:"email"`
 	Username     string             `json:"username"`
 	PasswordHash []byte             `json:"password_hash"`
@@ -18,13 +18,12 @@ type Owner struct {
 }
 
 type Pharmacy struct {
-	ID      int32       `json:"id"`
-	OwnerID int32       `json:"owner_id"`
+	ID      pgtype.UUID `json:"id"`
+	OwnerID pgtype.UUID `json:"owner_id"`
 	Name    pgtype.Text `json:"name"`
 }
 
 type RevokedSession struct {
-	ID        int32              `json:"id"`
 	SessionID string             `json:"session_id"`
 	Expires   pgtype.Timestamptz `json:"expires"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
@@ -32,10 +31,10 @@ type RevokedSession struct {
 }
 
 type User struct {
-	ID           int32              `json:"id"`
+	ID           pgtype.UUID        `json:"id"`
 	Username     string             `json:"username"`
 	PasswordHash []byte             `json:"password_hash"`
-	PharmacyID   int32              `json:"pharmacy_id"`
+	PharmacyID   pgtype.UUID        `json:"pharmacy_id"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }

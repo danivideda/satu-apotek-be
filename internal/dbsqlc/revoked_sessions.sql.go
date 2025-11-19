@@ -13,7 +13,7 @@ import (
 
 const createRevokedSession = `-- name: CreateRevokedSession :one
 INSERT INTO revoked_sessions (session_id, expires) 
-VALUES ($1, $2) RETURNING id, session_id, expires, created_at, updated_at
+VALUES ($1, $2) RETURNING session_id, expires, created_at, updated_at
 `
 
 type CreateRevokedSessionParams struct {
@@ -25,7 +25,6 @@ func (q *Queries) CreateRevokedSession(ctx context.Context, arg CreateRevokedSes
 	row := q.db.QueryRow(ctx, createRevokedSession, arg.SessionID, arg.Expires)
 	var i RevokedSession
 	err := row.Scan(
-		&i.ID,
 		&i.SessionID,
 		&i.Expires,
 		&i.CreatedAt,
@@ -35,7 +34,7 @@ func (q *Queries) CreateRevokedSession(ctx context.Context, arg CreateRevokedSes
 }
 
 const getRevokedSessionBySessionID = `-- name: GetRevokedSessionBySessionID :one
-SELECT id, session_id, expires, created_at, updated_at FROM revoked_sessions
+SELECT session_id, expires, created_at, updated_at FROM revoked_sessions
 WHERE session_id = $1
 `
 
@@ -43,7 +42,6 @@ func (q *Queries) GetRevokedSessionBySessionID(ctx context.Context, sessionID st
 	row := q.db.QueryRow(ctx, getRevokedSessionBySessionID, sessionID)
 	var i RevokedSession
 	err := row.Scan(
-		&i.ID,
 		&i.SessionID,
 		&i.Expires,
 		&i.CreatedAt,

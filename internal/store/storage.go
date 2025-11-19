@@ -8,7 +8,7 @@ import (
 
 type Storage struct {
 	Owners interface {
-		GetByID(context.Context, int) (*dbsqlc.Owner, error)
+		GetByID(context.Context, string) (*dbsqlc.Owner, error)
 		Create(context.Context, dbsqlc.CreateOwnerParams) (*dbsqlc.CreateOwnerRow, error)
 		GetByUsername(context.Context, string) (*dbsqlc.GetOwnerByUsernameRow, error)
 	}

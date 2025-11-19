@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/danivideda/satu-apotek-be/internal/dbsqlc"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type OwnerStore struct {
@@ -18,8 +19,12 @@ func (s *OwnerStore) Create(ctx context.Context, createOwnerParams dbsqlc.Create
 	return &owner, nil
 }
 
-func (s *OwnerStore) GetByID(ctx context.Context, id int) (*dbsqlc.Owner, error) {
-	owner, err := s.queries.GetOwnerByID(ctx, int32(id))
+func (s *OwnerStore) GetByID(ctx context.Context, id string) (*dbsqlc.Owner, error) {
+	var uuid pgtype.UUID
+	if err := uuid.Scan("hello"); err != nil {
+		return nil, err
+	}
+	owner, err := s.queries.GetOwnerByID(ctx, uuid)
 	if err != nil {
 		return nil, err
 	}

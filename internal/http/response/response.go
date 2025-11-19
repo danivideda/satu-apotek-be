@@ -21,7 +21,7 @@ func BadRequestResponse(w http.ResponseWriter, r *http.Request, err error) {
 	json.WriteResponseErr(w, http.StatusBadRequest, "bad request")
 }
 
-func NotAuthorizedResponse(w http.ResponseWriter, r *http.Request, err error) {
+func UnauthorizedResponse(w http.ResponseWriter, r *http.Request, err error) {
 	log.Printf("not authorized error: %s path: %s error: %s", r.Method, r.URL.Path, err)
 	json.WriteResponseErr(w, http.StatusUnauthorized, "unauthorized")
 }

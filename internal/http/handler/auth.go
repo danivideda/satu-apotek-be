@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/alexedwards/argon2id"
@@ -69,7 +68,7 @@ func (h *authHandler) RegisterOwner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, exp, err := newAuthToken(owner.ID, RoleOwner)
+	token, exp, err := newAuthToken(owner.ID.String(), RoleOwner)
 	if err != nil {
 		response.InternalServerErrorResponse(w, r, err)
 		return
@@ -126,7 +125,7 @@ func (h *authHandler) LoginOwner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, exp, err := newAuthToken(owner.ID, RoleOwner)
+	token, exp, err := newAuthToken(owner.ID.String(), RoleOwner)
 	if err != nil {
 		response.InternalServerErrorResponse(w, r, err)
 		return
@@ -135,11 +134,9 @@ func (h *authHandler) LoginOwner(w http.ResponseWriter, r *http.Request) {
 	setCookies(w, token.RefreshToken, *exp)
 
 	res := struct {
-		Username    string `json:"username"`
 		Message     string `json:"message"`
 		AccessToken string `json:"access_token"`
 	}{
-		Username:    payload.Username,
 		Message:     "Login success",
 		AccessToken: token.AccessToken,
 	}
@@ -155,19 +152,19 @@ func (h *authHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 
 	refreshToken, err := r.Cookie("refresh_token")
 	if err != nil {
-		response.BadRequestResponse(w, r, err)
+		response.UnauthorizedResponse(w, r, err)
 		return
 	}
 
 	claims, err := jwt.ValidateRefreshToken(refreshToken.Value)
 	if err != nil {
-		response.BadRequestResponse(w, r, err)
+		response.UnauthorizedResponse(w, r, err)
 		return
 	}
 
 	if err := sessionIsValid(ctx, h.store, claims.SessionID); err != nil {
 		if errors.Is(err, ErrRevokedAuthToken) {
-			response.NotAuthorizedResponse(w, r, err)
+			response.UnauthorizedResponse(w, r, err)
 			return
 		} else {
 			response.InternalServerErrorResponse(w, r, err)
@@ -177,14 +174,12 @@ func (h *authHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 
 	accessToken, err := jwt.NewAccessToken(claims.ID, claims.Role, claims.SessionID)
 	if err != nil {
-		response.BadRequestResponse(w, r, err)
+		response.InternalServerErrorResponse(w, r, err)
 		return
 	}
 
-	res := struct {
-		AccessToken string `json:"access_token"`
-	}{
-		AccessToken: accessToken,
+	res := map[string]string{
+		"access_token": accessToken,
 	}
 	if err := json.WriteResponse(w, http.StatusOK, res); err != nil {
 		response.InternalServerErrorResponse(w, r, err)
@@ -203,7 +198,7 @@ func (h *authHandler) LogoutOwner(w http.ResponseWriter, r *http.Request) {
 
 	if err := sessionIsValid(ctx, h.store, claims.SessionID); err != nil {
 		if errors.Is(err, ErrRevokedAuthToken) {
-			response.NotAuthorizedResponse(w, r, err)
+			response.UnauthorizedResponse(w, r, err)
 			return
 		} else {
 			response.InternalServerErrorResponse(w, r, err)
@@ -226,18 +221,17 @@ func (h *authHandler) LogoutOwner(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func newAuthToken(id int32, role jwt.RoleClaims) (*authToken, *time.Time, error) {
-	idString := strconv.Itoa(int(id))
+func newAuthToken(id string, role jwt.RoleClaims) (*authToken, *time.Time, error) {
 	sessionID, err := generateSessionID()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	exp, refreshToken, err := jwt.NewRefreshToken(idString, role, sessionID)
+	exp, refreshToken, err := jwt.NewRefreshToken(id, role, sessionID)
 	if err != nil {
 		return nil, nil, err
 	}
-	accessToken, err := jwt.NewAccessToken(idString, role, sessionID)
+	accessToken, err := jwt.NewAccessToken(id, role, sessionID)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -23,7 +23,7 @@ type CreateOwnerParams struct {
 }
 
 type CreateOwnerRow struct {
-	ID        int32              `json:"id"`
+	ID        pgtype.UUID        `json:"id"`
 	Email     string             `json:"email"`
 	Username  string             `json:"username"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
@@ -48,7 +48,7 @@ SELECT id, email, username, password_hash, created_at, updated_at FROM owners
 WHERE id = $1
 `
 
-func (q *Queries) GetOwnerByID(ctx context.Context, id int32) (Owner, error) {
+func (q *Queries) GetOwnerByID(ctx context.Context, id pgtype.UUID) (Owner, error) {
 	row := q.db.QueryRow(ctx, getOwnerByID, id)
 	var i Owner
 	err := row.Scan(
@@ -68,9 +68,9 @@ WHERE username = $1
 `
 
 type GetOwnerByUsernameRow struct {
-	ID           int32  `json:"id"`
-	Username     string `json:"username"`
-	PasswordHash []byte `json:"password_hash"`
+	ID           pgtype.UUID `json:"id"`
+	Username     string      `json:"username"`
+	PasswordHash []byte      `json:"password_hash"`
 }
 
 func (q *Queries) GetOwnerByUsername(ctx context.Context, username string) (GetOwnerByUsernameRow, error) {
