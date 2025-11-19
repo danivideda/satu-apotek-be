@@ -35,12 +35,13 @@ func Read(w http.ResponseWriter, r *http.Request, data any) error {
 	return decoder.Decode(data)
 }
 
-func WriteResponseErr(w http.ResponseWriter, status int, message string) error {
+func WriteResponseErr(w http.ResponseWriter, status int, message string) {
 	type envelope struct {
 		Error string `json:"error"`
 	}
 
-	return Write(w, status, &envelope{Error: message})
+	//error already catched, no need to return another error loop
+	_ = Write(w, status, &envelope{Error: message})
 }
 
 func WriteResponse(w http.ResponseWriter, status int, data any) error {

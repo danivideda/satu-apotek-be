@@ -13,6 +13,9 @@ CREATE TABLE IF NOT EXISTS pharmacies(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     owner_id UUID NOT NULL,
     name VARCHAR(255),
+    created_at timestamp(0) with time zone NOT NULL DEFAULT NOW(),
+    updated_at timestamp(0) with time zone NOT NULL DEFAULT NOW(),
+
     FOREIGN KEY (owner_id) REFERENCES owners (id)
 );
 

@@ -11,8 +11,8 @@ type OwnerStore struct {
 	queries *dbsqlc.Queries
 }
 
-func (s *OwnerStore) Create(ctx context.Context, createOwnerParams dbsqlc.CreateOwnerParams) (*dbsqlc.CreateOwnerRow, error) {
-	owner, err := s.queries.CreateOwner(ctx, createOwnerParams)
+func (s *OwnerStore) Create(ctx context.Context, params dbsqlc.CreateOwnerParams) (*dbsqlc.CreateOwnerRow, error) {
+	owner, err := s.queries.CreateOwner(ctx, params)
 	if err != nil {
 		return nil, err
 	}

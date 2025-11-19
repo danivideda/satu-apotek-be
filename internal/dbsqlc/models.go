@@ -18,9 +18,11 @@ type Owner struct {
 }
 
 type Pharmacy struct {
-	ID      pgtype.UUID `json:"id"`
-	OwnerID pgtype.UUID `json:"owner_id"`
-	Name    pgtype.Text `json:"name"`
+	ID        pgtype.UUID        `json:"id"`
+	OwnerID   pgtype.UUID        `json:"owner_id"`
+	Name      pgtype.Text        `json:"name"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
 type RevokedSession struct {

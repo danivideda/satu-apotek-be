@@ -59,6 +59,11 @@ func (app *application) mount() http.Handler {
 			r.Get("/", app.handler.Owner.GetByID)
 		})
 
+		r.Route("/apotek", func(r chi.Router) {
+			r.Use(middleware.Auth)
+			r.Post("/create", app.handler.Pharmacy.Create)
+		})
+
 	})
 
 	return r
