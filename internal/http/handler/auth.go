@@ -43,7 +43,7 @@ func (h *authHandler) RegisterOwner(w http.ResponseWriter, r *http.Request) {
 
 	var payload registerOwnerPayload
 	if err := json.Read(w, r, &payload); err != nil {
-		response.BadRequestResponse(w, r, err)
+		response.BadRequest(w, r, err)
 		return
 	}
 
@@ -53,7 +53,7 @@ func (h *authHandler) RegisterOwner(w http.ResponseWriter, r *http.Request) {
 	// $argon2id$v=19$m=65536,t=3,p=2$c29tZXNhbHQ$RdescudvJCsgt3ub+b+dWRWJTmaaJObG
 	hashedPassword, err := argon2id.CreateHash(payload.Password, argon2id.DefaultParams)
 	if err != nil {
-		response.BadRequestResponse(w, r, err)
+		response.BadRequest(w, r, err)
 		return
 	}
 
@@ -64,13 +64,13 @@ func (h *authHandler) RegisterOwner(w http.ResponseWriter, r *http.Request) {
 	}
 	owner, err := h.store.Owners.Create(ctx, param)
 	if err != nil {
-		response.BadRequestResponse(w, r, err)
+		response.BadRequest(w, r, err)
 		return
 	}
 
 	token, exp, err := newAuthToken(owner.ID.String(), RoleOwner)
 	if err != nil {
-		response.InternalServerErrorResponse(w, r, err)
+		response.InternalServerError(w, r, err)
 		return
 	}
 
@@ -85,7 +85,7 @@ func (h *authHandler) RegisterOwner(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.WriteResponse(w, http.StatusCreated, res); err != nil {
-		response.InternalServerErrorResponse(w, r, err)
+		response.InternalServerError(w, r, err)
 		return
 	}
 }
@@ -100,13 +100,13 @@ func (h *authHandler) LoginOwner(w http.ResponseWriter, r *http.Request) {
 
 	var payload loginOwnerPayload
 	if err := json.Read(w, r, &payload); err != nil {
-		response.BadRequestResponse(w, r, err)
+		response.BadRequest(w, r, err)
 		return
 	}
 
 	owner, err := h.store.Owners.GetByUsername(ctx, payload.Username)
 	if err != nil {
-		response.BadRequestResponse(w, r, err)
+		response.BadRequest(w, r, err)
 		return
 	}
 
@@ -116,18 +116,18 @@ func (h *authHandler) LoginOwner(w http.ResponseWriter, r *http.Request) {
 	// false.
 	match, err := argon2id.ComparePasswordAndHash(payload.Password, string(owner.PasswordHash))
 	if err != nil {
-		response.BadRequestResponse(w, r, err)
+		response.BadRequest(w, r, err)
 		return
 	}
 
 	if !match {
-		response.BadRequestResponse(w, r, ErrInvalidPassword)
+		response.BadRequest(w, r, ErrInvalidPassword)
 		return
 	}
 
 	token, exp, err := newAuthToken(owner.ID.String(), RoleOwner)
 	if err != nil {
-		response.InternalServerErrorResponse(w, r, err)
+		response.InternalServerError(w, r, err)
 		return
 	}
 
@@ -142,7 +142,7 @@ func (h *authHandler) LoginOwner(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.WriteResponse(w, http.StatusOK, res); err != nil {
-		response.InternalServerErrorResponse(w, r, err)
+		response.InternalServerError(w, r, err)
 		return
 	}
 }
@@ -152,29 +152,29 @@ func (h *authHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 
 	refreshToken, err := r.Cookie("refresh_token")
 	if err != nil {
-		response.UnauthorizedResponse(w, r, err)
+		response.Unauthorized(w, r, err)
 		return
 	}
 
 	claims, err := jwt.ValidateRefreshToken(refreshToken.Value)
 	if err != nil {
-		response.UnauthorizedResponse(w, r, err)
+		response.Unauthorized(w, r, err)
 		return
 	}
 
-	if err := sessionIsValid(ctx, h.store, claims.SessionID); err != nil {
+	if err := validateSession(ctx, h.store, claims.SessionID); err != nil {
 		if errors.Is(err, ErrRevokedAuthToken) {
-			response.UnauthorizedResponse(w, r, err)
+			response.Unauthorized(w, r, err)
 			return
 		} else {
-			response.InternalServerErrorResponse(w, r, err)
+			response.InternalServerError(w, r, err)
 			return
 		}
 	}
 
 	accessToken, err := jwt.NewAccessToken(claims.ID, claims.Role, claims.SessionID)
 	if err != nil {
-		response.InternalServerErrorResponse(w, r, err)
+		response.InternalServerError(w, r, err)
 		return
 	}
 
@@ -182,7 +182,7 @@ func (h *authHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		"access_token": accessToken,
 	}
 	if err := json.WriteResponse(w, http.StatusOK, res); err != nil {
-		response.InternalServerErrorResponse(w, r, err)
+		response.InternalServerError(w, r, err)
 		return
 	}
 }
@@ -192,22 +192,22 @@ func (h *authHandler) LogoutOwner(w http.ResponseWriter, r *http.Request) {
 
 	claims := middleware.AuthClaimsFromContext(ctx)
 	if claims == nil {
-		response.InternalServerErrorResponse(w, r, ErrInvalidAuthToken)
+		response.InternalServerError(w, r, ErrInvalidAuthToken)
 		return
 	}
 
-	if err := sessionIsValid(ctx, h.store, claims.SessionID); err != nil {
+	if err := validateSession(ctx, h.store, claims.SessionID); err != nil {
 		if errors.Is(err, ErrRevokedAuthToken) {
-			response.UnauthorizedResponse(w, r, err)
+			response.Unauthorized(w, r, err)
 			return
 		} else {
-			response.InternalServerErrorResponse(w, r, err)
+			response.InternalServerError(w, r, err)
 			return
 		}
 	}
 	revokedSession, err := h.store.RevokedSessions.Create(ctx, claims.SessionID)
 	if err != nil {
-		response.InternalServerErrorResponse(w, r, err)
+		response.InternalServerError(w, r, err)
 		return
 	}
 
@@ -216,7 +216,7 @@ func (h *authHandler) LogoutOwner(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.WriteResponse(w, http.StatusOK, res); err != nil {
-		response.InternalServerErrorResponse(w, r, err)
+		response.InternalServerError(w, r, err)
 		return
 	}
 }
@@ -264,7 +264,7 @@ func setCookies(w http.ResponseWriter, refreshToken string, exp time.Time) {
 	http.SetCookie(w, &authCookie)
 }
 
-func sessionIsValid(ctx context.Context, store store.Storage, sessionID string) error {
+func validateSession(ctx context.Context, store store.Storage, sessionID string) error {
 	_, err := store.RevokedSessions.GetBySessionID(ctx, sessionID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

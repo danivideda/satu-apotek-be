@@ -21,24 +21,24 @@ func (h *apotekHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	var payload createPharmacyPayload
 	if err := json.Read(w, r, &payload); err != nil {
-		response.InternalServerErrorResponse(w, r, err)
+		response.InternalServerError(w, r, err)
 		return
 	}
 
 	auth := middleware.AuthClaimsFromContext(ctx)
 	if auth == nil {
-		response.InternalServerErrorResponse(w, r, ErrInvalidAuthToken)
+		response.InternalServerError(w, r, ErrInvalidAuthToken)
 		return 
 	}
 
 	pharmacy, err := h.store.Pharmacies.Create(ctx, auth.ID, payload.Name)
 	if err != nil {
-		response.InternalServerErrorResponse(w, r, err)
+		response.InternalServerError(w, r, err)
 		return
 	}
 
 	if err := response.Created(w, r, map[string]any{"pharmacy": pharmacy}); err != nil {
-		response.InternalServerErrorResponse(w, r, err)
+		response.InternalServerError(w, r, err)
 		return
 	}
 }

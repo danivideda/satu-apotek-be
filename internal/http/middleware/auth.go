@@ -19,13 +19,13 @@ func Auth(next http.Handler) http.Handler {
 
 		tokenString, err := extractBearerToken(r)
 		if err != nil {
-			response.UnauthorizedResponse(w, r, err)
+			response.Unauthorized(w, r, err)
 			return
 		}
 
 		claims, err := jwt.ValidateAccessToken(tokenString)
 		if err != nil {
-			response.UnauthorizedResponse(w, r, err)
+			response.Unauthorized(w, r, err)
 			return
 		}
 

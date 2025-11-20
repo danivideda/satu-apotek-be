@@ -18,12 +18,12 @@ func (h *ownerHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	ownerID := "todo-uuid"
 	owners, err := h.store.Owners.GetByID(ctx, ownerID)
 	if err != nil {
-		response.BadRequestResponse(w, r, err)
+		response.BadRequest(w, r, err)
 		return
 	}
 
 	if err := json.WriteResponse(w, http.StatusOK, owners); err != nil {
-		response.InternalServerErrorResponse(w, r, err)
+		response.InternalServerError(w, r, err)
 		return
 	}
 }
