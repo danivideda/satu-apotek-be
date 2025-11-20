@@ -12,7 +12,6 @@ import (
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
 	"github.com/danivideda/satu-apotek-be/internal/http/jwt"
 	"github.com/danivideda/satu-apotek-be/internal/store"
-	"github.com/jackc/pgx/v5"
 )
 
 type authHandler struct {
@@ -142,10 +141,10 @@ func setCookies(w http.ResponseWriter, refreshToken string, exp time.Time, role 
 	return nil
 }
 
-func validateSession(ctx context.Context, store store.Storage, sessionID string) error {
-	_, err := store.RevokedSessions.GetBySessionID(ctx, sessionID)
+func validateSession(ctx context.Context, s store.Storage, sessionID string) error {
+	_, err := s.RevokedSessions.GetBySessionID(ctx, sessionID)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, store.ErrNotFound) {
 			// session id not found, so the session is still valid
 			return nil
 		} else {

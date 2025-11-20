@@ -4,7 +4,6 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/danivideda/satu-apotek-be/internal/dbsqlc"
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
 	"github.com/danivideda/satu-apotek-be/internal/http/jwt"
 	"github.com/danivideda/satu-apotek-be/internal/http/middleware"
@@ -25,18 +24,13 @@ func (h *authHandler) OwnerRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hashedPassword, err := hashPassword(payload.Password)
+	passwordHash, err := hashPassword(payload.Password)
 	if err != nil {
 		json.ResponseBadRequest(w, r, err)
 		return
 	}
 
-	params := dbsqlc.CreateOwnerParams{
-		Username:     payload.Username,
-		Email:        payload.Email,
-		PasswordHash: []byte(hashedPassword),
-	}
-	owner, err := h.store.Owners.Create(ctx, params)
+	owner, err := h.store.Owners.Create(ctx, payload.Username, payload.Email, passwordHash)
 	if err != nil {
 		json.ResponseBadRequest(w, r, err)
 		return
@@ -53,12 +47,9 @@ func (h *authHandler) OwnerRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := struct {
-		*dbsqlc.CreateOwnerRow
-		*authToken
-	}{
-		CreateOwnerRow: owner,
-		authToken:      token,
+	res := map[string]string{
+		"username": owner.Username,
+		ownerAccessTokenName: token.AccessToken,
 	}
 
 	if err := json.WriteResponse(w, http.StatusCreated, res); err != nil {
