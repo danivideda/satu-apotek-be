@@ -13,6 +13,10 @@ type Storage struct {
 		GetByUsername(ctx context.Context, username string) (*dbsqlc.GetOwnerByUsernameRow, error)
 	}
 
+	Users interface {
+		Create(ctx context.Context, username, passwordHash, pharmacyID string) (*dbsqlc.User, error)
+	}
+
 	RevokedSessions interface {
 		Create(ctx context.Context, sessionID string) (*dbsqlc.RevokedSession, error)
 		GetBySessionID(ctx context.Context, sessionID string) (*dbsqlc.RevokedSession, error)
@@ -28,6 +32,7 @@ func NewStorage(db dbsqlc.DBTX) Storage {
 
 	return Storage{
 		Owners: &OwnerStore{queries: queries},
+		Users: &UserStore{queries: queries},
 		RevokedSessions: &RevokedSessionStore{queries: queries},
 		Pharmacies: &PharmacyStore{queries: queries},
 	}

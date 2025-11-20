@@ -20,11 +20,11 @@ func (s *OwnerStore) Create(ctx context.Context, params dbsqlc.CreateOwnerParams
 }
 
 func (s *OwnerStore) GetByID(ctx context.Context, id string) (*dbsqlc.Owner, error) {
-	var uuid pgtype.UUID
-	if err := uuid.Scan("hello"); err != nil {
+	var ownerUUID pgtype.UUID
+	if err := ownerUUID.Scan(id); err != nil {
 		return nil, err
 	}
-	owner, err := s.queries.GetOwnerByID(ctx, uuid)
+	owner, err := s.queries.GetOwnerByID(ctx, ownerUUID)
 	if err != nil {
 		return nil, err
 	}

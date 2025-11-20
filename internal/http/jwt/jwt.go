@@ -16,6 +16,11 @@ var (
 	accessTokenTTL  = env.GetString("ACCESS_TTL", "5m")
 )
 
+const (
+	RoleOwner RoleClaims = "owner"
+	RoleUser  RoleClaims = "user"
+)
+
 type AuthClaims struct {
 	ID        string     `json:"id"`
 	Role      RoleClaims `json:"role"`

@@ -9,11 +9,8 @@ import (
 	"time"
 
 	"github.com/alexedwards/argon2id"
-	"github.com/danivideda/satu-apotek-be/internal/dbsqlc"
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
 	"github.com/danivideda/satu-apotek-be/internal/http/jwt"
-	"github.com/danivideda/satu-apotek-be/internal/http/middleware"
-	"github.com/danivideda/satu-apotek-be/internal/http/response"
 	"github.com/danivideda/satu-apotek-be/internal/store"
 	"github.com/jackc/pgx/v5"
 )
@@ -28,197 +25,56 @@ type authToken struct {
 }
 
 const (
-	RoleOwner jwt.RoleClaims = "owner"
-	RoleUser  jwt.RoleClaims = "user"
+	ownerCookieName = "owner_auth_token"
+	userCookieName  = "user_auth_token"
+
+	ownerCookiePath = "/v1/auth/owners/refresh"
+	userCookiePath  = "/v1/auth/users/refresh"
+
+	ownerAccessTokenName = "owner_access_token"
+	userAccessTokenName = "user_access_token"
 )
 
-func (h *authHandler) RegisterOwner(w http.ResponseWriter, r *http.Request) {
+func refresh(refreshToken *http.Cookie, accessTokenName string, h *authHandler, w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-
-	type registerOwnerPayload struct {
-		Username string `json:"username"`
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
-
-	var payload registerOwnerPayload
-	if err := json.Read(w, r, &payload); err != nil {
-		response.BadRequest(w, r, err)
-		return
-	}
-
-	// CreateHash returns an Argon2id hash of a plain-text password using the
-	// provided algorithm parameters. The returned hash follows the format used
-	// by the Argon2 reference C implementation and looks like this:
-	// $argon2id$v=19$m=65536,t=3,p=2$c29tZXNhbHQ$RdescudvJCsgt3ub+b+dWRWJTmaaJObG
-	hashedPassword, err := argon2id.CreateHash(payload.Password, argon2id.DefaultParams)
-	if err != nil {
-		response.BadRequest(w, r, err)
-		return
-	}
-
-	param := dbsqlc.CreateOwnerParams{
-		Username:     payload.Username,
-		Email:        payload.Email,
-		PasswordHash: []byte(hashedPassword),
-	}
-	owner, err := h.store.Owners.Create(ctx, param)
-	if err != nil {
-		response.BadRequest(w, r, err)
-		return
-	}
-
-	token, exp, err := newAuthToken(owner.ID.String(), RoleOwner)
-	if err != nil {
-		response.InternalServerError(w, r, err)
-		return
-	}
-
-	setCookies(w, token.RefreshToken, *exp)
-
-	res := struct {
-		*dbsqlc.CreateOwnerRow
-		*authToken
-	}{
-		CreateOwnerRow: owner,
-		authToken:      token,
-	}
-
-	if err := json.WriteResponse(w, http.StatusCreated, res); err != nil {
-		response.InternalServerError(w, r, err)
-		return
-	}
-}
-
-func (h *authHandler) LoginOwner(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	type loginOwnerPayload struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-	}
-
-	var payload loginOwnerPayload
-	if err := json.Read(w, r, &payload); err != nil {
-		response.BadRequest(w, r, err)
-		return
-	}
-
-	owner, err := h.store.Owners.GetByUsername(ctx, payload.Username)
-	if err != nil {
-		response.BadRequest(w, r, err)
-		return
-	}
-
-	// ComparePasswordAndHash performs a constant-time comparison between a
-	// plain-text password and Argon2id hash, using the parameters and salt
-	// contained in the hash. It returns true if they match, otherwise it returns
-	// false.
-	match, err := argon2id.ComparePasswordAndHash(payload.Password, string(owner.PasswordHash))
-	if err != nil {
-		response.BadRequest(w, r, err)
-		return
-	}
-
-	if !match {
-		response.BadRequest(w, r, ErrInvalidPassword)
-		return
-	}
-
-	token, exp, err := newAuthToken(owner.ID.String(), RoleOwner)
-	if err != nil {
-		response.InternalServerError(w, r, err)
-		return
-	}
-
-	setCookies(w, token.RefreshToken, *exp)
-
-	res := struct {
-		Message     string `json:"message"`
-		AccessToken string `json:"access_token"`
-	}{
-		Message:     "Login success",
-		AccessToken: token.AccessToken,
-	}
-
-	if err := json.WriteResponse(w, http.StatusOK, res); err != nil {
-		response.InternalServerError(w, r, err)
-		return
-	}
-}
-
-func (h *authHandler) Refresh(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	refreshToken, err := r.Cookie("refresh_token")
-	if err != nil {
-		response.Unauthorized(w, r, err)
-		return
-	}
 
 	claims, err := jwt.ValidateRefreshToken(refreshToken.Value)
 	if err != nil {
-		response.Unauthorized(w, r, err)
+		json.ResponseUnauthorized(w, r, err)
 		return
 	}
 
 	if err := validateSession(ctx, h.store, claims.SessionID); err != nil {
 		if errors.Is(err, ErrRevokedAuthToken) {
-			response.Unauthorized(w, r, err)
+			json.ResponseUnauthorized(w, r, err)
 			return
 		} else {
-			response.InternalServerError(w, r, err)
+			json.ResponseInternalServerError(w, r, err)
 			return
 		}
 	}
 
 	accessToken, err := jwt.NewAccessToken(claims.ID, claims.Role, claims.SessionID)
 	if err != nil {
-		response.InternalServerError(w, r, err)
+		json.ResponseInternalServerError(w, r, err)
 		return
 	}
 
 	res := map[string]string{
-		"access_token": accessToken,
+		accessTokenName: accessToken,
 	}
 	if err := json.WriteResponse(w, http.StatusOK, res); err != nil {
-		response.InternalServerError(w, r, err)
+		json.ResponseInternalServerError(w, r, err)
 		return
 	}
 }
 
-func (h *authHandler) LogoutOwner(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+func hashPassword(password string) (string, error) {
+	return argon2id.CreateHash(password, argon2id.DefaultParams)
+}
 
-	claims := middleware.AuthClaimsFromContext(ctx)
-	if claims == nil {
-		response.InternalServerError(w, r, ErrInvalidAuthToken)
-		return
-	}
-
-	if err := validateSession(ctx, h.store, claims.SessionID); err != nil {
-		if errors.Is(err, ErrRevokedAuthToken) {
-			response.Unauthorized(w, r, err)
-			return
-		} else {
-			response.InternalServerError(w, r, err)
-			return
-		}
-	}
-	revokedSession, err := h.store.RevokedSessions.Create(ctx, claims.SessionID)
-	if err != nil {
-		response.InternalServerError(w, r, err)
-		return
-	}
-
-	res := map[string]string{
-		"revoked_session_id": revokedSession.SessionID,
-	}
-
-	if err := json.WriteResponse(w, http.StatusOK, res); err != nil {
-		response.InternalServerError(w, r, err)
-		return
-	}
+func verifyPassword(password string, hash []byte) (bool, error) {
+	return argon2id.ComparePasswordAndHash(password, string(hash))
 }
 
 func newAuthToken(id string, role jwt.RoleClaims) (*authToken, *time.Time, error) {
@@ -252,16 +108,38 @@ func generateSessionID() (string, error) {
 	return base64.URLEncoding.EncodeToString(b), nil
 }
 
-func setCookies(w http.ResponseWriter, refreshToken string, exp time.Time) {
+func setCookies(w http.ResponseWriter, refreshToken string, exp time.Time, role jwt.RoleClaims) error {
+	var cookieName string
+	switch role {
+	case jwt.RoleOwner:
+		cookieName = ownerCookieName
+	case jwt.RoleUser:
+		cookieName = userCookieName
+	default:
+		return ErrWrongRole
+	}
+
+	var cookiePath string
+	switch role {
+	case jwt.RoleOwner:
+		cookiePath = ownerCookiePath
+	case jwt.RoleUser:
+		cookiePath = userCookiePath
+	default:
+		return ErrWrongRole
+	}
+
 	authCookie := http.Cookie{
-		Name:     "refresh_token",
+		Name:     cookieName,
 		Value:    refreshToken,
-		Path:     "/v1/auth/refresh",
+		Path:     cookiePath,
 		Expires:  exp,
 		Secure:   false, // Set to true for HTTPS
 		HttpOnly: true,  // Prevent client-side script access
 	}
 	http.SetCookie(w, &authCookie)
+
+	return nil
 }
 
 func validateSession(ctx context.Context, store store.Storage, sessionID string) error {

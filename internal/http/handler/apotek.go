@@ -5,7 +5,6 @@ import (
 
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
 	"github.com/danivideda/satu-apotek-be/internal/http/middleware"
-	"github.com/danivideda/satu-apotek-be/internal/http/response"
 	"github.com/danivideda/satu-apotek-be/internal/store"
 )
 
@@ -21,24 +20,24 @@ func (h *apotekHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	var payload createPharmacyPayload
 	if err := json.Read(w, r, &payload); err != nil {
-		response.InternalServerError(w, r, err)
+		json.ResponseInternalServerError(w, r, err)
 		return
 	}
 
 	auth := middleware.AuthClaimsFromContext(ctx)
 	if auth == nil {
-		response.InternalServerError(w, r, ErrInvalidAuthToken)
+		json.ResponseInternalServerError(w, r, ErrInvalidAuthToken)
 		return 
 	}
 
 	pharmacy, err := h.store.Pharmacies.Create(ctx, auth.ID, payload.Name)
 	if err != nil {
-		response.InternalServerError(w, r, err)
+		json.ResponseInternalServerError(w, r, err)
 		return
 	}
 
-	if err := response.Created(w, r, map[string]any{"pharmacy": pharmacy}); err != nil {
-		response.InternalServerError(w, r, err)
+	if err := json.ResponseCreated(w, map[string]any{"pharmacy": pharmacy}); err != nil {
+		json.ResponseInternalServerError(w, r, err)
 		return
 	}
 }

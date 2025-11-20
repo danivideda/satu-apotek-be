@@ -26,5 +26,6 @@ CREATE TABLE IF NOT EXISTS users(
     pharmacy_id UUID NOT NULL,
     created_at timestamp(0) with time zone NOT NULL DEFAULT NOW(),
     updated_at timestamp(0) with time zone NOT NULL DEFAULT NOW(),
+    
     FOREIGN KEY (pharmacy_id) REFERENCES pharmacies(id)
 );

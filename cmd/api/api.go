@@ -49,10 +49,24 @@ func (app *application) mount() http.Handler {
 		})
 
 		r.Route("/auth", func(r chi.Router) {
-			r.Post("/register", app.handler.Auth.RegisterOwner)
-			r.Post("/login", app.handler.Auth.LoginOwner)
-			r.Get("/refresh", app.handler.Auth.Refresh)
-			r.With(middleware.Auth).Post("/logout", app.handler.Auth.LogoutOwner)
+			r.Route("/owners", func(r chi.Router) {
+				r.Post("/register", app.handler.Auth.OwnerRegister)
+				r.Post("/login", app.handler.Auth.OwnerLogin)
+				r.Get("/refresh", app.handler.Auth.OwnerRefresh)
+				r.With(middleware.AuthOwner).Post("/logout", app.handler.Auth.OwnerLogout)
+			})
+			r.Route("/users", func(r chi.Router) {
+				r.Post("/login", app.handler.Auth.UserLogin)
+				r.Get("/refresh", app.handler.Auth.UserRefresh)
+				r.With(middleware.AuthOwner).Post("/logout", app.handler.Auth.UserLogout)
+			})
+		})
+
+		r.Route("/users", func(r chi.Router) {
+			r.Group(func(r chi.Router) {
+				r.Use(middleware.AuthOwner)
+				r.Post("/create", app.handler.User.Create)
+			})
 		})
 
 		r.Route("/owners", func(r chi.Router) {
@@ -60,10 +74,9 @@ func (app *application) mount() http.Handler {
 		})
 
 		r.Route("/apotek", func(r chi.Router) {
-			r.Use(middleware.Auth)
+			r.Use(middleware.AuthOwner)
 			r.Post("/create", app.handler.Pharmacy.Create)
 		})
-
 	})
 
 	return r

@@ -5,27 +5,61 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/danivideda/satu-apotek-be/internal/http/json"
 	"github.com/danivideda/satu-apotek-be/internal/http/jwt"
-	"github.com/danivideda/satu-apotek-be/internal/http/response"
 )
 
 type contextKey string
 
 const AuthClaimsCtx contextKey = "auth_claims"
 
-func Auth(next http.Handler) http.Handler {
+func AuthOwner(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
 		tokenString, err := extractBearerToken(r)
 		if err != nil {
-			response.Unauthorized(w, r, err)
+			json.ResponseUnauthorized(w, r, err)
 			return
 		}
 
 		claims, err := jwt.ValidateAccessToken(tokenString)
 		if err != nil {
-			response.Unauthorized(w, r, err)
+			json.ResponseUnauthorized(w, r, err)
+			return
+		}
+
+		if claims.Role != jwt.RoleOwner {
+			json.ResponseUnauthorized(w, r, ErrInvalidRole)
+			return
+		}
+
+		ctx = context.WithValue(ctx, AuthClaimsCtx, claims)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	}
+
+	return http.HandlerFunc(fn)
+}
+
+// TODO User Auth middleware
+func AuthUser(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
+		tokenString, err := extractBearerToken(r)
+		if err != nil {
+			json.ResponseUnauthorized(w, r, err)
+			return
+		}
+
+		claims, err := jwt.ValidateAccessToken(tokenString)
+		if err != nil {
+			json.ResponseUnauthorized(w, r, err)
+			return
+		}
+
+		if claims.Role != jwt.RoleUser {
+			json.ResponseUnauthorized(w, r, ErrInvalidRole)
 			return
 		}
 
