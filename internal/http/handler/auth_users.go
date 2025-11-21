@@ -24,7 +24,7 @@ func (h *authHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	owner, err := h.store.Owners.GetByUsername(ctx, payload.Username)
+	owner, err := h.repo.Owners.GetByUsername(ctx, payload.Username)
 	if err != nil {
 		json.ResponseBadRequest(w, r, err)
 		return
@@ -76,7 +76,7 @@ func (h *authHandler) UserLogout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := validateSession(ctx, h.store, claims.SessionID); err != nil {
+	if err := validateSession(ctx, h.repo, claims.SessionID); err != nil {
 		if errors.Is(err, ErrRevokedAuthToken) {
 			json.ResponseUnauthorized(w, r, err)
 			return
@@ -85,7 +85,7 @@ func (h *authHandler) UserLogout(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	revokedSession, err := h.store.RevokedSessions.Create(ctx, claims.SessionID)
+	revokedSession, err := h.repo.RevokedSessions.Create(ctx, claims.SessionID)
 	if err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return

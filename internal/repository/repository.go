@@ -1,4 +1,4 @@
-package store
+package repository
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"github.com/danivideda/satu-apotek-be/internal/dbsqlc"
 )
 
-type Storage struct {
+type Repository struct {
 	Owners interface {
 		GetByID(ctx context.Context, id string) (*dbsqlc.Owner, error)
 		Create(ctx context.Context, username, email, passwordHash string) (*dbsqlc.CreateOwnerRow, error)
@@ -27,13 +27,13 @@ type Storage struct {
 	}
 }
 
-func NewStorage(db dbsqlc.DBTX) Storage {
+func NewRepository(db dbsqlc.DBTX) Repository {
 	queries := dbsqlc.New(db)
 
-	return Storage{
-		Owners: &OwnerStore{queries: queries},
-		Users: &UserStore{queries: queries},
-		RevokedSessions: &RevokedSessionStore{queries: queries},
-		Pharmacies: &PharmacyStore{queries: queries},
+	return Repository{
+		Owners: &OwnersRepo{queries: queries},
+		Users: &UsersRepo{queries: queries},
+		RevokedSessions: &RevokedSessionsRepo{queries: queries},
+		Pharmacies: &PharmaciesRepo{queries: queries},
 	}
 }

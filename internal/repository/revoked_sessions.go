@@ -1,4 +1,4 @@
-package store
+package repository
 
 import (
 	"context"
@@ -10,11 +10,11 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type RevokedSessionStore struct {
+type RevokedSessionsRepo struct {
 	queries *dbsqlc.Queries
 }
 
-func (s *RevokedSessionStore) Create(ctx context.Context, sessionID string) (*dbsqlc.RevokedSession, error) {
+func (s *RevokedSessionsRepo) Create(ctx context.Context, sessionID string) (*dbsqlc.RevokedSession, error) {
 	revokedSession, err := s.queries.CreateRevokedSession(
 		ctx,
 		dbsqlc.CreateRevokedSessionParams{
@@ -31,7 +31,7 @@ func (s *RevokedSessionStore) Create(ctx context.Context, sessionID string) (*db
 	return &revokedSession, nil
 }
 
-func (s *RevokedSessionStore) GetBySessionID(ctx context.Context, sessionID string) (*dbsqlc.RevokedSession, error) {
+func (s *RevokedSessionsRepo) GetBySessionID(ctx context.Context, sessionID string) (*dbsqlc.RevokedSession, error) {
 	revokedSession, err := s.queries.GetRevokedSessionBySessionID(ctx, sessionID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

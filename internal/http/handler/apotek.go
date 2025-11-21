@@ -5,11 +5,11 @@ import (
 
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
 	"github.com/danivideda/satu-apotek-be/internal/http/middleware"
-	"github.com/danivideda/satu-apotek-be/internal/store"
+	"github.com/danivideda/satu-apotek-be/internal/repository"
 )
 
 type apotekHandler struct {
-	store store.Storage
+	repo repository.Repository
 }
 
 func (h *apotekHandler) Create(w http.ResponseWriter, r *http.Request) {
@@ -30,7 +30,7 @@ func (h *apotekHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return 
 	}
 
-	pharmacy, err := h.store.Pharmacies.Create(ctx, auth.ID, payload.Name)
+	pharmacy, err := h.repo.Pharmacies.Create(ctx, auth.ID, payload.Name)
 	if err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return

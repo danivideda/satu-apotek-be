@@ -1,4 +1,4 @@
-package store
+package repository
 
 import (
 	"context"
@@ -7,38 +7,38 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type OwnerStore struct {
+type OwnersRepo struct {
 	queries *dbsqlc.Queries
 }
 
-func (s *OwnerStore) Create(ctx context.Context, username, email, passwordHash string) (*dbsqlc.CreateOwnerRow, error) {
+func (r *OwnersRepo) Create(ctx context.Context, username, email, passwordHash string) (*dbsqlc.CreateOwnerRow, error) {
 	params := dbsqlc.CreateOwnerParams{
 		Username:     username,
 		Email:        email,
 		PasswordHash: []byte(passwordHash),
 	}
 
-	owner, err := s.queries.CreateOwner(ctx, params)
+	owner, err := r.queries.CreateOwner(ctx, params)
 	if err != nil {
 		return nil, err
 	}
 	return &owner, nil
 }
 
-func (s *OwnerStore) GetByID(ctx context.Context, id string) (*dbsqlc.Owner, error) {
+func (r *OwnersRepo) GetByID(ctx context.Context, id string) (*dbsqlc.Owner, error) {
 	var ownerUUID pgtype.UUID
 	if err := ownerUUID.Scan(id); err != nil {
 		return nil, err
 	}
-	owner, err := s.queries.GetOwnerByID(ctx, ownerUUID)
+	owner, err := r.queries.GetOwnerByID(ctx, ownerUUID)
 	if err != nil {
 		return nil, err
 	}
 	return &owner, nil
 }
 
-func (s *OwnerStore) GetByUsername(ctx context.Context, username string) (*dbsqlc.GetOwnerByUsernameRow, error) {
-	owner, err := s.queries.GetOwnerByUsername(ctx, username)
+func (r *OwnersRepo) GetByUsername(ctx context.Context, username string) (*dbsqlc.GetOwnerByUsernameRow, error) {
+	owner, err := r.queries.GetOwnerByUsername(ctx, username)
 	if err != nil {
 		return nil, err
 	}

@@ -6,7 +6,7 @@ import (
 	"github.com/danivideda/satu-apotek-be/internal/db"
 	"github.com/danivideda/satu-apotek-be/internal/env"
 	"github.com/danivideda/satu-apotek-be/internal/http/handler"
-	"github.com/danivideda/satu-apotek-be/internal/store"
+	"github.com/danivideda/satu-apotek-be/internal/repository"
 )
 
 func main() {
@@ -24,9 +24,9 @@ func main() {
 	defer db.Close()
 	log.Println("Database connection pool established")
 
-	storage := store.NewStorage(db)
+	repository := repository.NewRepository(db)
 
-	handler := handler.New(storage)
+	handler := handler.New(repository)
 
 	app := &application{
 		config: cfg,

@@ -1,4 +1,4 @@
-package store
+package repository
 
 import (
 	"context"
@@ -7,11 +7,11 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type UserStore struct {
+type UsersRepo struct {
 	queries *dbsqlc.Queries
 }
 
-func (s *UserStore) Create(ctx context.Context, username, passwordHash, pharmacyID string) (*dbsqlc.User, error) {
+func (r *UsersRepo) Create(ctx context.Context, username, passwordHash, pharmacyID string) (*dbsqlc.User, error) {
 	var pharmacyUUID pgtype.UUID
 	if err := pharmacyUUID.Scan(pharmacyID); err != nil {
 		return nil, err
@@ -22,7 +22,7 @@ func (s *UserStore) Create(ctx context.Context, username, passwordHash, pharmacy
 		PasswordHash: []byte(passwordHash),
 		PharmacyID:   pharmacyUUID,
 	}
-	user, err := s.queries.CreateUser(ctx, params)
+	user, err := r.queries.CreateUser(ctx, params)
 	if err != nil {
 		return nil, err
 	}

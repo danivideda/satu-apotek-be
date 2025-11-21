@@ -4,18 +4,18 @@ import (
 	"net/http"
 
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
-	"github.com/danivideda/satu-apotek-be/internal/store"
+	"github.com/danivideda/satu-apotek-be/internal/repository"
 )
 
 type ownerHandler struct {
-	store store.Storage
+	repo repository.Repository
 }
 
 func (h *ownerHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	ownerID := "todo-uuid"
-	owners, err := h.store.Owners.GetByID(ctx, ownerID)
+	owners, err := h.repo.Owners.GetByID(ctx, ownerID)
 	if err != nil {
 		json.ResponseBadRequest(w, r, err)
 		return

@@ -1,4 +1,4 @@
-package store
+package repository
 
 import (
 	"context"
@@ -7,12 +7,11 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type PharmacyStore struct {
+type PharmaciesRepo struct {
 	queries *dbsqlc.Queries
 }
 
-func (s *PharmacyStore) Create(ctx context.Context, ownerID string, name string) (*dbsqlc.Pharmacy, error) {
-
+func (r *PharmaciesRepo) Create(ctx context.Context, ownerID string, name string) (*dbsqlc.Pharmacy, error) {
 	var ownerUUID pgtype.UUID
 	if err := ownerUUID.Scan(ownerID); err != nil {
 		return nil, err
@@ -21,7 +20,7 @@ func (s *PharmacyStore) Create(ctx context.Context, ownerID string, name string)
 		OwnerID: ownerUUID,
 		Name:    pgtype.Text{String: name, Valid: true},
 	}
-	pharmacy, err := s.queries.CreatePharmacy(ctx, params)
+	pharmacy, err := r.queries.CreatePharmacy(ctx, params)
 	if err != nil {
 		return nil, err
 	}

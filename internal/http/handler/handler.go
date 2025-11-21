@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"github.com/danivideda/satu-apotek-be/internal/store"
+	"github.com/danivideda/satu-apotek-be/internal/repository"
 )
 
 type Handler struct {
@@ -11,11 +11,11 @@ type Handler struct {
 	User *userHandler
 }
 
-func New(store store.Storage) Handler {
+func New(repo repository.Repository) Handler {
 	return Handler{
-		Auth:  &authHandler{store: store},
-		Owner: &ownerHandler{store: store},
-		User: &userHandler{store: store},
-		Pharmacy: &apotekHandler{store: store},
+		Auth:  &authHandler{repo: repo},
+		Owner: &ownerHandler{repo: repo},
+		User: &userHandler{repo: repo},
+		Pharmacy: &apotekHandler{repo: repo},
 	}
 }

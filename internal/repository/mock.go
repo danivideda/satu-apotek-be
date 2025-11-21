@@ -1,4 +1,4 @@
-package store
+package repository
 
 import (
 	"context"
@@ -7,8 +7,8 @@ import (
 	"github.com/danivideda/satu-apotek-be/internal/dbsqlc"
 )
 
-func NewMockStorage() Storage {
-	return Storage{}
+func NewMockStorage() Repository {
+	return Repository{}
 }
 
 type MockOwnerStore struct {

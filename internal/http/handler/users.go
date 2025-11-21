@@ -5,11 +5,11 @@ import (
 
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
 	"github.com/danivideda/satu-apotek-be/internal/http/jwt"
-	"github.com/danivideda/satu-apotek-be/internal/store"
+	"github.com/danivideda/satu-apotek-be/internal/repository"
 )
 
 type userHandler struct {
-	store store.Storage
+	repo repository.Repository
 }
 
 // TODO user create handler
@@ -34,7 +34,7 @@ func (h *userHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.store.Users.Create(ctx, payload.Username, passwordHash, payload.PharmacyID)
+	user, err := h.repo.Users.Create(ctx, payload.Username, passwordHash, payload.PharmacyID)
 	if err != nil {
 		json.ResponseBadRequest(w, r, err)
 		return

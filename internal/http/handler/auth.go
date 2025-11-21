@@ -11,11 +11,11 @@ import (
 	"github.com/alexedwards/argon2id"
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
 	"github.com/danivideda/satu-apotek-be/internal/http/jwt"
-	"github.com/danivideda/satu-apotek-be/internal/store"
+	"github.com/danivideda/satu-apotek-be/internal/repository"
 )
 
 type authHandler struct {
-	store store.Storage
+	repo repository.Repository
 }
 
 type authToken struct {
@@ -43,7 +43,7 @@ func refresh(refreshToken *http.Cookie, accessTokenName string, h *authHandler, 
 		return
 	}
 
-	if err := validateSession(ctx, h.store, claims.SessionID); err != nil {
+	if err := validateSession(ctx, h.repo, claims.SessionID); err != nil {
 		if errors.Is(err, ErrRevokedAuthToken) {
 			json.ResponseUnauthorized(w, r, err)
 			return
@@ -141,10 +141,10 @@ func setCookies(w http.ResponseWriter, refreshToken string, exp time.Time, role 
 	return nil
 }
 
-func validateSession(ctx context.Context, s store.Storage, sessionID string) error {
+func validateSession(ctx context.Context, s repository.Repository, sessionID string) error {
 	_, err := s.RevokedSessions.GetBySessionID(ctx, sessionID)
 	if err != nil {
-		if errors.Is(err, store.ErrNotFound) {
+		if errors.Is(err, repository.ErrNotFound) {
 			// session id not found, so the session is still valid
 			return nil
 		} else {
