@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
-	"github.com/danivideda/satu-apotek-be/internal/http/jwt"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
 )
 
@@ -12,7 +11,6 @@ type userHandler struct {
 	repo repository.Repository
 }
 
-// TODO user create handler
 func (h *userHandler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -40,26 +38,9 @@ func (h *userHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: creating user should have not automatically give login to the user
-	token, exp, err := newAuthToken(user.ID.String(), jwt.RoleUser)
-	if err != nil {
-		json.ResponseInternalServerError(w, r, err)
-		return
-	}
-
-	if err := setCookies(w, token.RefreshToken, *exp, jwt.RoleUser); err != nil {
-		json.ResponseInternalServerError(w, r, err)
-		return
-	}
-
-	res := struct {
-		Username string `json:"username"`
-		PharmacyID string `json:"pharmacy_id"`
-		*authToken
-	}{
-		Username: user.Username,
-		PharmacyID: user.PharmacyID.String(),
-		authToken: token,
+	res := map[string]string{
+		"username": user.Username,
+		"pharmacy_id": user.PharmacyID.String(),
 	}
 
 	if err := json.WriteResponse(w, http.StatusCreated, res); err != nil {
