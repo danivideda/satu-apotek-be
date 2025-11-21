@@ -40,6 +40,7 @@ func (h *userHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO: creating user should have not automatically give login to the user
 	token, exp, err := newAuthToken(user.ID.String(), jwt.RoleUser)
 	if err != nil {
 		json.ResponseInternalServerError(w, r, err)

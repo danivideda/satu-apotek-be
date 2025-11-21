@@ -34,7 +34,7 @@ func NewRefreshToken(id string, role RoleClaims, sessionID string) (*time.Time, 
 		return nil, "", err
 	}
 	exp := time.Now().Add(ttl)
-	signed, err := generate(id, role, sessionID, exp, refreshTokenKey)
+	signed, err := generateToken(id, role, sessionID, exp, refreshTokenKey)
 	return &exp, signed, err
 }
 
@@ -44,10 +44,10 @@ func NewAccessToken(id string, role RoleClaims, sessionID string) (string, error
 		return "", err
 	}
 	exp := time.Now().Add(ttl)
-	return generate(id, role, sessionID, exp, accessTokenKey)
+	return generateToken(id, role, sessionID, exp, accessTokenKey)
 }
 
-func generate(id string, role RoleClaims, sessionID string, exp time.Time, signKey string) (string, error) {
+func generateToken(id string, role RoleClaims, sessionID string, exp time.Time, signKey string) (string, error) {
 	claims := AuthClaims{
 		ID:        id,
 		Role:      role,
