@@ -27,7 +27,7 @@ type Repository struct {
 	}
 }
 
-func NewRepository(db dbsqlc.DBTX) Repository {
+func New(db dbsqlc.DBTX) Repository {
 	queries := dbsqlc.New(db)
 
 	return Repository{

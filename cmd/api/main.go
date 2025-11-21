@@ -24,7 +24,7 @@ func main() {
 	defer db.Close()
 	log.Println("Database connection pool established")
 
-	repository := repository.NewRepository(db)
+	repository := repository.New(db)
 
 	handler := handler.New(repository)
 
