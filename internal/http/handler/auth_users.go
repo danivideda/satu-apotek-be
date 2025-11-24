@@ -9,7 +9,7 @@ import (
 	"github.com/danivideda/satu-apotek-be/internal/http/middleware"
 )
 
-// TODO user login handler
+// TODO (moved to backlog) user login handler
 func (h *authHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -66,7 +66,7 @@ func (h *authHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// TODO user logout handler
+// TODO (moved to backlog) user logout handler
 func (h *authHandler) UserLogout(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -101,7 +101,7 @@ func (h *authHandler) UserLogout(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// TODO user refresh handler
+// TODO (moved to backlog) user refresh handler
 func (h *authHandler) UserRefresh(w http.ResponseWriter, r *http.Request) {
 	refreshToken, err := r.Cookie(userCookieName)
 	if err != nil {

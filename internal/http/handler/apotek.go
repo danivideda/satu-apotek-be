@@ -41,3 +41,21 @@ func (h *apotekHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+func (h *apotekHandler) Connect(w http.ResponseWriter, r *http.Request) {
+	// Get OTP
+	type ConnectApotekPayload struct {
+		OTP string `json:"otp"`
+	}
+
+	var payload ConnectApotekPayload
+	if err := json.Read(w, r, &payload); err != nil {
+		json.ResponseBadRequest(w, r, err)
+		return
+	}
+
+	// Check OTP in the repository
+	// TODO: Create apotek_otp_codes table in database
+
+	// Send back the long lived access token with Apotek ID + Apotek Session ID
+}
