@@ -1,0 +1,27 @@
+type: http_request
+model: http_request
+id: rq_uqbpNmKGAu
+createdAt: 2025-10-31T03:08:43.835845
+updatedAt: 2025-11-20T09:36:12.423293
+workspaceId: wk_QW7qFsyHd5
+folderId: fl_J7YAQRASV6
+authentication: {}
+authenticationType: null
+body:
+  text: |-
+    {
+      "username": "testuser1",
+      "password": "password123"
+    }
+bodyType: application/json
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: wECWZNsrcn
+method: POST
+name: Login Owner
+sortPriority: 0.0
+url: ${[ api_v1 ]}/auth/owners/login
+urlParameters: []

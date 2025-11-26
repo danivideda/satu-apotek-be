@@ -13,6 +13,10 @@ func ResponseCreated(w http.ResponseWriter, data any) error {
 	return WriteResponse(w, http.StatusCreated, data)
 }
 
+func ResponseNoContent(w http.ResponseWriter, data any) error {
+	return WriteResponse(w, http.StatusNoContent, data)
+}
+
 func ResponseInternalServerError(w http.ResponseWriter, r *http.Request, err error) {
 	log.Printf("internal server error: %s path: %s error: %s", r.Method, r.URL.Path, err)
 	WriteResponseErr(w, http.StatusInternalServerError, "the server encountered some problem")

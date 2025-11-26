@@ -15,10 +15,9 @@ type apotekHandler struct {
 func (h *apotekHandler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	type createPharmacyPayload struct {
+	var payload struct {
 		Name string `json:"name"`
 	}
-	var payload createPharmacyPayload
 	if err := json.Read(w, r, &payload); err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return
@@ -27,7 +26,7 @@ func (h *apotekHandler) Create(w http.ResponseWriter, r *http.Request) {
 	auth := middleware.AuthClaimsFromContext(ctx)
 	if auth == nil {
 		json.ResponseInternalServerError(w, r, ErrInvalidAuthToken)
-		return 
+		return
 	}
 
 	pharmacy, err := h.repo.Pharmacies.Create(ctx, auth.ID, payload.Name)
@@ -42,20 +41,60 @@ func (h *apotekHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *apotekHandler) Connect(w http.ResponseWriter, r *http.Request) {
-	// Get OTP
-	type ConnectApotekPayload struct {
-		OTP string `json:"otp"`
-	}
+func (h *apotekHandler) CreateCode(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 
-	var payload ConnectApotekPayload
+	var payload struct {
+		ApotekID string `json:"apotek_id"`
+	}
 	if err := json.Read(w, r, &payload); err != nil {
 		json.ResponseBadRequest(w, r, err)
 		return
 	}
 
-	// Check OTP in the repository
-	// TODO: Create apotek_otp_codes table in database
+	mycode := "ABCDEF"
+	apotekCode, err := h.repo.ApotekCode.Create(ctx, payload.ApotekID, mycode)
+	if err != nil {
+		json.ResponseBadRequest(w, r, err)
+		return
+	}
 
-	// Send back the long lived access token with Apotek ID + Apotek Session ID
+	res := map[string]any{
+		"apotek_id": apotekCode.ApotekID,
+		"code":      apotekCode.Code,
+		"expires":   apotekCode.Expires.Time,
+	}
+	if err := json.ResponseCreated(w, res); err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+}
+
+func (h *apotekHandler) VerifyCode(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var payload struct {
+		Code string `json:"code"`
+	}
+	if err := json.Read(w, r, &payload); err != nil {
+		json.ResponseBadRequest(w, r, err)
+		return
+	}
+
+	// Check Apotek Code in the repository
+	apotekCode, err := h.repo.ApotekCode.GetByCode(ctx, payload.Code)
+	if err != nil {
+		json.ResponseBadRequest(w, r, err)
+		return
+	}
+
+	// TODO: Send back the long lived access token with Apotek ID + Apotek Session ID
+	res := map[string]any{
+		"apotek_id": apotekCode.ApotekID,
+		"token": "This-is-the-JWT-token",
+	}
+	if err := json.ResponseOK(w, res); err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
 }

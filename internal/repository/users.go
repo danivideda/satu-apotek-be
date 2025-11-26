@@ -7,11 +7,11 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type UsersRepo struct {
+type usersRepo struct {
 	queries *dbsqlc.Queries
 }
 
-func (r *UsersRepo) Create(ctx context.Context, username, passwordHash, pharmacyID string) (*dbsqlc.User, error) {
+func (r *usersRepo) Create(ctx context.Context, username, passwordHash, pharmacyID string) (*dbsqlc.User, error) {
 	var pharmacyUUID pgtype.UUID
 	if err := pharmacyUUID.Scan(pharmacyID); err != nil {
 		return nil, err

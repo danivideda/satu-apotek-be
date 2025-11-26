@@ -7,11 +7,11 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type OwnersRepo struct {
+type ownersRepo struct {
 	queries *dbsqlc.Queries
 }
 
-func (r *OwnersRepo) Create(ctx context.Context, username, email, passwordHash string) (*dbsqlc.CreateOwnerRow, error) {
+func (r *ownersRepo) Create(ctx context.Context, username, email, passwordHash string) (*dbsqlc.CreateOwnerRow, error) {
 	params := dbsqlc.CreateOwnerParams{
 		Username:     username,
 		Email:        email,
@@ -25,7 +25,7 @@ func (r *OwnersRepo) Create(ctx context.Context, username, email, passwordHash s
 	return &owner, nil
 }
 
-func (r *OwnersRepo) GetByID(ctx context.Context, id string) (*dbsqlc.Owner, error) {
+func (r *ownersRepo) GetByID(ctx context.Context, id string) (*dbsqlc.Owner, error) {
 	var ownerUUID pgtype.UUID
 	if err := ownerUUID.Scan(id); err != nil {
 		return nil, err
@@ -37,7 +37,7 @@ func (r *OwnersRepo) GetByID(ctx context.Context, id string) (*dbsqlc.Owner, err
 	return &owner, nil
 }
 
-func (r *OwnersRepo) GetByUsername(ctx context.Context, username string) (*dbsqlc.GetOwnerByUsernameRow, error) {
+func (r *ownersRepo) GetByUsername(ctx context.Context, username string) (*dbsqlc.GetOwnerByUsernameRow, error) {
 	owner, err := r.queries.GetOwnerByUsername(ctx, username)
 	if err != nil {
 		return nil, err

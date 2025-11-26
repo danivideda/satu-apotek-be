@@ -18,7 +18,7 @@ VALUES ($1, $2) RETURNING id, owner_id, name, created_at, updated_at
 
 type CreatePharmacyParams struct {
 	OwnerID pgtype.UUID `json:"owner_id"`
-	Name    pgtype.Text `json:"name"`
+	Name    string      `json:"name"`
 }
 
 func (q *Queries) CreatePharmacy(ctx context.Context, arg CreatePharmacyParams) (Pharmacy, error) {

@@ -1,0 +1,22 @@
+type: http_request
+model: http_request
+id: rq_TSLgiUCmUF
+createdAt: 2025-11-20T09:35:20.631073
+updatedAt: 2025-11-20T09:36:53.384348
+workspaceId: wk_QW7qFsyHd5
+folderId: fl_swrDmZdkfD
+authentication: {}
+authenticationType: null
+body:
+  text: |-
+    {
+      "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjQiLCJpc3MiOiJzYXR1LWFwb3Rlay1hcGkiLCJleHAiOjE3NjE5ODUxNDMsImlhdCI6MTc2MTg5ODc0M30.ye5gG9EG5bR3H6GowXNAbHA4_NyhJASh2D8xe8WSLzI"
+    }
+bodyType: null
+description: ''
+headers: []
+method: GET
+name: Refresh User
+sortPriority: 2000.0
+url: ${[ api_v1 ]}/auth/users/refresh
+urlParameters: []

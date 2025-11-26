@@ -74,8 +74,15 @@ func (app *application) mount() http.Handler {
 		})
 
 		r.Route("/apotek", func(r chi.Router) {
-			r.Use(middleware.AuthOwner)
-			r.Post("/create", app.handler.Pharmacy.Create)
+			r.Route("/code", func(r chi.Router) {
+				r.Post("/verify", app.handler.Pharmacy.VerifyCode)
+				r.With(middleware.AuthOwner).Post("/create", app.handler.Pharmacy.CreateCode)
+			})
+
+			r.Group(func(r chi.Router) {
+				r.Use(middleware.AuthOwner)
+				r.Post("/create", app.handler.Pharmacy.Create)
+			})
 		})
 	})
 

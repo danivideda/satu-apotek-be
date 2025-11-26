@@ -1,0 +1,22 @@
+type: http_request
+model: http_request
+id: rq_HV7RassM9R
+createdAt: 2025-10-31T09:09:32.417469
+updatedAt: 2025-11-20T09:36:12.429533
+workspaceId: wk_QW7qFsyHd5
+folderId: fl_J7YAQRASV6
+authentication: {}
+authenticationType: null
+body:
+  text: |-
+    {
+      "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjQiLCJpc3MiOiJzYXR1LWFwb3Rlay1hcGkiLCJleHAiOjE3NjE5ODUxNDMsImlhdCI6MTc2MTg5ODc0M30.ye5gG9EG5bR3H6GowXNAbHA4_NyhJASh2D8xe8WSLzI"
+    }
+bodyType: null
+description: ''
+headers: []
+method: GET
+name: Refresh Owner
+sortPriority: 3000.0
+url: ${[ api_v1 ]}/auth/owners/refresh
+urlParameters: []

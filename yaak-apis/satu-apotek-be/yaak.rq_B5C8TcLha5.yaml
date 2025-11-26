@@ -1,0 +1,31 @@
+type: http_request
+model: http_request
+id: rq_B5C8TcLha5
+createdAt: 2025-11-26T02:15:07.963612
+updatedAt: 2025-11-26T02:16:00.954657
+workspaceId: wk_QW7qFsyHd5
+folderId: fl_9RuRTxVbbq
+authentication:
+  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjA4OTUyMmU5LTRmNmEtNGMyMi05OGM2LTBjODFjYjJlOGEwYiIsInJvbGUiOiJvd25lciIsInNpZCI6IjdsR25XVzZCeEtoR1R4MmxxUURmMHN0TEFtM0NOVTJUVWJKVUdqanlkUU09IiwiaXNzIjoic2F0dS1hcG90ZWstYXBpIiwiZXhwIjoxNzY0MTIzNDA3LCJpYXQiOjE3NjQxMjMzNDd9.QlQXRmCd6s7syuwEJ1dHZu2RblIJpA7UyGwssfsSKGU
+authenticationType: bearer
+body:
+  text: |-
+    {
+      "code": "ABCDEF"
+    }
+bodyType: application/json
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: wECWZNsrcn
+- enabled: true
+  name: ''
+  value: ''
+  id: iwVs3nvE9Z
+method: POST
+name: Verify Code
+sortPriority: 0.002
+url: ${[ api_v1 ]}/apotek/code/verify
+urlParameters: []

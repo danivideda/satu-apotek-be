@@ -1,0 +1,29 @@
+type: http_request
+model: http_request
+id: rq_abk8bmN4Sf
+createdAt: 2025-11-20T09:37:38.254836
+updatedAt: 2025-11-20T10:56:45.905574
+workspaceId: wk_QW7qFsyHd5
+folderId: fl_K4cUBuZDMz
+authentication:
+  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImJhNWMzOGNiLTdjYjUtNDYxNC05NzkwLTE3ODhmN2Y5ZmNkOCIsInJvbGUiOiJvd25lciIsInNpZCI6IlpkQUYwNHB5SVU2U21LWW9hWDJsQW9aeGRGR3VVMjlFcHB0N0ZuN0tQelE9IiwiaXNzIjoic2F0dS1hcG90ZWstYXBpIiwiZXhwIjoxNzYzNjM2MjU1LCJpYXQiOjE3NjM2MzYxOTV9.rUG7W4z1rpz2A7xmxmTVIyLYR2aBffWwCwuHsy3iZIg
+authenticationType: bearer
+body:
+  text: |-
+    {
+      "username": "user1",
+      "password": "password123",
+      "pharmacy_id": "b8635985-ae0d-4e28-aade-1735ebe6592e"
+    }
+bodyType: application/json
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: wECWZNsrcn
+method: POST
+name: Create
+sortPriority: 0.0
+url: ${[ api_v1 ]}/users/create
+urlParameters: []

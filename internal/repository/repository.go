@@ -25,15 +25,22 @@ type Repository struct {
 	Pharmacies interface {
 		Create(ctx context.Context, ownerID string, name string) (*dbsqlc.Pharmacy, error)
 	}
+
+	ApotekCode interface {
+		Create(ctx context.Context, apotekID, code string) (*dbsqlc.ApotekCode, error)
+		Get(ctx context.Context, apotekID string) (*dbsqlc.ApotekCode, error)
+		GetByCode(ctx context.Context, code string) (*dbsqlc.ApotekCode, error)
+	}
 }
 
 func New(db dbsqlc.DBTX) Repository {
 	queries := dbsqlc.New(db)
 
 	return Repository{
-		Owners: &OwnersRepo{queries: queries},
-		Users: &UsersRepo{queries: queries},
-		RevokedSessions: &RevokedSessionsRepo{queries: queries},
-		Pharmacies: &PharmaciesRepo{queries: queries},
+		Owners:          &ownersRepo{queries: queries},
+		Users:           &usersRepo{queries: queries},
+		RevokedSessions: &revokedSessionsRepo{queries: queries},
+		Pharmacies:      &pharmaciesRepo{queries: queries},
+		ApotekCode:      &apotekCodesRepo{queries: queries},
 	}
 }

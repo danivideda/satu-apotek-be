@@ -1,0 +1,20 @@
+type: http_request
+model: http_request
+id: rq_RQzyBd9xY3
+createdAt: 2025-11-17T12:51:02.321878
+updatedAt: 2025-11-20T15:05:45.224777
+workspaceId: wk_QW7qFsyHd5
+folderId: fl_J7YAQRASV6
+authentication:
+  disabled: false
+  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImJhNWMzOGNiLTdjYjUtNDYxNC05NzkwLTE3ODhmN2Y5ZmNkOCIsInJvbGUiOiJvd25lciIsInNpZCI6IjdGc0x6bFNRZElzNy1ZNlBMUW5tYTFqSzJhVzJOWXVpYUIzejJ4MGQwMTQ9IiwiaXNzIjoic2F0dS1hcG90ZWstYXBpIiwiZXhwIjoxNzYzNjUxMTk1LCJpYXQiOjE3NjM2NTExMzV9.Rd9T95it_6D9ZU_2f0wSC7AQ0RyYE26_regBphkjoUM
+authenticationType: bearer
+body: {}
+bodyType: null
+description: ''
+headers: []
+method: POST
+name: Logout Owner
+sortPriority: 2000.0
+url: ${[ api_v1 ]}/auth/owners/logout
+urlParameters: []
