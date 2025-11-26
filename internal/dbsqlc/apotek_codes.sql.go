@@ -70,3 +70,29 @@ func (q *Queries) GetApotekCodeByCode(ctx context.Context, code string) (ApotekC
 	)
 	return i, err
 }
+
+const upsertApotekCode = `-- name: UpsertApotekCode :one
+INSERT INTO apotek_codes (apotek_id, code, expires) 
+VALUES ($1, $2, $3) 
+ON CONFLICT (apotek_id) DO UPDATE SET code = excluded.code, expires = excluded.expires
+RETURNING apotek_id, code, expires, created_at, updated_at
+`
+
+type UpsertApotekCodeParams struct {
+	ApotekID pgtype.UUID        `json:"apotek_id"`
+	Code     string             `json:"code"`
+	Expires  pgtype.Timestamptz `json:"expires"`
+}
+
+func (q *Queries) UpsertApotekCode(ctx context.Context, arg UpsertApotekCodeParams) (ApotekCode, error) {
+	row := q.db.QueryRow(ctx, upsertApotekCode, arg.ApotekID, arg.Code, arg.Expires)
+	var i ApotekCode
+	err := row.Scan(
+		&i.ApotekID,
+		&i.Code,
+		&i.Expires,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}

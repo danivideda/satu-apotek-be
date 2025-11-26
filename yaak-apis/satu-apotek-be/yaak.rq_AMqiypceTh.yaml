@@ -2,11 +2,11 @@ type: http_request
 model: http_request
 id: rq_AMqiypceTh
 createdAt: 2025-11-21T14:52:19.988072
-updatedAt: 2025-11-26T01:53:58.955622
+updatedAt: 2025-11-26T09:16:48.002528
 workspaceId: wk_QW7qFsyHd5
 folderId: fl_9RuRTxVbbq
 authentication:
-  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjA4OTUyMmU5LTRmNmEtNGMyMi05OGM2LTBjODFjYjJlOGEwYiIsInJvbGUiOiJvd25lciIsInNpZCI6Ii1Da1BncGdRMDBPMURza3lHWGdPMnVhMkJXUHVXbjQxNFRpQVplaGl1YnM9IiwiaXNzIjoic2F0dS1hcG90ZWstYXBpIiwiZXhwIjoxNzY0MTIyMDg4LCJpYXQiOjE3NjQxMjIwMjh9.r-Ypcw31LvyWgX0jtdpZ1pNeinhgpWGdisxIBmdjAXk
+  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjA4OTUyMmU5LTRmNmEtNGMyMi05OGM2LTBjODFjYjJlOGEwYiIsInJvbGUiOiJvd25lciIsInNpZCI6Im14dTlHb3J2LXJ4dF9MZklCUzczVlVFcEw0ZmJRTXpNNmtqRlVQOXhpSW89IiwiaXNzIjoic2F0dS1hcG90ZWstYXBpIiwiZXhwIjoxNzY0MTQ4NjU5LCJpYXQiOjE3NjQxNDg1OTl9.BwE5DRm-UBtMHtewsoMCoQymYock7zUj0HhyEIXmV4k
 authenticationType: bearer
 body:
   text: |-
@@ -21,13 +21,9 @@ headers:
   value: application/json
   id: wECWZNsrcn
 - enabled: true
-  name: Apotek-Token
-  value: JWT_token
-  id: 6mhn07pEhE
-- enabled: true
   name: ''
   value: ''
-  id: pCj5vjHJ3g
+  id: q52UhRqn0s
 method: POST
 name: Create Code
 sortPriority: 0.001

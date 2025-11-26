@@ -30,6 +30,7 @@ type Repository struct {
 		Create(ctx context.Context, apotekID, code string) (*dbsqlc.ApotekCode, error)
 		Get(ctx context.Context, apotekID string) (*dbsqlc.ApotekCode, error)
 		GetByCode(ctx context.Context, code string) (*dbsqlc.ApotekCode, error)
+		Upsert(ctx context.Context, apotekID, code string) (*dbsqlc.ApotekCode, error)
 	}
 }
 

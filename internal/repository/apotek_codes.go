@@ -35,6 +35,29 @@ func (r *apotekCodesRepo) Create(ctx context.Context, apotekID, code string) (*d
 	return &apotekCode, nil
 }
 
+func (r *apotekCodesRepo) Upsert(ctx context.Context, apotekID, code string) (*dbsqlc.ApotekCode, error) {
+	var apotekUUID pgtype.UUID
+	if err := apotekUUID.Scan(apotekID); err != nil {
+		return nil, err
+	}
+
+	exp := pgtype.Timestamptz{
+		Time:  time.Now().Add(1 * time.Minute),
+		Valid: true,
+	}
+	params := dbsqlc.UpsertApotekCodeParams{
+		ApotekID: apotekUUID,
+		Code:     code,
+		Expires:  exp,
+	}
+	apotekCode, err := r.queries.UpsertApotekCode(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+
+	return &apotekCode, nil
+}
+
 func (r *apotekCodesRepo) Get(ctx context.Context, apotekID string) (*dbsqlc.ApotekCode, error) {
 	var apotekUUID pgtype.UUID
 	if err := apotekUUID.Scan(apotekID); err != nil {
