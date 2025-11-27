@@ -107,7 +107,7 @@ func (h *apotekHandler) VerifyCode(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *apotekHandler) generateApotekCode() (string, error) {
-	b := make([]byte, 3) // 32 bytes for a 256-bit ID
+	b := make([]byte, 3) // 3 bytes for 6-character hex string code
 	if _, err := rand.Read(b); err != nil {
 		return "", err
 	}

@@ -15,3 +15,7 @@ INSERT INTO apotek_codes (apotek_id, code, expires)
 VALUES ($1, $2, $3) 
 ON CONFLICT (apotek_id) DO UPDATE SET code = excluded.code, expires = excluded.expires
 RETURNING *;
+
+-- name: DeleteExpiredApotekCode :many
+DELETE FROM apotek_codes
+WHERE expires < NOW() RETURNING *;

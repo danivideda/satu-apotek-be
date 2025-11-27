@@ -35,6 +35,37 @@ func (q *Queries) CreateApotekCode(ctx context.Context, arg CreateApotekCodePara
 	return i, err
 }
 
+const deleteExpiredApotekCode = `-- name: DeleteExpiredApotekCode :many
+DELETE FROM apotek_codes
+WHERE expires < NOW() RETURNING apotek_id, code, expires, created_at, updated_at
+`
+
+func (q *Queries) DeleteExpiredApotekCode(ctx context.Context) ([]ApotekCode, error) {
+	rows, err := q.db.Query(ctx, deleteExpiredApotekCode)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ApotekCode
+	for rows.Next() {
+		var i ApotekCode
+		if err := rows.Scan(
+			&i.ApotekID,
+			&i.Code,
+			&i.Expires,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getApotekCode = `-- name: GetApotekCode :one
 SELECT apotek_id, code, expires, created_at, updated_at FROM apotek_codes
 WHERE apotek_id = $1
