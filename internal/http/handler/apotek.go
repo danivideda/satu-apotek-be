@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
+	"github.com/danivideda/satu-apotek-be/internal/http/jwt"
 	"github.com/danivideda/satu-apotek-be/internal/http/middleware"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
 )
@@ -96,9 +97,14 @@ func (h *apotekHandler) VerifyCode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: Send back the long lived access token with Apotek ID + Apotek Session ID
+	token, err := jwt.NewApotekToken(apotekCode.ApotekID.String())
+	if err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
 	res := map[string]any{
 		"apotek_id": apotekCode.ApotekID,
-		"token": "This-is-the-JWT-token",
+		"token": token,
 	}
 	if err := json.ResponseOK(w, res); err != nil {
 		json.ResponseInternalServerError(w, r, err)
@@ -113,4 +119,8 @@ func (h *apotekHandler) generateApotekCode() (string, error) {
 	}
 	encoded := hex.EncodeToString(b)
 	return encoded, nil
+}
+
+func (h *apotekHandler) newApotekToken(apotekID string) (string, error) {
+	return jwt.NewApotekToken(apotekID)
 }
