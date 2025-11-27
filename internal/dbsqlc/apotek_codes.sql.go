@@ -12,23 +12,23 @@ import (
 )
 
 const createApotekCode = `-- name: CreateApotekCode :one
-INSERT INTO apotek_codes (apotek_id, code, expires) 
-VALUES ($1, $2, $3) RETURNING apotek_id, code, expires, created_at, updated_at
+INSERT INTO apotek_codes (apotek_id, code, expires_at) 
+VALUES ($1, $2, $3) RETURNING apotek_id, code, expires_at, created_at, updated_at
 `
 
 type CreateApotekCodeParams struct {
-	ApotekID pgtype.UUID        `json:"apotek_id"`
-	Code     string             `json:"code"`
-	Expires  pgtype.Timestamptz `json:"expires"`
+	ApotekID  pgtype.UUID        `json:"apotek_id"`
+	Code      string             `json:"code"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
 }
 
 func (q *Queries) CreateApotekCode(ctx context.Context, arg CreateApotekCodeParams) (ApotekCode, error) {
-	row := q.db.QueryRow(ctx, createApotekCode, arg.ApotekID, arg.Code, arg.Expires)
+	row := q.db.QueryRow(ctx, createApotekCode, arg.ApotekID, arg.Code, arg.ExpiresAt)
 	var i ApotekCode
 	err := row.Scan(
 		&i.ApotekID,
 		&i.Code,
-		&i.Expires,
+		&i.ExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -37,7 +37,7 @@ func (q *Queries) CreateApotekCode(ctx context.Context, arg CreateApotekCodePara
 
 const deleteExpiredApotekCode = `-- name: DeleteExpiredApotekCode :many
 DELETE FROM apotek_codes
-WHERE expires < NOW() RETURNING apotek_id, code, expires, created_at, updated_at
+WHERE expires_at < NOW() RETURNING apotek_id, code, expires_at, created_at, updated_at
 `
 
 func (q *Queries) DeleteExpiredApotekCode(ctx context.Context) ([]ApotekCode, error) {
@@ -52,7 +52,7 @@ func (q *Queries) DeleteExpiredApotekCode(ctx context.Context) ([]ApotekCode, er
 		if err := rows.Scan(
 			&i.ApotekID,
 			&i.Code,
-			&i.Expires,
+			&i.ExpiresAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -67,7 +67,7 @@ func (q *Queries) DeleteExpiredApotekCode(ctx context.Context) ([]ApotekCode, er
 }
 
 const getApotekCode = `-- name: GetApotekCode :one
-SELECT apotek_id, code, expires, created_at, updated_at FROM apotek_codes
+SELECT apotek_id, code, expires_at, created_at, updated_at FROM apotek_codes
 WHERE apotek_id = $1
 `
 
@@ -77,7 +77,7 @@ func (q *Queries) GetApotekCode(ctx context.Context, apotekID pgtype.UUID) (Apot
 	err := row.Scan(
 		&i.ApotekID,
 		&i.Code,
-		&i.Expires,
+		&i.ExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -85,7 +85,7 @@ func (q *Queries) GetApotekCode(ctx context.Context, apotekID pgtype.UUID) (Apot
 }
 
 const getApotekCodeByCode = `-- name: GetApotekCodeByCode :one
-SELECT apotek_id, code, expires, created_at, updated_at FROM apotek_codes
+SELECT apotek_id, code, expires_at, created_at, updated_at FROM apotek_codes
 WHERE code = $1
 `
 
@@ -95,7 +95,7 @@ func (q *Queries) GetApotekCodeByCode(ctx context.Context, code string) (ApotekC
 	err := row.Scan(
 		&i.ApotekID,
 		&i.Code,
-		&i.Expires,
+		&i.ExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -103,25 +103,25 @@ func (q *Queries) GetApotekCodeByCode(ctx context.Context, code string) (ApotekC
 }
 
 const upsertApotekCode = `-- name: UpsertApotekCode :one
-INSERT INTO apotek_codes (apotek_id, code, expires) 
+INSERT INTO apotek_codes (apotek_id, code, expires_at) 
 VALUES ($1, $2, $3) 
-ON CONFLICT (apotek_id) DO UPDATE SET code = excluded.code, expires = excluded.expires
-RETURNING apotek_id, code, expires, created_at, updated_at
+ON CONFLICT (apotek_id) DO UPDATE SET code = excluded.code, expires_at = excluded.expires_at
+RETURNING apotek_id, code, expires_at, created_at, updated_at
 `
 
 type UpsertApotekCodeParams struct {
-	ApotekID pgtype.UUID        `json:"apotek_id"`
-	Code     string             `json:"code"`
-	Expires  pgtype.Timestamptz `json:"expires"`
+	ApotekID  pgtype.UUID        `json:"apotek_id"`
+	Code      string             `json:"code"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
 }
 
 func (q *Queries) UpsertApotekCode(ctx context.Context, arg UpsertApotekCodeParams) (ApotekCode, error) {
-	row := q.db.QueryRow(ctx, upsertApotekCode, arg.ApotekID, arg.Code, arg.Expires)
+	row := q.db.QueryRow(ctx, upsertApotekCode, arg.ApotekID, arg.Code, arg.ExpiresAt)
 	var i ApotekCode
 	err := row.Scan(
 		&i.ApotekID,
 		&i.Code,
-		&i.Expires,
+		&i.ExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

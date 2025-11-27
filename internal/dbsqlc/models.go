@@ -11,7 +11,7 @@ import (
 type ApotekCode struct {
 	ApotekID  pgtype.UUID        `json:"apotek_id"`
 	Code      string             `json:"code"`
-	Expires   pgtype.Timestamptz `json:"expires"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }

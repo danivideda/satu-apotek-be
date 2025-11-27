@@ -30,7 +30,7 @@ func NewScheduler(r repository.Repository) (*MyScheduler, error) {
 }
 
 func (s *MyScheduler) AddClearCacheJob() {
-	job, err := s.scheduler.NewJob(gocron.DurationJob(5*time.Second), gocron.NewTask(func(ctx context.Context) {
+	job, err := s.scheduler.NewJob(gocron.DurationJob(15*time.Second), gocron.NewTask(func(ctx context.Context) {
 		items, err := s.repo.ApotekCode.DeleteExpired(ctx)
 		if err != nil {
 			s.logger.Error(err.Error())

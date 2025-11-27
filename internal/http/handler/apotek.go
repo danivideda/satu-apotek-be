@@ -70,7 +70,7 @@ func (h *apotekHandler) CreateOrUpdateCode(w http.ResponseWriter, r *http.Reques
 	res := map[string]any{
 		"apotek_id": apotekCode.ApotekID,
 		"code":      apotekCode.Code,
-		"expires":   apotekCode.Expires.Time,
+		"expires":   apotekCode.ExpiresAt.Time,
 	}
 	if err := json.ResponseCreated(w, res); err != nil {
 		json.ResponseInternalServerError(w, r, err)
@@ -96,7 +96,7 @@ func (h *apotekHandler) VerifyCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Send back the long lived access token with Apotek ID + Apotek Session ID
+	// Send back the long lived access token with Apotek ID + Apotek Session ID
 	token, err := jwt.NewApotekToken(apotekCode.ApotekID.String())
 	if err != nil {
 		json.ResponseInternalServerError(w, r, err)

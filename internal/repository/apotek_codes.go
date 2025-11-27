@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/danivideda/satu-apotek-be/internal/dbsqlc"
+	"github.com/danivideda/satu-apotek-be/internal/env"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -18,14 +19,18 @@ func (r *apotekCodesRepo) Upsert(ctx context.Context, apotekID, code string) (*d
 		return nil, err
 	}
 
+	ttl, err := time.ParseDuration(env.GetString("CODE_TTL", "5m"))
+	if err != nil {
+		return nil, err
+	}
 	exp := pgtype.Timestamptz{
-		Time:  time.Now().Add(1 * time.Minute),
+		Time:  time.Now().Add(ttl),
 		Valid: true,
 	}
 	params := dbsqlc.UpsertApotekCodeParams{
-		ApotekID: apotekUUID,
-		Code:     code,
-		Expires:  exp,
+		ApotekID:  apotekUUID,
+		Code:      code,
+		ExpiresAt: exp,
 	}
 	apotekCode, err := r.queries.UpsertApotekCode(ctx, params)
 	if err != nil {
