@@ -9,11 +9,17 @@ import (
 	"github.com/danivideda/satu-apotek-be/internal/http/jwt"
 )
 
+func (m *AppMiddleware) NewAuthOwner(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(w, r)
+	})
+}
+
 type contextKey string
 
 const AuthClaimsCtx contextKey = "auth_claims"
 
-func AuthOwner(next http.Handler) http.Handler {
+func (m *AppMiddleware) AuthOwner(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
@@ -42,7 +48,7 @@ func AuthOwner(next http.Handler) http.Handler {
 }
 
 // TODO User Auth middleware
-func AuthUser(next http.Handler) http.Handler {
+func (m *AppMiddleware) AuthUser(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 

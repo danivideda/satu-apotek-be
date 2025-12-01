@@ -37,9 +37,9 @@ func (s *MyScheduler) AddClearCacheJob() {
 		}
 
 		if len(*items) > 0 {
-			itemIDs := make([]string, len(*items))
+			itemIDs := make([]int64, len(*items))
 			for idx, item := range *items {
-				itemIDs[idx] = item.ApotekID.String()
+				itemIDs[idx] = item.ApotekID
 			}
 			s.logger.Info("job: deleted expired Apotek Code row(s)", itemIDs)
 		} else {

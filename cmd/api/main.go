@@ -2,12 +2,15 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"github.com/danivideda/satu-apotek-be/internal/db"
 	"github.com/danivideda/satu-apotek-be/internal/env"
 	"github.com/danivideda/satu-apotek-be/internal/http/handler"
+	"github.com/danivideda/satu-apotek-be/internal/http/middleware"
 	"github.com/danivideda/satu-apotek-be/internal/job"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
+	"github.com/patrickmn/go-cache"
 )
 
 func main() {
@@ -26,7 +29,9 @@ func main() {
 	log.Println("Database connection pool established")
 
 	r := repository.New(db)
-	h := handler.New(r)
+	c := cache.New(5*time.Minute, 10*time.Minute)
+	h := handler.New(r, c)
+	md := middleware.New(c)
 	s, err := job.NewScheduler(r)
 	if err != nil {
 		log.Panic(err)
@@ -39,9 +44,11 @@ func main() {
 		}
 	}()
 
+
 	app := &application{
-		config:  cfg,
-		handler: h,
+		config:     cfg,
+		handler:    h,
+		middleware: md,
 	}
 
 	mux := app.mount()

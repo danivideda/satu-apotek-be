@@ -13,12 +13,7 @@ type apotekCodesRepo struct {
 	queries *dbsqlc.Queries
 }
 
-func (r *apotekCodesRepo) Upsert(ctx context.Context, apotekID, code string) (*dbsqlc.ApotekCode, error) {
-	var apotekUUID pgtype.UUID
-	if err := apotekUUID.Scan(apotekID); err != nil {
-		return nil, err
-	}
-
+func (r *apotekCodesRepo) Upsert(ctx context.Context, apotekID int64, code string) (*dbsqlc.ApotekCode, error) {
 	ttl, err := time.ParseDuration(env.GetString("CODE_TTL", "5m"))
 	if err != nil {
 		return nil, err
@@ -28,7 +23,7 @@ func (r *apotekCodesRepo) Upsert(ctx context.Context, apotekID, code string) (*d
 		Valid: true,
 	}
 	params := dbsqlc.UpsertApotekCodeParams{
-		ApotekID:  apotekUUID,
+		ApotekID:  apotekID,
 		Code:      code,
 		ExpiresAt: exp,
 	}
@@ -40,13 +35,8 @@ func (r *apotekCodesRepo) Upsert(ctx context.Context, apotekID, code string) (*d
 	return &apotekCode, nil
 }
 
-func (r *apotekCodesRepo) Get(ctx context.Context, apotekID string) (*dbsqlc.ApotekCode, error) {
-	var apotekUUID pgtype.UUID
-	if err := apotekUUID.Scan(apotekID); err != nil {
-		return nil, err
-	}
-
-	apotekCode, err := r.queries.GetApotekCode(ctx, apotekUUID)
+func (r *apotekCodesRepo) Get(ctx context.Context, apotekID int64) (*dbsqlc.ApotekCode, error) {
+	apotekCode, err := r.queries.GetApotekCode(ctx, apotekID)
 	if err != nil {
 		return nil, err
 	}

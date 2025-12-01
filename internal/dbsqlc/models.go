@@ -9,42 +9,59 @@ import (
 )
 
 type ApotekCode struct {
-	ApotekID  pgtype.UUID        `json:"apotek_id"`
+	ApotekID  int64              `json:"apotek_id"`
 	Code      string             `json:"code"`
 	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
+type ApotekSession struct {
+	ID        pgtype.UUID        `json:"id"`
+	ApotekID  int64              `json:"apotek_id"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Owner struct {
-	ID           pgtype.UUID        `json:"id"`
+	ID           int64              `json:"id"`
 	Email        string             `json:"email"`
 	Username     string             `json:"username"`
-	PasswordHash []byte             `json:"password_hash"`
+	PasswordHash string             `json:"password_hash"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }
 
-type Pharmacy struct {
+type OwnerSession struct {
 	ID        pgtype.UUID        `json:"id"`
-	OwnerID   pgtype.UUID        `json:"owner_id"`
+	OwnerID   int64              `json:"owner_id"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type Pharmacy struct {
+	ID        int64              `json:"id"`
+	OwnerID   int64              `json:"owner_id"`
 	Name      string             `json:"name"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
-type RevokedSession struct {
-	SessionID string             `json:"session_id"`
-	Expires   pgtype.Timestamptz `json:"expires"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-}
-
 type User struct {
-	ID           pgtype.UUID        `json:"id"`
+	ID           int64              `json:"id"`
 	Username     string             `json:"username"`
-	PasswordHash []byte             `json:"password_hash"`
-	PharmacyID   pgtype.UUID        `json:"pharmacy_id"`
+	PasswordHash string             `json:"password_hash"`
+	PharmacyID   int64              `json:"pharmacy_id"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
+type UserSession struct {
+	ID        pgtype.UUID        `json:"id"`
+	UserID    int64              `json:"user_id"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }

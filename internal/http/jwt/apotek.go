@@ -7,11 +7,11 @@ import (
 )
 
 type ApotekClaims struct {
-	ApotekID string `json:"apotek_id"`
+	ApotekID int64 `json:"apotek_id"`
 	jwt.RegisteredClaims
 }
 
-func NewApotekToken(apotekID string) (string, error) {
+func NewApotekToken(apotekID int64) (string, error) {
 	exp := time.Now().Add(24 * 7 * time.Hour)
 	claims := ApotekClaims{
 		ApotekID: apotekID,

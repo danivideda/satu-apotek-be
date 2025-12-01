@@ -5,19 +5,21 @@ import (
 
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
+	"github.com/patrickmn/go-cache"
 )
 
 type userHandler struct {
-	repo repository.Repository
+	repo  repository.Repository
+	cache *cache.Cache
 }
 
 func (h *userHandler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	type createUserPayload struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-		PharmacyID string `json:"pharmacy_id"`
+		Username   string `json:"username"`
+		Password   string `json:"password"`
+		PharmacyID int64  `json:"pharmacy_id"`
 	}
 
 	var payload createUserPayload
@@ -38,9 +40,9 @@ func (h *userHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := map[string]string{
-		"username": user.Username,
-		"pharmacy_id": user.PharmacyID.String(),
+	res := map[string]any{
+		"username":    user.Username,
+		"pharmacy_id": user.PharmacyID,
 	}
 
 	if err := json.WriteResponse(w, http.StatusCreated, res); err != nil {

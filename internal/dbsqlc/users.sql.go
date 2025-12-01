@@ -7,8 +7,6 @@ package dbsqlc
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createUser = `-- name: CreateUser :one
@@ -17,9 +15,9 @@ VALUES ($1, $2, $3) RETURNING id, username, password_hash, pharmacy_id, created_
 `
 
 type CreateUserParams struct {
-	Username     string      `json:"username"`
-	PasswordHash []byte      `json:"password_hash"`
-	PharmacyID   pgtype.UUID `json:"pharmacy_id"`
+	Username     string `json:"username"`
+	PasswordHash string `json:"password_hash"`
+	PharmacyID   int64  `json:"pharmacy_id"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {

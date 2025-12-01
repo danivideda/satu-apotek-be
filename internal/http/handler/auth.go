@@ -12,10 +12,12 @@ import (
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
 	"github.com/danivideda/satu-apotek-be/internal/http/jwt"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
+	"github.com/patrickmn/go-cache"
 )
 
 type authHandler struct {
-	repo repository.Repository
+	repo  repository.Repository
+	cache *cache.Cache
 }
 
 type authToken struct {
@@ -31,7 +33,7 @@ const (
 	userCookiePath  = "/v1/auth/users/refresh"
 
 	ownerAccessTokenName = "owner_access_token"
-	userAccessTokenName = "user_access_token"
+	userAccessTokenName  = "user_access_token"
 )
 
 func refresh(refreshToken *http.Cookie, accessTokenName string, h *authHandler, w http.ResponseWriter, r *http.Request) {
@@ -72,8 +74,8 @@ func hashPassword(password string) (string, error) {
 	return argon2id.CreateHash(password, argon2id.DefaultParams)
 }
 
-func verifyPassword(password string, hash []byte) (bool, error) {
-	return argon2id.ComparePasswordAndHash(password, string(hash))
+func verifyPassword(password string, hash string) (bool, error) {
+	return argon2id.ComparePasswordAndHash(password, hash)
 }
 
 func newAuthToken(id string, role jwt.RoleClaims) (*authToken, *time.Time, error) {
@@ -142,7 +144,7 @@ func setCookies(w http.ResponseWriter, refreshToken string, exp time.Time, role 
 }
 
 func validateSession(ctx context.Context, s repository.Repository, sessionID string) error {
-	_, err := s.RevokedSessions.GetBySessionID(ctx, sessionID)
+	_, err := s.OwnerSessions.Get(ctx, sessionID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			// session id not found, so the session is still valid

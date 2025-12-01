@@ -17,7 +17,7 @@ VALUES ($1, $2, $3) RETURNING apotek_id, code, expires_at, created_at, updated_a
 `
 
 type CreateApotekCodeParams struct {
-	ApotekID  pgtype.UUID        `json:"apotek_id"`
+	ApotekID  int64              `json:"apotek_id"`
 	Code      string             `json:"code"`
 	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
 }
@@ -71,7 +71,7 @@ SELECT apotek_id, code, expires_at, created_at, updated_at FROM apotek_codes
 WHERE apotek_id = $1
 `
 
-func (q *Queries) GetApotekCode(ctx context.Context, apotekID pgtype.UUID) (ApotekCode, error) {
+func (q *Queries) GetApotekCode(ctx context.Context, apotekID int64) (ApotekCode, error) {
 	row := q.db.QueryRow(ctx, getApotekCode, apotekID)
 	var i ApotekCode
 	err := row.Scan(
@@ -110,7 +110,7 @@ RETURNING apotek_id, code, expires_at, created_at, updated_at
 `
 
 type UpsertApotekCodeParams struct {
-	ApotekID  pgtype.UUID        `json:"apotek_id"`
+	ApotekID  int64              `json:"apotek_id"`
 	Code      string             `json:"code"`
 	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
 }

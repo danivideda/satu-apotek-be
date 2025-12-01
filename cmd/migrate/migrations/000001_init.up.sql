@@ -1,31 +1,27 @@
 CREATE EXTENSION IF NOT EXISTS citext;
 
 CREATE TABLE IF NOT EXISTS owners(
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    id bigserial PRIMARY KEY,
     email citext UNIQUE NOT NULL,
     username text UNIQUE NOT NULL,
-    password_hash bytea NOT NULL,
+    password_hash text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT NOW(),
     updated_at timestamptz NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS pharmacies(
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    owner_id uuid NOT NULL,
+    id bigserial PRIMARY KEY,
+    owner_id bigint NOT NULL REFERENCES owners,
     name text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT NOW(),
-    updated_at timestamptz NOT NULL DEFAULT NOW(),
-
-    FOREIGN KEY (owner_id) REFERENCES owners (id)
+    updated_at timestamptz NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS users(
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    id bigserial PRIMARY KEY,
     username text UNIQUE NOT NULL,
-    password_hash bytea NOT NULL,
-    pharmacy_id uuid NOT NULL,
+    password_hash text NOT NULL,
+    pharmacy_id bigint NOT NULL REFERENCES pharmacies,
     created_at timestamptz NOT NULL DEFAULT NOW(),
-    updated_at timestamptz NOT NULL DEFAULT NOW(),
-    
-    FOREIGN KEY (pharmacy_id) REFERENCES pharmacies(id)
+    updated_at timestamptz NOT NULL DEFAULT NOW()
 );

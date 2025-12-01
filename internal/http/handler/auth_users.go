@@ -3,6 +3,8 @@ package handler
 import (
 	"errors"
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
 	"github.com/danivideda/satu-apotek-be/internal/http/jwt"
@@ -41,7 +43,7 @@ func (h *authHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, exp, err := newAuthToken(owner.ID.String(), jwt.RoleOwner)
+	token, exp, err := newAuthToken(strconv.Itoa(int(owner.ID)), jwt.RoleOwner)
 	if err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return
@@ -85,14 +87,17 @@ func (h *authHandler) UserLogout(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	revokedSession, err := h.repo.RevokedSessions.Create(ctx, claims.SessionID)
+
+	idInt, _ := strconv.Atoi(claims.ID)
+	ttl, _ := time.ParseDuration(ownerSessionTTL)
+	ownerSession, err := h.repo.OwnerSessions.Create(ctx, int64(idInt), time.Now().Add(ttl))
 	if err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}
 
-	res := map[string]string{
-		"revoked_session_id": revokedSession.SessionID,
+	res := map[string]any{
+		"session_id": ownerSession.ID,
 	}
 
 	if err := json.ResponseOK(w, res); err != nil {

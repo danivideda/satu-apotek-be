@@ -4,15 +4,18 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"net/http"
+	"strconv"
 
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
 	"github.com/danivideda/satu-apotek-be/internal/http/jwt"
 	"github.com/danivideda/satu-apotek-be/internal/http/middleware"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
+	"github.com/patrickmn/go-cache"
 )
 
 type apotekHandler struct {
-	repo repository.Repository
+	repo  repository.Repository
+	cache *cache.Cache
 }
 
 func (h *apotekHandler) Create(w http.ResponseWriter, r *http.Request) {
@@ -32,7 +35,8 @@ func (h *apotekHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pharmacy, err := h.repo.Pharmacies.Create(ctx, auth.ID, payload.Name)
+	idInt, _ := strconv.Atoi(auth.ID)
+	pharmacy, err := h.repo.Pharmacies.Create(ctx, int64(idInt), payload.Name)
 	if err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return
@@ -48,7 +52,7 @@ func (h *apotekHandler) CreateOrUpdateCode(w http.ResponseWriter, r *http.Reques
 	ctx := r.Context()
 
 	var payload struct {
-		ApotekID string `json:"apotek_id"`
+		ApotekID int64 `json:"apotek_id"`
 	}
 	if err := json.Read(w, r, &payload); err != nil {
 		json.ResponseBadRequest(w, r, err)
@@ -97,14 +101,14 @@ func (h *apotekHandler) VerifyCode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send back the long lived access token with Apotek ID + Apotek Session ID
-	token, err := jwt.NewApotekToken(apotekCode.ApotekID.String())
+	token, err := jwt.NewApotekToken(apotekCode.ApotekID)
 	if err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}
 	res := map[string]any{
 		"apotek_id": apotekCode.ApotekID,
-		"token": token,
+		"token":     token,
 	}
 	if err := json.ResponseOK(w, res); err != nil {
 		json.ResponseInternalServerError(w, r, err)
@@ -121,6 +125,6 @@ func (h *apotekHandler) generateApotekCode() (string, error) {
 	return encoded, nil
 }
 
-func (h *apotekHandler) newApotekToken(apotekID string) (string, error) {
+func (h *apotekHandler) newApotekToken(apotekID int64) (string, error) {
 	return jwt.NewApotekToken(apotekID)
 }
