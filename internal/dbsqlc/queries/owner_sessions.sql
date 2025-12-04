@@ -1,6 +1,6 @@
 -- name: CreateOwnerSession :one
-INSERT INTO owner_sessions (id, owner_id, expires_at) 
-VALUES ($1, $2, $3) RETURNING *;
+INSERT INTO owner_sessions (owner_id, expires_at) 
+VALUES ($1, $2) RETURNING *;
 
 -- name: UpdateOwnerSession :one
 UPDATE owner_sessions

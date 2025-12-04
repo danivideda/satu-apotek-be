@@ -37,12 +37,12 @@ func main() {
 		log.Panic(err)
 	}
 	s.AddClearCacheJob()
-	s.Start()
-	defer func() {
-		if err := s.Shutdown(); err != nil {
-			log.Panic(err)
-		}
-	}()
+	// s.Start()
+	// defer func() {
+	// 	if err := s.Shutdown(); err != nil {
+	// 		log.Panic(err)
+	// 	}
+	// }()
 
 
 	app := &application{

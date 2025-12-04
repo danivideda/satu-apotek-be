@@ -13,8 +13,8 @@ func ResponseCreated(w http.ResponseWriter, data any) error {
 	return WriteResponse(w, http.StatusCreated, data)
 }
 
-func ResponseNoContent(w http.ResponseWriter, data any) error {
-	return WriteResponse(w, http.StatusNoContent, data)
+func ResponseNoContent(w http.ResponseWriter) error {
+	return WriteResponse(w, http.StatusNoContent, nil)
 }
 
 func ResponseInternalServerError(w http.ResponseWriter, r *http.Request, err error) {

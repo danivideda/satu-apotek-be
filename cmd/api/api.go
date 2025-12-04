@@ -51,8 +51,8 @@ func (app *application) mount() http.Handler {
 
 		r.Route("/auth", func(r chi.Router) {
 			r.Route("/owners", func(r chi.Router) {
-				r.Post("/register", app.handler.Auth.OwnerRegister)
-				r.Post("/login", app.handler.Auth.OwnerLogin)
+				r.Post("/register", app.handler.AuthNew.OwnerRegister)
+				r.Post("/login", app.handler.AuthNew.OwnerLogin)
 				r.Get("/refresh", app.handler.Auth.OwnerRefresh)
 				r.With(app.middleware.AuthOwner).Post("/logout", app.handler.Auth.OwnerLogout)
 			})

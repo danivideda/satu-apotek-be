@@ -12,18 +12,17 @@ import (
 )
 
 const createOwnerSession = `-- name: CreateOwnerSession :one
-INSERT INTO owner_sessions (id, owner_id, expires_at) 
-VALUES ($1, $2, $3) RETURNING id, owner_id, expires_at, created_at, updated_at
+INSERT INTO owner_sessions (owner_id, expires_at) 
+VALUES ($1, $2) RETURNING id, owner_id, expires_at, created_at, updated_at
 `
 
 type CreateOwnerSessionParams struct {
-	ID        pgtype.UUID        `json:"id"`
 	OwnerID   int64              `json:"owner_id"`
 	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
 }
 
 func (q *Queries) CreateOwnerSession(ctx context.Context, arg CreateOwnerSessionParams) (OwnerSession, error) {
-	row := q.db.QueryRow(ctx, createOwnerSession, arg.ID, arg.OwnerID, arg.ExpiresAt)
+	row := q.db.QueryRow(ctx, createOwnerSession, arg.OwnerID, arg.ExpiresAt)
 	var i OwnerSession
 	err := row.Scan(
 		&i.ID,

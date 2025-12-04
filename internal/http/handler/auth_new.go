@@ -42,29 +42,19 @@ func (h *authNewHandler) OwnerRegister(w http.ResponseWriter, r *http.Request) {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}
-	createdOwner, err := h.repo.Owners.Create(ctx, payload.Username, payload.Email, passwordHash)
-	if err != nil {
-		json.ResponseInternalServerError(w, r, err)
-		return
-	}
-
-	ttl, err := time.ParseDuration(ownerSessionTTL)
-	if err != nil {
-		json.ResponseInternalServerError(w, r, err)
-		return
-	}
-	ownerSession, err := h.repo.OwnerSessions.Create(ctx, createdOwner.ID, time.Now().Add(ttl))
+	ownerID, ownerSessionID, err := h.repo.Owners.Create(ctx, payload.Username, payload.Email, passwordHash)
 	if err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}
 
 	// Return `session_id` which is an opaque token as SessionID
-	res := map[string]string{
-		"session_id": ownerSession.ID.String(),
-	}
+	result := struct {
+		OwnerID        int64  `json:"owner_id"`
+		OwnerSessionID string `json:"owner_session_id"`
+	}{OwnerID: ownerID, OwnerSessionID: ownerSessionID}
 
-	if err := json.ResponseCreated(w, res); err != nil {
+	if err := json.ResponseCreated(w, result); err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}
@@ -113,11 +103,9 @@ func (h *authNewHandler) OwnerLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := map[string]string{
-		"session_id": ownerSession.ID.String(),
-	}
+	h.setOwnerSessionCookie(w, ownerSession.ID.String())
 
-	if err := json.ResponseOK(w, res); err != nil {
+	if err := json.ResponseNoContent(w); err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}
@@ -176,4 +164,15 @@ func (h *authNewHandler) generateSessionID() (string, error) {
 		return "", err
 	}
 	return base64.URLEncoding.EncodeToString(b), nil
+}
+
+func (h *authNewHandler) setOwnerSessionCookie(w http.ResponseWriter, sessionID string) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "owner_session",
+		Value:    sessionID,
+		Expires:  time.Now().Add(1 * time.Hour),
+		MaxAge:   0,
+		Secure:   false,
+		HttpOnly: true,
+	})
 }

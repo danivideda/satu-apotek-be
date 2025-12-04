@@ -32,13 +32,13 @@ func (h *authHandler) OwnerRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	owner, err := h.repo.Owners.Create(ctx, payload.Username, payload.Email, passwordHash)
+	ownerID, ownerSessionID, err := h.repo.Owners.Create(ctx, payload.Username, payload.Email, passwordHash)
 	if err != nil {
 		json.ResponseBadRequest(w, r, err)
 		return
 	}
 
-	token, exp, err := newAuthToken(strconv.Itoa(int(owner.ID)), jwt.RoleOwner)
+	token, exp, err := newAuthToken(strconv.Itoa(int(ownerID)), jwt.RoleOwner)
 	if err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return
@@ -50,8 +50,9 @@ func (h *authHandler) OwnerRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res := map[string]string{
-		"username": owner.Username,
+		"username": "temp-username-for-refactoring",
 		ownerAccessTokenName: token.AccessToken,
+		"owner_session_id": ownerSessionID,
 	}
 
 	if err := json.WriteResponse(w, http.StatusCreated, res); err != nil {

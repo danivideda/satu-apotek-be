@@ -5,12 +5,16 @@ import (
 	"time"
 
 	"github.com/danivideda/satu-apotek-be/internal/dbsqlc"
+	"github.com/danivideda/satu-apotek-be/internal/env"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+var ownerSessionTTL = env.GetString("OWNER_SESSION_TTL", "168h")
 
 type Repository struct {
 	Owners interface {
 		GetByID(ctx context.Context, id int64) (*dbsqlc.Owner, error)
-		Create(ctx context.Context, username, email, passwordHash string) (*dbsqlc.CreateOwnerRow, error)
+		Create(ctx context.Context, username, email, passwordHash string) (ownerID int64, ownerSessionID string, err error)
 		GetByUsername(ctx context.Context, username string) (*dbsqlc.GetOwnerByUsernameRow, error)
 	}
 
@@ -37,14 +41,41 @@ type Repository struct {
 	}
 }
 
-func New(db dbsqlc.DBTX) Repository {
-	queries := dbsqlc.New(db)
+func New(db *pgxpool.Pool) Repository {
+	q := dbsqlc.New(db)
 
 	return Repository{
-		Owners:        &ownersRepo{queries: queries},
-		Users:         &usersRepo{queries: queries},
-		OwnerSessions: &ownerSessionsRepo{queries: queries},
-		Pharmacies:    &pharmaciesRepo{queries: queries},
-		ApotekCode:    &apotekCodesRepo{queries: queries},
+		Owners:        &ownersRepo{db: db, queries: q},
+		Users:         &usersRepo{queries: q},
+		OwnerSessions: &ownerSessionsRepo{queries: q},
+		Pharmacies:    &pharmaciesRepo{queries: q},
+		ApotekCode:    &apotekCodesRepo{queries: q},
 	}
+}
+
+func runInTx(
+	ctx context.Context,
+	db *pgxpool.Pool,
+	queries *dbsqlc.Queries,
+	fn func(qtx *dbsqlc.Queries) (any, error),
+) (result any, err error) {
+	tx, err := db.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	qtx := queries.WithTx(tx)
+	defer tx.Rollback(ctx)
+
+	result, err = fn(qtx)
+	if err != nil {
+		return nil, err
+
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
