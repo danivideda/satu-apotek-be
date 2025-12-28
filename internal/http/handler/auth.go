@@ -1,16 +1,14 @@
 package handler
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/base64"
-	"errors"
 	"net/http"
 	"time"
 
 	"github.com/alexedwards/argon2id"
+	"github.com/danivideda/satu-apotek-be/internal/env"
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
-	"github.com/danivideda/satu-apotek-be/internal/http/jwt"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
 	"github.com/patrickmn/go-cache"
 )
@@ -20,88 +18,146 @@ type authHandler struct {
 	cache *cache.Cache
 }
 
-type authToken struct {
-	RefreshToken string `json:"refresh_token"`
-	AccessToken  string `json:"access_token"`
-}
-
-const (
-	ownerCookieName = "owner_auth_token"
-	userCookieName  = "user_auth_token"
-
-	ownerCookiePath = "/v1/auth/owners/refresh"
-	userCookiePath  = "/v1/auth/users/refresh"
-
-	ownerAccessTokenName = "owner_access_token"
-	userAccessTokenName  = "user_access_token"
+var (
+	ownerSessionTTL = env.GetString("OWNER_SESSION_TTL", "168h")
 )
 
-func refresh(refreshToken *http.Cookie, accessTokenName string, h *authHandler, w http.ResponseWriter, r *http.Request) {
+func (h *authHandler) OwnerRegister(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	claims, err := jwt.ValidateRefreshToken(refreshToken.Value)
-	if err != nil {
-		json.ResponseUnauthorized(w, r, err)
+	// Get payload of username, email, and password
+	var payload struct {
+		Username string `json:"username"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	if err := json.Read(w, r, &payload); err != nil {
+		json.ResponseBadRequest(w, r, err)
 		return
 	}
 
-	if err := validateSession(ctx, h.repo, claims.SessionID); err != nil {
-		if errors.Is(err, ErrRevokedAuthToken) {
-			json.ResponseUnauthorized(w, r, err)
-			return
-		} else {
-			json.ResponseInternalServerError(w, r, err)
-			return
-		}
+	// Create owner and insert owner's session into database
+	passwordHash, err := argon2id.CreateHash(payload.Password, argon2id.DefaultParams)
+	if err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+	ownerID, ownerSessionID, err := h.repo.Owners.Create(ctx, payload.Username, payload.Email, passwordHash)
+	if err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
 	}
 
-	accessToken, err := jwt.NewAccessToken(claims.ID, claims.Role, claims.SessionID)
+	result := struct {
+		OwnerID        int64  `json:"owner_id"`
+		OwnerSessionID string `json:"owner_session_id"`
+	}{OwnerID: ownerID, OwnerSessionID: ownerSessionID}
+
+	if err := json.ResponseCreated(w, result); err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+}
+
+func (h *authHandler) OwnerLogin(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	// Get payload of username and password
+	var payload struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+	if err := json.Read(w, r, &payload); err != nil {
+		json.ResponseBadRequest(w, r, err)
+		return
+	}
+
+	// Get owner password
+	owner, err := h.repo.Owners.GetByUsername(ctx, payload.Username)
+	if err != nil {
+		json.ResponseBadRequest(w, r, err)
+		return
+	}
+
+	// check password hash to match
+	match, err := argon2id.ComparePasswordAndHash(payload.Password, owner.PasswordHash)
+	if err != nil {
+		json.ResponseBadRequest(w, r, err)
+		return
+	}
+
+	if !match {
+		json.ResponseBadRequest(w, r, ErrInvalidPassword)
+		return
+	}
+
+	ttl, err := time.ParseDuration(ownerSessionTTL)
+	if err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+	ownerSession, err := h.repo.OwnerSessions.Create(ctx, owner.ID, time.Now().Add(ttl))
+	if err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+
+	h.setOwnerSessionCookie(w, ownerSession.ID.String())
+
+	if err := json.ResponseNoContent(w); err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+}
+
+func (h *authHandler) OwnerRefresh(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var payload struct {
+		SessionID string `json:"session_id"`
+	}
+	if err := json.Read(w, r, &payload); err != nil {
+		json.ResponseBadRequest(w, r, err)
+		return
+	}
+	newOwnerSession, err := h.repo.OwnerSessions.Update(ctx, payload.SessionID, time.Now().Add(7*24*time.Hour))
+	if err != nil {
+		json.ResponseNotFound(w, r, err)
+		return
+	}
+
+	if err := json.ResponseOK(w, newOwnerSession.ID); err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+}
+
+func (h *authHandler) OwnerLogout(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	var payload struct {
+		SessionID string `json:"session_id"`
+	}
+	if err := json.Read(w, r, &payload); err != nil {
+		json.ResponseBadRequest(w, r, err)
+		return
+	}
+
+	deletedOwnerSession, err := h.repo.OwnerSessions.Delete(ctx, payload.SessionID)
 	if err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}
 
 	res := map[string]string{
-		accessTokenName: accessToken,
+		"deleted_session": deletedOwnerSession.ID.String(),
 	}
-	if err := json.WriteResponse(w, http.StatusOK, res); err != nil {
+	if err := json.ResponseOK(w, res); err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}
 }
 
-func hashPassword(password string) (string, error) {
-	return argon2id.CreateHash(password, argon2id.DefaultParams)
-}
-
-func verifyPassword(password string, hash string) (bool, error) {
-	return argon2id.ComparePasswordAndHash(password, hash)
-}
-
-func newAuthToken(id string, role jwt.RoleClaims) (*authToken, *time.Time, error) {
-	sessionID, err := generateSessionID()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	exp, refreshToken, err := jwt.NewRefreshToken(id, role, sessionID)
-	if err != nil {
-		return nil, nil, err
-	}
-	accessToken, err := jwt.NewAccessToken(id, role, sessionID)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	token := authToken{
-		RefreshToken: refreshToken,
-		AccessToken:  accessToken,
-	}
-
-	return &token, exp, nil
-}
-
-func generateSessionID() (string, error) {
+func (h *authHandler) generateSessionID() (string, error) {
 	b := make([]byte, 32) // 32 bytes for a 256-bit ID
 	if _, err := rand.Read(b); err != nil {
 		return "", err
@@ -109,50 +165,13 @@ func generateSessionID() (string, error) {
 	return base64.URLEncoding.EncodeToString(b), nil
 }
 
-func setCookies(w http.ResponseWriter, refreshToken string, exp time.Time, role jwt.RoleClaims) error {
-	var cookieName string
-	switch role {
-	case jwt.RoleOwner:
-		cookieName = ownerCookieName
-	case jwt.RoleUser:
-		cookieName = userCookieName
-	default:
-		return ErrWrongRole
-	}
-
-	var cookiePath string
-	switch role {
-	case jwt.RoleOwner:
-		cookiePath = ownerCookiePath
-	case jwt.RoleUser:
-		cookiePath = userCookiePath
-	default:
-		return ErrWrongRole
-	}
-
-	authCookie := http.Cookie{
-		Name:     cookieName,
-		Value:    refreshToken,
-		Path:     cookiePath,
-		Expires:  exp,
-		Secure:   false, // Set to true for HTTPS
-		HttpOnly: true,  // Prevent client-side script access
-	}
-	http.SetCookie(w, &authCookie)
-
-	return nil
-}
-
-func validateSession(ctx context.Context, s repository.Repository, sessionID string) error {
-	_, err := s.OwnerSessions.Get(ctx, sessionID)
-	if err != nil {
-		if errors.Is(err, repository.ErrNotFound) {
-			// session id not found, so the session is still valid
-			return nil
-		} else {
-			return err
-		}
-	}
-	// session id found, so the session is already revoked
-	return ErrRevokedAuthToken
+func (h *authHandler) setOwnerSessionCookie(w http.ResponseWriter, sessionID string) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "owner_session",
+		Value:    sessionID,
+		Expires:  time.Now().Add(1 * time.Hour),
+		MaxAge:   0,
+		Secure:   false,
+		HttpOnly: true,
+	})
 }

@@ -1,5 +1,21 @@
 #!/bin/sh
 
+# Source - https://stackoverflow.com/a/638980
+# Posted by John Feminella, modified by community. See post 'Timeline' for change history
+# Retrieved 2025-12-28, License - CC BY-SA 4.0
+if [ ! -f .envrc ]; then
+    echo "File .envrc not found!"
+    exit 1
+fi
+
+# Source - https://stackoverflow.com/a/26759734
+# Posted by user492203, modified by community. See post 'Timeline' for change history
+# Retrieved 2025-12-28, License - CC BY-SA 4.0
+if ! [ -x "$(command -v direnv)" ]; then
+    echo 'Error: direnv is not installed.' >&2
+    exit 1
+fi
+
 cd internal/tools
 
 go install \

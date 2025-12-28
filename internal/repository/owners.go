@@ -15,49 +15,40 @@ type ownersRepo struct {
 }
 
 func (r *ownersRepo) Create(ctx context.Context, username, email, passwordHash string) (ownerID int64, ownerSessionID string, err error) {
-	type txQueryResult struct {
-		OwnerID        int64
-		OwnerSessionID string
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return 0, "", err
 	}
-	withTxQuery := func(qtx *dbsqlc.Queries) (any, error) {
-		// create new owner
-		owner, err := qtx.CreateOwner(ctx, dbsqlc.CreateOwnerParams{
-			Username:     username,
-			Email:        email,
-			PasswordHash: passwordHash,
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		// create new session
-		ttl, err := time.ParseDuration(ownerSessionTTL)
-		if err != nil {
-			return nil, err
-		}
-		ownerSession, err := qtx.CreateOwnerSession(ctx, dbsqlc.CreateOwnerSessionParams{
-			OwnerID:   owner.ID,
-			ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(ttl), Valid: true},
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		result := txQueryResult{
-			OwnerID:        owner.ID,
-			OwnerSessionID: ownerSession.ID.String(),
-		}
-		return result, nil
-	}
-
-	qtxResult, err := runInTx(ctx, r.db, r.queries, withTxQuery)
+	defer tx.Rollback(ctx)
+	qtx := r.queries.WithTx(tx)
+	// create new owner
+	owner, err := qtx.CreateOwner(ctx, dbsqlc.CreateOwnerParams{
+		Username:     username,
+		Email:        email,
+		PasswordHash: passwordHash,
+	})
 	if err != nil {
 		return 0, "", err
 	}
 
-	owner := qtxResult.(txQueryResult)
+	// create new session
+	ttl, err := time.ParseDuration(ownerSessionTTL)
+	if err != nil {
+		return 0, "", err
+	}
+	ownerSession, err := qtx.CreateOwnerSession(ctx, dbsqlc.CreateOwnerSessionParams{
+		OwnerID:   owner.ID,
+		ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(ttl), Valid: true},
+	})
+	if err != nil {
+		return 0, "", err
+	}
 
-	return owner.OwnerID, owner.OwnerSessionID, nil
+	if err := tx.Commit(ctx); err != nil {
+		return 0, "", err
+	}
+
+	return owner.ID, ownerSession.ID.String(), nil
 }
 
 func (r *ownersRepo) GetByID(ctx context.Context, id int64) (*dbsqlc.Owner, error) {

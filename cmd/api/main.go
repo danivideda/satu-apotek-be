@@ -21,7 +21,7 @@ func main() {
 		},
 	}
 
-	db, err := db.New(cfg.db.url)
+	db, err := db.NewPostgres(cfg.db.url)
 	if err != nil {
 		log.Panic(err)
 	}

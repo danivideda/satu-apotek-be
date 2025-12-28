@@ -18,7 +18,7 @@ func runScript1() {
 	parsedUrl.Scheme = "postgres"
 	dbUrl = parsedUrl.String()
 
-	db, err := db.New(dbUrl)
+	db, err := db.NewPostgres(dbUrl)
 	if err != nil {
 		panic(err)
 	}

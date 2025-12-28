@@ -10,7 +10,6 @@ type Handler struct {
 	Auth     *authHandler
 	Pharmacy *apotekHandler
 	User     *userHandler
-	AuthNew  *authNewHandler
 }
 
 func New(repo repository.Repository, cache *cache.Cache) Handler {
@@ -19,6 +18,5 @@ func New(repo repository.Repository, cache *cache.Cache) Handler {
 		Owner:    &ownerHandler{repo: repo, cache: cache},
 		User:     &userHandler{repo: repo, cache: cache},
 		Pharmacy: &apotekHandler{repo: repo, cache: cache},
-		AuthNew:  &authNewHandler{repo: repo, cache: cache},
 	}
 }

@@ -6,7 +6,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func New(addr string) (*pgxpool.Pool, error) {
+func NewPostgres(addr string) (*pgxpool.Pool, error) {
 	config, err := pgxpool.ParseConfig(addr)
 	if err != nil {
 		return nil, err

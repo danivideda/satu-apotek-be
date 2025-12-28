@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	"github.com/alexedwards/argon2id"
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
 	"github.com/patrickmn/go-cache"
@@ -28,7 +29,7 @@ func (h *userHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	passwordHash, err := hashPassword(payload.Password)
+	passwordHash, err := argon2id.CreateHash(payload.Password, argon2id.DefaultParams)
 	if err != nil {
 		json.ResponseBadRequest(w, r, err)
 		return
