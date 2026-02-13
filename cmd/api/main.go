@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"time"
 
 	"github.com/danivideda/satu-apotek-be/internal/db"
 	"github.com/danivideda/satu-apotek-be/internal/env"
@@ -10,7 +9,6 @@ import (
 	"github.com/danivideda/satu-apotek-be/internal/http/middleware"
 	"github.com/danivideda/satu-apotek-be/internal/job"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
-	"github.com/patrickmn/go-cache"
 )
 
 func main() {
@@ -28,10 +26,14 @@ func main() {
 	defer db.Close()
 	log.Println("Database connection pool established")
 
-	r := repository.New(db)
-	c := cache.New(5*time.Minute, 10*time.Minute)
-	h := handler.New(r, c)
-	md := middleware.New(c)
+	c, err := repository.NewCacheStore()
+	if err != nil {
+		log.Panic(err)
+	}
+
+	r := repository.New(db, c)
+	h := handler.New(r)
+	md := middleware.New(r)
 	s, err := job.NewScheduler(r)
 	if err != nil {
 		log.Panic(err)

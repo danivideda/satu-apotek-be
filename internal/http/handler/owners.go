@@ -5,12 +5,10 @@ import (
 
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
-	"github.com/patrickmn/go-cache"
 )
 
 type ownerHandler struct {
 	repo  repository.Repository
-	cache *cache.Cache
 }
 
 func (h *ownerHandler) GetByID(w http.ResponseWriter, r *http.Request) {

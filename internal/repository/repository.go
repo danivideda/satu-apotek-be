@@ -39,9 +39,11 @@ type Repository struct {
 		Upsert(ctx context.Context, apotekID int64, code string) (*dbsqlc.ApotekCode, error)
 		DeleteExpired(ctx context.Context) (*[]dbsqlc.ApotekCode, error)
 	}
+
+	CacheStore *CacheStore
 }
 
-func New(db *pgxpool.Pool) Repository {
+func New(db *pgxpool.Pool, cs *CacheStore) Repository {
 	q := dbsqlc.New(db)
 
 	return Repository{
@@ -50,6 +52,7 @@ func New(db *pgxpool.Pool) Repository {
 		OwnerSessions: &ownerSessionsRepo{queries: q},
 		Pharmacies:    &pharmaciesRepo{queries: q},
 		ApotekCode:    &apotekCodesRepo{queries: q},
+		CacheStore:    cs,
 	}
 }
 

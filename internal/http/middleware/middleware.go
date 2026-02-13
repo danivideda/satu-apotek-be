@@ -1,13 +1,13 @@
 package middleware
 
-import "github.com/patrickmn/go-cache"
+import "github.com/danivideda/satu-apotek-be/internal/repository"
 
 type AppMiddleware struct {
-	cache *cache.Cache
+	repo repository.Repository
 }
 
-func New(c *cache.Cache) AppMiddleware {
+func New(r repository.Repository) AppMiddleware {
 	return AppMiddleware{
-		cache: c,
+		repo: r,
 	}
 }

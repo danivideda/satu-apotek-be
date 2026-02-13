@@ -2,7 +2,6 @@ package handler
 
 import (
 	"github.com/danivideda/satu-apotek-be/internal/repository"
-	"github.com/patrickmn/go-cache"
 )
 
 type Handler struct {
@@ -12,11 +11,11 @@ type Handler struct {
 	User     *userHandler
 }
 
-func New(repo repository.Repository, cache *cache.Cache) Handler {
+func New(repo repository.Repository) Handler {
 	return Handler{
-		Auth:     &authHandler{repo: repo, cache: cache},
-		Owner:    &ownerHandler{repo: repo, cache: cache},
-		User:     &userHandler{repo: repo, cache: cache},
-		Pharmacy: &apotekHandler{repo: repo, cache: cache},
+		Auth:     &authHandler{repo: repo},
+		Owner:    &ownerHandler{repo: repo},
+		User:     &userHandler{repo: repo},
+		Pharmacy: &apotekHandler{repo: repo},
 	}
 }

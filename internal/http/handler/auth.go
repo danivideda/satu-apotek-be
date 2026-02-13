@@ -10,12 +10,10 @@ import (
 	"github.com/danivideda/satu-apotek-be/internal/env"
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
-	"github.com/patrickmn/go-cache"
 )
 
 type authHandler struct {
 	repo  repository.Repository
-	cache *cache.Cache
 }
 
 var (

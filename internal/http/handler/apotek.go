@@ -10,12 +10,10 @@ import (
 	"github.com/danivideda/satu-apotek-be/internal/http/jwt"
 	"github.com/danivideda/satu-apotek-be/internal/http/middleware"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
-	"github.com/patrickmn/go-cache"
 )
 
 type apotekHandler struct {
 	repo  repository.Repository
-	cache *cache.Cache
 }
 
 func (h *apotekHandler) Create(w http.ResponseWriter, r *http.Request) {
