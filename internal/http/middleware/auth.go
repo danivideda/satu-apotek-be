@@ -47,7 +47,9 @@ func (m *AppMiddleware) AuthOwner(next http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
+// -DEPRECATED-
 // TODO User Auth middleware
+// ------------
 func (m *AppMiddleware) AuthUser(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -106,3 +108,5 @@ func extractBearerToken(r *http.Request) (string, error) {
 
 	return token, nil
 }
+
+// TODO create AuthOwnerCtx that carry the session info

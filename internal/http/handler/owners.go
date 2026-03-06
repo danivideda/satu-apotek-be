@@ -14,7 +14,7 @@ type ownerHandler struct {
 func (h *ownerHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var ownerID int64 = 23
+	var ownerID int64 = 5
 	owners, err := h.repo.Owners.GetByID(ctx, ownerID)
 	if err != nil {
 		json.ResponseBadRequest(w, r, err)

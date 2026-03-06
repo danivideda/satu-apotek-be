@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"crypto/rand"
-	"encoding/base64"
 	"net/http"
 	"time"
 
@@ -10,10 +8,11 @@ import (
 	"github.com/danivideda/satu-apotek-be/internal/env"
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
+	"github.com/danivideda/satu-apotek-be/internal/service"
 )
 
 type authHandler struct {
-	repo  repository.Repository
+	repo repository.Repository
 }
 
 var (
@@ -99,8 +98,8 @@ func (h *authHandler) OwnerLogin(w http.ResponseWriter, r *http.Request) {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}
-
-	h.setOwnerSessionCookie(w, ownerSession.ID.String())
+	service.SetOwnerSessionCookie(w, ownerSession.ID.String(), ownerSession.ExpiresAt.Time)
+	h.repo.CacheStore.OwnerSessions.SetDefault(ownerSession.ID.String(), owner.ID)
 
 	if err := json.ResponseNoContent(w); err != nil {
 		json.ResponseInternalServerError(w, r, err)
@@ -153,23 +152,4 @@ func (h *authHandler) OwnerLogout(w http.ResponseWriter, r *http.Request) {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}
-}
-
-func (h *authHandler) generateSessionID() (string, error) {
-	b := make([]byte, 32) // 32 bytes for a 256-bit ID
-	if _, err := rand.Read(b); err != nil {
-		return "", err
-	}
-	return base64.URLEncoding.EncodeToString(b), nil
-}
-
-func (h *authHandler) setOwnerSessionCookie(w http.ResponseWriter, sessionID string) {
-	http.SetCookie(w, &http.Cookie{
-		Name:     "owner_session",
-		Value:    sessionID,
-		Expires:  time.Now().Add(1 * time.Hour),
-		MaxAge:   0,
-		Secure:   false,
-		HttpOnly: true,
-	})
 }
