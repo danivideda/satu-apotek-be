@@ -6,6 +6,7 @@ import (
 
 	"github.com/danivideda/satu-apotek-be/internal/repository"
 	"github.com/go-co-op/gocron/v2"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type MyScheduler struct {
@@ -29,8 +30,8 @@ func NewScheduler(r repository.Repository) (*MyScheduler, error) {
 	return &scheduler, nil
 }
 
-func (s *MyScheduler) AddClearCacheJob() {
-	job, err := s.scheduler.NewJob(gocron.DurationJob(15*time.Second), gocron.NewTask(func(ctx context.Context) {
+func (s *MyScheduler) AddClearApotekCodeJob() {
+	job, err := s.scheduler.NewJob(gocron.DurationJob(5*time.Second), gocron.NewTask(func(ctx context.Context) {
 		items, err := s.repo.ApotekCode.DeleteExpired(ctx)
 		if err != nil {
 			s.logger.Error(err.Error())
@@ -50,6 +51,31 @@ func (s *MyScheduler) AddClearCacheJob() {
 		s.logger.Error(err.Error())
 	}
 	s.logger.Info("gocron: job added", job.ID())
+}
+
+func (s *MyScheduler) AddDeleteExpiredSessionsJob() {
+	jobDuration := gocron.DurationJob(5 * time.Second)
+	task := gocron.NewTask(func(ctx context.Context) {
+		items, err := s.repo.OwnerSessions.DeleteExpired(ctx)
+		if err != nil {
+			s.logger.Error(err.Error())
+		}
+
+		if len(*items) > 0 {
+			ownerSessionIDs := make([]pgtype.UUID, len(*items))
+			for idx, item := range *items {
+				ownerSessionIDs[idx] = item.ID
+			}
+			s.logger.Info("job: deleted expired Owner Session row(s)", ownerSessionIDs)
+		} else {
+			s.logger.Info("job: no expired owner session")
+		}
+	})
+	job, err := s.scheduler.NewJob(jobDuration, task)
+	if err != nil {
+		s.logger.Error(err.Error())
+	}
+	s.logger.Info("delete expired owner session job added", job.ID())
 }
 
 func (s *MyScheduler) Start() {

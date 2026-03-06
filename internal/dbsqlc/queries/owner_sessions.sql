@@ -16,3 +16,7 @@ WHERE id = @session_id;
 -- name: DeleteOwnerSession :one
 DELETE FROM owner_sessions
 WHERE id = @id RETURNING *;
+
+-- name: DeleteExpiredOwnerSessions :many
+DELETE FROM owner_sessions
+WHERE expires_at < NOW() RETURNING *;

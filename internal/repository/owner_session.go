@@ -77,3 +77,11 @@ func (s *ownerSessionsRepo) Delete(ctx context.Context, sessionID string) (*dbsq
 	}
 	return &deletedOwnerSession, nil
 }
+
+func (s *ownerSessionsRepo) DeleteExpired(ctx context.Context) (*[]dbsqlc.OwnerSession, error) {
+	items, err := s.queries.DeleteExpiredOwnerSessions(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &items, nil
+}

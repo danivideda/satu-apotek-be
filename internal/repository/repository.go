@@ -27,6 +27,7 @@ type Repository struct {
 		Update(ctx context.Context, sessionID string, exp time.Time) (*dbsqlc.OwnerSession, error)
 		Get(ctx context.Context, sessionID string) (*dbsqlc.OwnerSession, error)
 		Delete(ctx context.Context, sessionID string) (*dbsqlc.OwnerSession, error)
+		DeleteExpired(ctx context.Context) (*[]dbsqlc.OwnerSession, error)
 	}
 
 	Pharmacies interface {

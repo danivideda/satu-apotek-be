@@ -34,6 +34,37 @@ func (q *Queries) CreateOwnerSession(ctx context.Context, arg CreateOwnerSession
 	return i, err
 }
 
+const deleteExpiredOwnerSessions = `-- name: DeleteExpiredOwnerSessions :many
+DELETE FROM owner_sessions
+WHERE expires_at < NOW() RETURNING id, owner_id, expires_at, created_at, updated_at
+`
+
+func (q *Queries) DeleteExpiredOwnerSessions(ctx context.Context) ([]OwnerSession, error) {
+	rows, err := q.db.Query(ctx, deleteExpiredOwnerSessions)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []OwnerSession
+	for rows.Next() {
+		var i OwnerSession
+		if err := rows.Scan(
+			&i.ID,
+			&i.OwnerID,
+			&i.ExpiresAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const deleteOwnerSession = `-- name: DeleteOwnerSession :one
 DELETE FROM owner_sessions
 WHERE id = $1 RETURNING id, owner_id, expires_at, created_at, updated_at

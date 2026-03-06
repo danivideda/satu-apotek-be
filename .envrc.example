@@ -10,9 +10,16 @@ export DATABASE_URL="postgres://$postgres_addr"
 export MIGRATE_URL="pgx5://$postgres_addr"
 
 # JWT secret
-export JWT_REFRESH_SECRET="secret-refresh-token"
-export JWT_ACCESS_SECRET="secret-access-token"
+export JWT_REFRESH_SECRET="szAbG+fXZcdQVOA4wf1gI9i7g0RURo0IQPWiKjsjuT8="
+export JWT_ACCESS_SECRET="BYdQFIRzWCaWkqq0o21QN1RTUGe5yzpo6+8XIQLNx9k="
 
 # JWT Time-to-Live
-export REFRESH_TTL="168h" # 7days
-export ACCESS_TTL="5m" # 5minutes
+export REFRESH_TTL="5m"
+export ACCESS_TTL="5m"
+
+# Apotek Code TTL
+export CODE_TTL="10s"
+
+# Sessions TTL
+export CACHE_SESSION_TTL="5s"
+export OWNER_SESSION_TTL="10s" # 7 days

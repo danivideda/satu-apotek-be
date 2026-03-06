@@ -38,13 +38,14 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
-	s.AddClearCacheJob()
-	// s.Start()
-	// defer func() {
-	// 	if err := s.Shutdown(); err != nil {
-	// 		log.Panic(err)
-	// 	}
-	// }()
+	s.AddClearApotekCodeJob()
+	s.AddDeleteExpiredSessionsJob()
+	s.Start()
+	defer func() {
+		if err := s.Shutdown(); err != nil {
+			log.Panic(err)
+		}
+	}()
 
 
 	app := &application{
