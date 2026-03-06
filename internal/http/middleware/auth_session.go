@@ -13,7 +13,20 @@ import (
 	"github.com/danivideda/satu-apotek-be/internal/service"
 )
 
-const AuthSessionOwnerCtx = "AuthOwnerSessionCtx"
+const authOwnerCtx = "AuthOwnerSessionCtx"
+
+type authOwner struct {
+	OwnerID   int64
+	SessionID string
+}
+
+func AuthOwnerFromCtx(ctx context.Context) (*authOwner, error) {
+	authOwner, ok := ctx.Value(authOwnerCtx).(authOwner)
+	if !ok {
+		return nil, errors.New("AuthOwnerCtx type assertion missmatch")
+	}
+	return &authOwner, nil
+}
 
 var (
 	ownerSessionTTL = env.GetString("OWNER_SESSION_TTL", "168h")
@@ -33,8 +46,17 @@ func (m *AppMiddleware) AuthSessionOwner(next http.Handler) http.Handler {
 		// 2. Check if session exist in cache. If exist, pass the request.
 		if val, found := m.repo.CacheStore.OwnerSessions.Get(sessionID); found {
 			fmt.Println("Session value:", sessionID)
-			ownerID := val
-			ctx := context.WithValue(ctx, AuthSessionOwnerCtx, ownerID)
+			ownerID, ok := val.(int64)
+			if !ok {
+				json.ResponseInternalServerError(w, r, errors.New("incorrect type assertion of OwnerID"))
+				return
+			}
+
+			authOwner := authOwner{
+				OwnerID:   ownerID,
+				SessionID: sessionID,
+			}
+			ctx := context.WithValue(ctx, authOwnerCtx, authOwner)
 			next.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}
@@ -61,6 +83,11 @@ func (m *AppMiddleware) AuthSessionOwner(next http.Handler) http.Handler {
 
 		fmt.Println("Session value:", sessionID)
 
+		authOwner := authOwner{
+			OwnerID:   ownerSession.OwnerID,
+			SessionID: sessionID,
+		}
+		ctx = context.WithValue(ctx, authOwnerCtx, authOwner)
 		next.ServeHTTP(w, r)
 	}
 

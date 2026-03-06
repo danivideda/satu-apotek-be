@@ -11,7 +11,18 @@ func SetOwnerSessionCookie(w http.ResponseWriter, sessionID string, exp time.Tim
 		Value:   sessionID,
 		Path:    "/",
 		Expires: exp,
-		// MaxAge:   0,
+		Secure:   false,
+		HttpOnly: true,
+	}
+	http.SetCookie(w, c)
+}
+
+func DeleteOwnerSessionCookie(w http.ResponseWriter) {
+	c := &http.Cookie{
+		Name:    "owner_session",
+		Value:   "",
+		Path:    "/",
+		Expires: time.Now().Add(1 * time.Second),
 		Secure:   false,
 		HttpOnly: true,
 	}
