@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/danivideda/satu-apotek-be/internal/env"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
 	"github.com/go-co-op/gocron/v2"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -31,12 +32,19 @@ func NewScheduler(r repository.Repository) (*MyScheduler, error) {
 }
 
 func (s *MyScheduler) AddClearApotekCodeJob() {
-	job, err := s.scheduler.NewJob(gocron.DurationJob(5*time.Second), gocron.NewTask(func(ctx context.Context) {
+	duration, err := time.ParseDuration(env.GetString("CRON_DURATION_CLEAR_APTK_CODE", "5m"))
+	if err != nil {
+		s.logger.Error(err.Error())
+		return
+	}
+
+	jobDuration := gocron.DurationJob(duration)
+	task := gocron.NewTask(func(ctx context.Context) {
 		items, err := s.repo.ApotekCode.DeleteExpired(ctx)
 		if err != nil {
 			s.logger.Error(err.Error())
+			return
 		}
-
 		if len(*items) > 0 {
 			itemIDs := make([]int64, len(*items))
 			for idx, item := range *items {
@@ -46,15 +54,24 @@ func (s *MyScheduler) AddClearApotekCodeJob() {
 		} else {
 			s.logger.Info("job: no expired Apotek Code")
 		}
-	}))
+	})
+
+	job, err := s.scheduler.NewJob(jobDuration, task)
 	if err != nil {
 		s.logger.Error(err.Error())
+	} else {
+		s.logger.Info("gocron: job added", job.ID())
 	}
-	s.logger.Info("gocron: job added", job.ID())
 }
 
 func (s *MyScheduler) AddDeleteExpiredSessionsJob() {
-	jobDuration := gocron.DurationJob(5 * time.Second)
+	duration, err := time.ParseDuration(env.GetString("CRON_DURATION_DEL_EXP_SESSION", "5m"))
+	if err != nil {
+		s.logger.Error(err.Error())
+		return
+	}
+
+	jobDuration := gocron.DurationJob(duration)
 	task := gocron.NewTask(func(ctx context.Context) {
 		items, err := s.repo.OwnerSessions.DeleteExpired(ctx)
 		if err != nil {
@@ -71,11 +88,13 @@ func (s *MyScheduler) AddDeleteExpiredSessionsJob() {
 			s.logger.Info("job: no expired owner session")
 		}
 	})
+
 	job, err := s.scheduler.NewJob(jobDuration, task)
 	if err != nil {
 		s.logger.Error(err.Error())
+	} else {
+		s.logger.Info("gocron: job added", job.ID())
 	}
-	s.logger.Info("delete expired owner session job added", job.ID())
 }
 
 func (s *MyScheduler) Start() {
