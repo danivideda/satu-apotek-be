@@ -16,7 +16,6 @@ var CSRF_SECRET = env.GetString("CSRF_SECRET", "csrf-secret-key")
 func NewCSRFToken(sessionID string) (string, error) {
 	randomVal := rand.Text()
 	message := fmt.Sprintf("%s!%s", sessionID, randomVal)
-	fmt.Println(message)
 	hash := hmac.New(sha256.New, []byte(CSRF_SECRET))
 	_, err := hash.Write([]byte(message))
 	if err != nil {
