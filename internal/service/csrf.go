@@ -7,13 +7,17 @@ import (
 	"encoding/hex"
 	"fmt"
 	"strings"
+
+	"github.com/danivideda/satu-apotek-be/internal/env"
 )
+
+var CSRF_SECRET = env.GetString("CSRF_SECRET", "csrf-secret-key")
 
 func NewCSRFToken(sessionID string) (string, error) {
 	randomVal := rand.Text()
 	message := fmt.Sprintf("%s!%s", sessionID, randomVal)
 	fmt.Println(message)
-	hash := hmac.New(sha256.New, []byte("secret-csrf-token-key"))
+	hash := hmac.New(sha256.New, []byte(CSRF_SECRET))
 	_, err := hash.Write([]byte(message))
 	if err != nil {
 		return "", err
@@ -26,11 +30,14 @@ func NewCSRFToken(sessionID string) (string, error) {
 
 func VerifyCSRFToken(sessionID, csrfToken string) (bool, error) {
 	csrf := strings.Split(csrfToken, ".")
+	if len(csrf) < 2 {
+		return false, ErrMalformedCSRFToken
+	}
 	hmacFromRequest := csrf[0]
 	randomVal := csrf[1]
 
 	message := fmt.Sprintf("%s!%s", sessionID, randomVal)
-	hash := hmac.New(sha256.New, []byte("secret-csrf-token-key"))
+	hash := hmac.New(sha256.New, []byte(CSRF_SECRET))
 	_, err := hash.Write([]byte(message))
 	if err != nil {
 		return false, err
