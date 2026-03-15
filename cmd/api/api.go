@@ -72,7 +72,7 @@ func (app *application) mount() http.Handler {
 		})
 
 		r.Route("/owners", func(r chi.Router) {
-			r.Use(app.middleware.AuthSessionOwner)
+			r.Use(app.middleware.AuthSessionOwner, app.middleware.CSRFProtection)
 			r.Get("/", app.handler.Owner.GetByID)
 		})
 

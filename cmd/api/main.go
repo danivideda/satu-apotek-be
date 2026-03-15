@@ -7,7 +7,6 @@ import (
 	"github.com/danivideda/satu-apotek-be/internal/env"
 	"github.com/danivideda/satu-apotek-be/internal/http/handler"
 	"github.com/danivideda/satu-apotek-be/internal/http/middleware"
-	"github.com/danivideda/satu-apotek-be/internal/job"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
 )
 
@@ -34,18 +33,18 @@ func main() {
 	r := repository.New(db, c)
 	h := handler.New(r)
 	md := middleware.New(r)
-	s, err := job.NewScheduler(r)
-	if err != nil {
-		log.Panic(err)
-	}
-	s.AddClearApotekCodeJob()
-	s.AddDeleteExpiredSessionsJob()
-	s.Start()
-	defer func() {
-		if err := s.Shutdown(); err != nil {
-			log.Panic(err)
-		}
-	}()
+	// s, err := job.NewScheduler(r)
+	// if err != nil {
+	// 	log.Panic(err)
+	// }
+	// s.AddClearApotekCodeJob()
+	// s.AddDeleteExpiredSessionsJob()
+	// s.Start()
+	// defer func() {
+	// 	if err := s.Shutdown(); err != nil {
+	// 		log.Panic(err)
+	// 	}
+	// }()
 
 
 	app := &application{

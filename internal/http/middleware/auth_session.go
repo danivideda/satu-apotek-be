@@ -3,7 +3,6 @@ package middleware
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -45,7 +44,6 @@ func (m *AppMiddleware) AuthSessionOwner(next http.Handler) http.Handler {
 
 		// 2. Check if session exist in cache. If exist, pass the request.
 		if val, found := m.repo.CacheStore.OwnerSessions.Get(sessionID); found {
-			fmt.Println("Session value:", sessionID)
 			ownerID, ok := val.(int64)
 			if !ok {
 				json.ResponseInternalServerError(w, r, errors.New("incorrect type assertion of OwnerID"))
@@ -62,7 +60,7 @@ func (m *AppMiddleware) AuthSessionOwner(next http.Handler) http.Handler {
 		}
 
 		// 3. Check if session exist in DB. If exist, renew the session_id and expires_at value. If not exist
-		// or expired, then the session is invalid
+		// or is expired, then the session is invalid
 		ttl, err := time.ParseDuration(ownerSessionTTL)
 		if err != nil {
 			json.ResponseInternalServerError(w, r, err)
@@ -79,16 +77,14 @@ func (m *AppMiddleware) AuthSessionOwner(next http.Handler) http.Handler {
 		}
 		sessionID = ownerSession.ID.String()
 		m.repo.CacheStore.OwnerSessions.SetDefault(sessionID, ownerSession.OwnerID)
-		service.SetOwnerSessionCookie(w, sessionID, ownerSession.ExpiresAt.Time)
-
-		fmt.Println("Session value:", sessionID)
+		service.SetOwnerCookies(w, sessionID, ownerSession.ExpiresAt.Time)
 
 		authOwner := authOwner{
 			OwnerID:   ownerSession.OwnerID,
 			SessionID: sessionID,
 		}
 		ctx = context.WithValue(ctx, authOwnerCtx, authOwner)
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 
 	return http.HandlerFunc(fn)

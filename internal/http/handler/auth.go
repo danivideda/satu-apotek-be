@@ -99,7 +99,7 @@ func (h *authHandler) OwnerLogin(w http.ResponseWriter, r *http.Request) {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}
-	service.SetOwnerSessionCookie(w, ownerSession.ID.String(), ownerSession.ExpiresAt.Time)
+	service.SetOwnerCookies(w, ownerSession.ID.String(), ownerSession.ExpiresAt.Time)
 	h.repo.CacheStore.OwnerSessions.SetDefault(ownerSession.ID.String(), owner.ID)
 
 	if err := json.ResponseNoContent(w); err != nil {
@@ -144,7 +144,7 @@ func (h *authHandler) OwnerLogout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	service.DeleteOwnerSessionCookie(w)
+	service.DeleteOwnerCookies(w)
 
 	res := map[string]string{
 		"deleted_session": deletedOwnerSession.ID.String(),

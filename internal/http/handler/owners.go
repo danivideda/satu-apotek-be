@@ -4,17 +4,23 @@ import (
 	"net/http"
 
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
+	"github.com/danivideda/satu-apotek-be/internal/http/middleware"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
 )
 
 type ownerHandler struct {
-	repo  repository.Repository
+	repo repository.Repository
 }
 
 func (h *ownerHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var ownerID int64 = 5
+	authOwner, err := middleware.AuthOwnerFromCtx(ctx)
+	if err != nil {
+		json.ResponseUnauthorized(w, r, err)
+		return
+	}
+	var ownerID int64 = authOwner.OwnerID
 	owners, err := h.repo.Owners.GetByID(ctx, ownerID)
 	if err != nil {
 		json.ResponseBadRequest(w, r, err)

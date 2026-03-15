@@ -1,0 +1,33 @@
+package middleware
+
+import (
+	"net/http"
+
+	"github.com/danivideda/satu-apotek-be/internal/http/json"
+	"github.com/danivideda/satu-apotek-be/internal/service"
+)
+
+func (m *AppMiddleware) CSRFProtection(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		authOwner, err := AuthOwnerFromCtx(ctx)
+		if err != nil {
+			json.ResponseInternalServerError(w, r, err)
+			return
+		}
+
+		csrfToken := r.Header.Get("X-CSRF-Token")
+		ok, err := service.VerifyCSRFToken(authOwner.SessionID, csrfToken)
+		if err != nil {
+			json.ResponseInternalServerError(w, r, err)
+			return
+		}
+		if !ok {
+			json.ResponseInvalidCSRFToken(w, r, ErrInvalidCSRFToken)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	}
+	return http.HandlerFunc(fn)
+}

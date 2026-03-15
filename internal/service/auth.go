@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func SetOwnerSessionCookie(w http.ResponseWriter, sessionID string, exp time.Time) {
+func SetOwnerCookies(w http.ResponseWriter, sessionID string, exp time.Time) {
 	c := &http.Cookie{
 		Name:    "owner_session",
 		Value:   sessionID,
@@ -15,9 +15,20 @@ func SetOwnerSessionCookie(w http.ResponseWriter, sessionID string, exp time.Tim
 		HttpOnly: true,
 	}
 	http.SetCookie(w, c)
+
+	csrfToken, _ := NewCSRFToken(sessionID)
+	csrf := &http.Cookie{
+		Name:    "owner_csrf",
+		Value:   csrfToken,
+		Path:    "/",
+		Expires: exp,
+		Secure:   false,
+		HttpOnly: false,
+	}
+	http.SetCookie(w, csrf)
 }
 
-func DeleteOwnerSessionCookie(w http.ResponseWriter) {
+func DeleteOwnerCookies(w http.ResponseWriter) {
 	c := &http.Cookie{
 		Name:    "owner_session",
 		Value:   "",

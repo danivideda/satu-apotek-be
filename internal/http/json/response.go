@@ -36,3 +36,8 @@ func ResponseUnauthorized(w http.ResponseWriter, r *http.Request, err error) {
 	log.Printf("not authorized, %s path: %s error: %s", r.Method, r.URL.Path, err)
 	WriteResponseErr(w, http.StatusUnauthorized, "unauthorized")
 }
+
+func ResponseInvalidCSRFToken(w http.ResponseWriter, r *http.Request, err error) {
+	log.Printf("not authorized, %s path: %s error: %s", r.Method, r.URL.Path, err)
+	WriteResponseErr(w, http.StatusBadRequest, "invalid CSRF token")
+}
