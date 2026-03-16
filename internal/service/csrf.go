@@ -4,7 +4,7 @@ import (
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
-	"encoding/hex"
+	"encoding/base64"
 	"fmt"
 	"strings"
 
@@ -23,7 +23,7 @@ func NewCSRFToken(sessionID string) (string, error) {
 	}
 	newHmac := hash.Sum(nil)
 
-	csrfToken := fmt.Sprintf("%s.%s", hex.EncodeToString([]byte(newHmac)), randomVal)
+	csrfToken := fmt.Sprintf("%s.%s", base64.StdEncoding.EncodeToString([]byte(newHmac)), randomVal)
 	return csrfToken, nil
 }
 
@@ -41,12 +41,12 @@ func VerifyCSRFToken(sessionID, csrfToken string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	expectedHmac := hash.Sum(nil)
 
-	bytesArrayHmacFromRequest, err := hex.DecodeString(hmacFromRequest)
+	bytesArrayHmacFromRequest, err := base64.StdEncoding.DecodeString(hmacFromRequest)
 	if err != nil {
 		return false, err
 	}
-	expectedHmac := hash.Sum(nil)
 	isValid := hmac.Equal(bytesArrayHmacFromRequest, expectedHmac)
 	return isValid, nil
 }

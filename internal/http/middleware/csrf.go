@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
@@ -19,11 +20,15 @@ func (m *AppMiddleware) CSRFProtection(next http.Handler) http.Handler {
 		csrfToken := r.Header.Get("X-CSRF-Token")
 		ok, err := service.VerifyCSRFToken(authOwner.SessionID, csrfToken)
 		if err != nil {
-			json.ResponseInternalServerError(w, r, err)
+			if errors.Is(err, service.ErrMalformedCSRFToken) {
+				json.ResponseInvalidCSRFToken(w, r, err)
+			} else {
+				json.ResponseInternalServerError(w, r, err)
+			}
 			return
 		}
 		if !ok {
-			json.ResponseInvalidCSRFToken(w, r, ErrInvalidCSRFToken)
+			json.ResponseInvalidCSRFToken(w, r, service.ErrInvalidCSRFToken)
 			return
 		}
 
