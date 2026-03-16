@@ -10,6 +10,12 @@ import (
 
 func (m *AppMiddleware) CSRFProtection(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
+		// CSRF Token is not required on GET request
+		if r.Method == http.MethodGet {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		ctx := r.Context()
 		authOwner, err := AuthOwnerFromCtx(ctx)
 		if err != nil {
