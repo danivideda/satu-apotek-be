@@ -38,4 +38,14 @@ func DeleteOwnerCookies(w http.ResponseWriter) {
 		HttpOnly: true,
 	}
 	http.SetCookie(w, c)
+
+	csrf := &http.Cookie{
+		Name:    "owner_csrf",
+		Value:   "",
+		Path:    "/",
+		Expires: time.Now().Add(1 * time.Second),
+		Secure:   false,
+		HttpOnly: false,
+	}
+	http.SetCookie(w, csrf)
 }

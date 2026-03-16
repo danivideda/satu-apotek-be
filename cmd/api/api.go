@@ -53,7 +53,7 @@ func (app *application) mount() http.Handler {
 			r.Route("/owners", func(r chi.Router) {
 				r.Post("/register", app.handler.Auth.OwnerRegister)
 				r.Post("/login", app.handler.Auth.OwnerLogin)
-				r.With(app.middleware.AuthSessionOwner).Post("/logout", app.handler.Auth.OwnerLogout)
+				r.With(app.middleware.AuthSessionOwner, app.middleware.CSRFProtection).Post("/logout", app.handler.Auth.OwnerLogout)
 				// r.Get("/refresh", app.handler.Auth.OwnerRefresh)
 				// r.With(app.middleware.AuthOwner).Post("/logout", app.handler.Auth.OwnerLogout)
 			})
