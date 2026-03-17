@@ -54,19 +54,14 @@ func (app *application) mount() http.Handler {
 				r.Post("/register", app.handler.Auth.OwnerRegister)
 				r.Post("/login", app.handler.Auth.OwnerLogin)
 				r.With(app.middleware.AuthSessionOwner, app.middleware.CSRFProtection).Post("/logout", app.handler.Auth.OwnerLogout)
-				// r.Get("/refresh", app.handler.Auth.OwnerRefresh)
-				// r.With(app.middleware.AuthOwner).Post("/logout", app.handler.Auth.OwnerLogout)
 			})
 			r.Route("/users", func(r chi.Router) {
-				// r.Post("/login", app.handler.Auth.UserLogin)
-				// r.Get("/refresh", app.handler.Auth.UserRefresh)
-				// r.With(app.middleware.AuthOwner).Post("/logout", app.handler.Auth.UserLogout)
+				// ..
 			})
 		})
 
 		r.Route("/users", func(r chi.Router) {
 			r.Group(func(r chi.Router) {
-				r.Use(app.middleware.AuthOwner)
 				r.Post("/create", app.handler.User.Create)
 			})
 		})
@@ -74,18 +69,6 @@ func (app *application) mount() http.Handler {
 		r.Route("/owners", func(r chi.Router) {
 			r.Use(app.middleware.AuthSessionOwner, app.middleware.CSRFProtection)
 			r.Get("/", app.handler.Owner.GetByID)
-		})
-
-		r.Route("/apotek", func(r chi.Router) {
-			r.Route("/code", func(r chi.Router) {
-				r.Post("/verify", app.handler.Pharmacy.VerifyCode)
-				r.With(app.middleware.AuthOwner).Post("/create", app.handler.Pharmacy.CreateOrUpdateCode)
-			})
-
-			r.Group(func(r chi.Router) {
-				r.Use(app.middleware.AuthOwner)
-				r.Post("/create", app.handler.Pharmacy.Create)
-			})
 		})
 	})
 
