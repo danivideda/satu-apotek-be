@@ -16,15 +16,9 @@ func (m *AppMiddleware) OwnerCSRFProtection(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := r.Context()
-		authOwner, err := AuthOwnerFromCtx(ctx)
-		if err != nil {
-			json.ResponseInternalServerError(w, r, err)
-			return
-		}
-
 		csrfToken := r.Header.Get("X-CSRF-Token")
-		ok, err := service.VerifyCSRFToken(authOwner.SessionID, csrfToken)
+		ownerSessionCookie, _ := r.Cookie("owner_session")
+		ok, err := service.VerifyCSRFToken(ownerSessionCookie.Value, csrfToken)
 		if err != nil {
 			if errors.Is(err, service.ErrMalformedCSRFToken) {
 				json.ResponseInvalidCSRFToken(w, r, err)
