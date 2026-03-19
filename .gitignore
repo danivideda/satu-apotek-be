@@ -35,3 +35,9 @@ go.work.sum
 # binaries
 bin/*
 !bin/install_tools
+
+# macOS
+.DS_Store
+._.DS_Store
+**/.DS_Store
+**/._.DS_Store
