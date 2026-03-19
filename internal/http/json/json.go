@@ -2,6 +2,8 @@ package json
 
 import (
 	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
 	"slices"
 )
@@ -32,7 +34,14 @@ func Read(w http.ResponseWriter, r *http.Request, data any) error {
 
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
-	return decoder.Decode(data)
+	if err := decoder.Decode(data); err != nil {
+		if errors.Is(err, io.EOF) {
+			return ErrEmptyBody
+		} else {
+			return err
+		}
+	}
+	return nil
 }
 
 func WriteResponseErr(w http.ResponseWriter, status int, message string) {

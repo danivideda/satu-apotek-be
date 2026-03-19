@@ -37,19 +37,20 @@ func main() {
 
 	// TODO: Move this to separate process /cmd/cron/main.go
 	// Cron Job
-	s, err := job.NewScheduler(r)
-	if err != nil {
-		log.Panic(err)
-	}
-	s.AddClearApotekCodeJob()
-	s.AddDeleteExpiredSessionsJob()
-	s.Start()
-	defer func() {
-		if err := s.Shutdown(); err != nil {
+	if env.GetString("RUN_JOB", "false") == "true" {
+		s, err := job.NewScheduler(r)
+		if err != nil {
 			log.Panic(err)
 		}
-	}()
-
+		s.AddClearApotekCodeJob()
+		s.AddDeleteExpiredSessionsJob()
+		s.Start()
+		defer func() {
+			if err := s.Shutdown(); err != nil {
+				log.Panic(err)
+			}
+		}()
+	}
 
 	app := &application{
 		config:     cfg,

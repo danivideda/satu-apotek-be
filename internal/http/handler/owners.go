@@ -20,7 +20,7 @@ func (h *ownerHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		json.ResponseUnauthorized(w, r, err)
 		return
 	}
-	var ownerID int64 = authOwner.OwnerID
+	var ownerID int64 = authOwner.ID
 	owners, err := h.repo.Owners.GetByID(ctx, ownerID)
 	if err != nil {
 		json.ResponseBadRequest(w, r, err)

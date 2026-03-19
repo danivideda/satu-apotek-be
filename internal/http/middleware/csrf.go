@@ -8,7 +8,7 @@ import (
 	"github.com/danivideda/satu-apotek-be/internal/service"
 )
 
-func (m *AppMiddleware) CSRFProtection(next http.Handler) http.Handler {
+func (m *AppMiddleware) OwnerCSRFProtection(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		// CSRF Token is not required on GET request
 		if r.Method == http.MethodGet {

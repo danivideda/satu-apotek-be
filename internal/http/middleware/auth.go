@@ -15,7 +15,7 @@ import (
 const authOwnerCtx = "AuthOwnerSessionCtx"
 
 type authOwner struct {
-	OwnerID   int64
+	ID        int64
 	SessionID string
 }
 
@@ -51,7 +51,7 @@ func (m *AppMiddleware) AuthSessionOwner(next http.Handler) http.Handler {
 			}
 
 			authOwner := authOwner{
-				OwnerID:   ownerID,
+				ID:        ownerID,
 				SessionID: sessionID,
 			}
 			ctx := context.WithValue(ctx, authOwnerCtx, authOwner)
@@ -80,7 +80,7 @@ func (m *AppMiddleware) AuthSessionOwner(next http.Handler) http.Handler {
 		service.SetOwnerCookies(w, sessionID, ownerSession.ExpiresAt.Time)
 
 		authOwner := authOwner{
-			OwnerID:   ownerSession.OwnerID,
+			ID:        ownerSession.OwnerID,
 			SessionID: sessionID,
 		}
 		ctx = context.WithValue(ctx, authOwnerCtx, authOwner)
