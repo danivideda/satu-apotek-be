@@ -31,7 +31,7 @@ var (
 	ownerSessionTTL = env.GetString("OWNER_SESSION_TTL", "168h")
 )
 
-func (m *AppMiddleware) AuthSessionOwner(next http.Handler) http.Handler {
+func (m *AppMiddleware) AuthOwner(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 

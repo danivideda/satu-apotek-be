@@ -54,8 +54,8 @@ func (app *application) mount() http.Handler {
 				r.Post("/register", app.handler.Auth.OwnerRegister)
 				r.Post("/login", app.handler.Auth.OwnerLogin)
 				r.With(
-					app.middleware.AuthSessionOwner,
-					app.middleware.OwnerCSRFProtection,
+					app.middleware.AuthOwner,
+					app.middleware.CSRFProtectionOwner,
 				).Post("/logout", app.handler.Auth.OwnerLogout)
 			})
 			r.Route("/users", func(r chi.Router) {
@@ -65,8 +65,8 @@ func (app *application) mount() http.Handler {
 
 		r.Route("/apotek", func(r chi.Router) {
 			r.Group(func(r chi.Router) {
-				r.Use(app.middleware.AuthSessionOwner)
-				r.Use(app.middleware.OwnerCSRFProtection)
+				r.Use(app.middleware.AuthOwner)
+				r.Use(app.middleware.CSRFProtectionOwner)
 				r.Post("/create", app.handler.Apotek.Create)
 				r.Post("/disconnect", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("/disconnect")) })
 			})
@@ -80,8 +80,8 @@ func (app *application) mount() http.Handler {
 		})
 
 		r.Route("/owners", func(r chi.Router) {
-			r.Use(app.middleware.AuthSessionOwner)
-			r.Use(app.middleware.OwnerCSRFProtection)
+			r.Use(app.middleware.AuthOwner)
+			r.Use(app.middleware.CSRFProtectionOwner)
 			r.Get("/", app.handler.Owner.GetByID)
 		})
 	})
