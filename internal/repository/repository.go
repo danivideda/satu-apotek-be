@@ -57,29 +57,29 @@ func New(db *pgxpool.Pool, cs *CacheStore) Repository {
 	}
 }
 
-func runInTx(
-	ctx context.Context,
-	db *pgxpool.Pool,
-	queries *dbsqlc.Queries,
-	fn func(qtx *dbsqlc.Queries) (any, error),
-) (result any, err error) {
-	tx, err := db.Begin(ctx)
-	if err != nil {
-		return nil, err
-	}
-	qtx := queries.WithTx(tx)
-	defer tx.Rollback(ctx)
+// func runInTx(
+// 	ctx context.Context,
+// 	db *pgxpool.Pool,
+// 	queries *dbsqlc.Queries,
+// 	fn func(qtx *dbsqlc.Queries) (any, error),
+// ) (result any, err error) {
+// 	tx, err := db.Begin(ctx)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	qtx := queries.WithTx(tx)
+// 	defer tx.Rollback(ctx)
 
-	result, err = fn(qtx)
-	if err != nil {
-		return nil, err
+// 	result, err = fn(qtx)
+// 	if err != nil {
+// 		return nil, err
 
-	}
+// 	}
 
-	err = tx.Commit(ctx)
-	if err != nil {
-		return nil, err
-	}
+// 	err = tx.Commit(ctx)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return result, nil
-}
+// 	return result, nil
+// }

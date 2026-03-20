@@ -108,28 +108,6 @@ func (h *authHandler) OwnerLogin(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *authHandler) OwnerRefresh(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var payload struct {
-		SessionID string `json:"session_id"`
-	}
-	if err := json.Read(w, r, &payload); err != nil {
-		json.ResponseBadRequest(w, r, err)
-		return
-	}
-	newOwnerSession, err := h.repo.OwnerSessions.Update(ctx, payload.SessionID, time.Now().Add(7*24*time.Hour))
-	if err != nil {
-		json.ResponseNotFound(w, r, err)
-		return
-	}
-
-	if err := json.ResponseOK(w, newOwnerSession.ID); err != nil {
-		json.ResponseInternalServerError(w, r, err)
-		return
-	}
-}
-
 func (h *authHandler) OwnerLogout(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	authOwner, err := middleware.AuthOwnerFromCtx(ctx)

@@ -21,9 +21,9 @@ func (h *apotekHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: 
+	// TODO:
 	// 1. input necessary data about the Apotek
-	// 2. Apotek Name, address, description (optional)
+	// 2. Apotek Name
 	var payload struct {
 		ApotekName string `json:"apotek_name"`
 	}
@@ -35,12 +35,18 @@ func (h *apotekHandler) Create(w http.ResponseWriter, r *http.Request) {
 	// TODO:
 	// 1. Create new Apotek under the OwnerID relation in DB table
 	// 2. Return ApotekID
+	apotek, err := h.repo.Pharmacies.Create(ctx, authOwner.ID, payload.ApotekName)
+	if err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+
 	res := map[string]any{
 		"owner_id":    authOwner.ID,
-		"owner_session":  authOwner.SessionID,
 		"apotek_name": payload.ApotekName,
+		"apotek_id":   apotek.ID,
 	}
-	if err := json.ResponseOK(w, res); err != nil {
+	if err := json.ResponseCreated(w, res); err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}
