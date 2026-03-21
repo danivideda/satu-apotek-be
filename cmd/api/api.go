@@ -40,11 +40,10 @@ func (app *application) mount() http.Handler {
 	// processing should be stopped.
 	r.Use(chiMiddleware.Timeout(60 * time.Second))
 
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello world!"))
-	})
-
 	r.Route("/v1", func(r chi.Router) {
+		// Only allow `application/json` for requests.
+		r.Use(chiMiddleware.AllowContentType("application/json"))
+
 		r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("Health check: OK\n"))
 		})
@@ -63,7 +62,7 @@ func (app *application) mount() http.Handler {
 			})
 		})
 
-		r.Route("/apotek", func(r chi.Router) {
+		r.Route("/pharmacies", func(r chi.Router) {
 			r.Group(func(r chi.Router) {
 				r.Use(app.middleware.AuthOwner)
 				r.Use(app.middleware.CSRFProtectionOwner)
