@@ -14,9 +14,9 @@ CREATE TABLE IF NOT EXISTS user_sessions (
     updated_at timestamptz NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS apotek_sessions (
+CREATE TABLE IF NOT EXISTS pharmacy_sessions (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    apotek_id bigint NOT NULL REFERENCES pharmacies,
+    pharmacy_id bigint NOT NULL REFERENCES pharmacies,
     expires_at timestamptz NOT NULL,
     created_at timestamptz NOT NULL DEFAULT NOW(),
     updated_at timestamptz NOT NULL DEFAULT NOW()

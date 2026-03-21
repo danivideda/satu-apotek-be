@@ -21,5 +21,13 @@ export ACCESS_TTL="5m"
 export CODE_TTL="10s"
 
 # Sessions TTL
-export CACHE_SESSION_TTL="5s"
-export OWNER_SESSION_TTL="10s" # 7 days
+export CACHE_SESSION_TTL="5m"
+export OWNER_SESSION_TTL="10m" # 7 days
+
+# CRON Duration
+export RUN_JOB=false
+export CRON_DURATION_DEL_EXP_SESSION="10s"
+export CRON_DURATION_CLEAR_APTK_CODE="10s"
+
+# CSRF secret
+export CSRF_SECRET="gkeidgVznqRuazfmqVXuwdcNY4doNAafAi5MBmHDBcc="
