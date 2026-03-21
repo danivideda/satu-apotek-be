@@ -9,11 +9,11 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type apotekCodesRepo struct {
+type pharmacyCodesRepo struct {
 	queries *dbsqlc.Queries
 }
 
-func (r *apotekCodesRepo) Upsert(ctx context.Context, apotekID int64, code string) (*dbsqlc.ApotekCode, error) {
+func (r *pharmacyCodesRepo) Upsert(ctx context.Context, apotekID int64, code string) (*dbsqlc.PharmacyCode, error) {
 	ttl, err := time.ParseDuration(env.GetString("CODE_TTL", "5m"))
 	if err != nil {
 		return nil, err
@@ -35,7 +35,7 @@ func (r *apotekCodesRepo) Upsert(ctx context.Context, apotekID int64, code strin
 	return &apotekCode, nil
 }
 
-func (r *apotekCodesRepo) Get(ctx context.Context, apotekID int64) (*dbsqlc.ApotekCode, error) {
+func (r *pharmacyCodesRepo) Get(ctx context.Context, apotekID int64) (*dbsqlc.PharmacyCode, error) {
 	apotekCode, err := r.queries.GetApotekCode(ctx, apotekID)
 	if err != nil {
 		return nil, err
@@ -44,7 +44,7 @@ func (r *apotekCodesRepo) Get(ctx context.Context, apotekID int64) (*dbsqlc.Apot
 	return &apotekCode, nil
 }
 
-func (r *apotekCodesRepo) GetByCode(ctx context.Context, code string) (*dbsqlc.ApotekCode, error) {
+func (r *pharmacyCodesRepo) GetByCode(ctx context.Context, code string) (*dbsqlc.PharmacyCode, error) {
 	apotekCode, err := r.queries.GetApotekCodeByCode(ctx, code)
 	if err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ func (r *apotekCodesRepo) GetByCode(ctx context.Context, code string) (*dbsqlc.A
 	return &apotekCode, nil
 }
 
-func (r *apotekCodesRepo) DeleteExpired(ctx context.Context) (*[]dbsqlc.ApotekCode, error) {
+func (r *pharmacyCodesRepo) DeleteExpired(ctx context.Context) (*[]dbsqlc.PharmacyCode, error) {
 	apotekCode, err := r.queries.DeleteExpiredApotekCode(ctx)
 	if err != nil {
 		return nil, err

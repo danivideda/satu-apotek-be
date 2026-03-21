@@ -8,11 +8,11 @@ import (
 	"github.com/danivideda/satu-apotek-be/internal/repository"
 )
 
-type apotekHandler struct {
+type pharmacyHandler struct {
 	repo repository.Repository
 }
 
-func (h *apotekHandler) Create(w http.ResponseWriter, r *http.Request) {
+func (h *pharmacyHandler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	authOwner, err := middleware.AuthOwnerFromCtx(ctx)
@@ -47,6 +47,26 @@ func (h *apotekHandler) Create(w http.ResponseWriter, r *http.Request) {
 		"apotek_id":   apotek.ID,
 	}
 	if err := json.ResponseCreated(w, res); err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+}
+
+func (h *pharmacyHandler) GetByOwner(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	authOwner, err := middleware.AuthOwnerFromCtx(ctx)
+	if err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+
+	pharmacies, err := h.repo.Pharmacies.GetByOwner(ctx, authOwner.ID)
+	if err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+
+	if err := json.ResponseOK(w, pharmacies); err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}

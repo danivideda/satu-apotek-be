@@ -67,7 +67,8 @@ func (app *application) mount() http.Handler {
 			r.Group(func(r chi.Router) {
 				r.Use(app.middleware.AuthOwner)
 				r.Use(app.middleware.CSRFProtectionOwner)
-				r.Post("/create", app.handler.Apotek.Create)
+				r.Get("/", app.handler.Pharmacy.GetByOwner)
+				r.Post("/create", app.handler.Pharmacy.Create)
 				r.Post("/disconnect", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("/disconnect")) })
 			})
 			r.Post("/connect", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("/connect")) })

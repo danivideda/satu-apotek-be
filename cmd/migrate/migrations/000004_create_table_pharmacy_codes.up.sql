@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS apotek_codes (
+CREATE TABLE IF NOT EXISTS pharmacy_codes (
     apotek_id bigint PRIMARY KEY REFERENCES pharmacies,
     code text UNIQUE NOT NULL,
     expires_at timestamptz NOT NULL,
@@ -6,4 +6,4 @@ CREATE TABLE IF NOT EXISTS apotek_codes (
     updated_at timestamptz NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX apotek_codes_expires_at_idx ON apotek_codes (expires_at);
+CREATE INDEX pharmacy_codes_expires_idx ON pharmacy_codes (expires_at);

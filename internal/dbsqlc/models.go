@@ -8,14 +8,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type ApotekCode struct {
-	ApotekID  int64              `json:"apotek_id"`
-	Code      string             `json:"code"`
-	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-}
-
 type ApotekSession struct {
 	ID        pgtype.UUID        `json:"id"`
 	ApotekID  int64              `json:"apotek_id"`
@@ -45,6 +37,14 @@ type Pharmacy struct {
 	ID        int64              `json:"id"`
 	OwnerID   int64              `json:"owner_id"`
 	Name      string             `json:"name"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type PharmacyCode struct {
+	ApotekID  int64              `json:"apotek_id"`
+	Code      string             `json:"code"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }

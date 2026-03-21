@@ -40,7 +40,7 @@ func (s *MyScheduler) AddClearApotekCodeJob() {
 
 	jobDuration := gocron.DurationJob(duration)
 	task := gocron.NewTask(func(ctx context.Context) {
-		items, err := s.repo.ApotekCode.DeleteExpired(ctx)
+		items, err := s.repo.PharmacyCode.DeleteExpired(ctx)
 		if err != nil {
 			s.logger.Error(err.Error())
 			return

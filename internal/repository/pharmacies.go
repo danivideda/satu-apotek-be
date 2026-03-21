@@ -19,3 +19,11 @@ func (r *pharmaciesRepo) Create(ctx context.Context, ownerID int64, name string)
 
 	return &pharmacy, nil
 }
+
+func (r *pharmaciesRepo) GetByOwner(ctx context.Context, ownerID int64) (*[]dbsqlc.Pharmacy, error) {
+	pharmacies, err := r.queries.GetPharmaciesByOwner(ctx, ownerID)
+	if err != nil {
+		return nil, err
+	}
+	return &pharmacies, nil
+}

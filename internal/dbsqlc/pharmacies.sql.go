@@ -31,3 +31,35 @@ func (q *Queries) CreatePharmacy(ctx context.Context, arg CreatePharmacyParams) 
 	)
 	return i, err
 }
+
+const getPharmaciesByOwner = `-- name: GetPharmaciesByOwner :many
+SELECT id, owner_id, name, created_at, updated_at FROM pharmacies
+WHERE owner_id = $1
+ORDER BY created_at DESC
+`
+
+func (q *Queries) GetPharmaciesByOwner(ctx context.Context, ownerID int64) ([]Pharmacy, error) {
+	rows, err := q.db.Query(ctx, getPharmaciesByOwner, ownerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Pharmacy
+	for rows.Next() {
+		var i Pharmacy
+		if err := rows.Scan(
+			&i.ID,
+			&i.OwnerID,
+			&i.Name,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
