@@ -40,18 +40,20 @@ func (h *authHandler) OwnerRegister(w http.ResponseWriter, r *http.Request) {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}
-	ownerID, ownerSessionID, err := h.repo.Owners.Create(ctx, payload.Username, payload.Email, passwordHash)
+	ownerID, ownerSessionID, exp, err := h.repo.Owners.Create(ctx, payload.Username, payload.Email, passwordHash)
 	if err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}
 
-	result := struct {
-		OwnerID        int64  `json:"owner_id"`
-		OwnerSessionID string `json:"owner_session_id"`
-	}{OwnerID: ownerID, OwnerSessionID: ownerSessionID}
+	service.SetOwnerCookies(w, ownerSessionID, exp)
 
-	if err := json.ResponseCreated(w, result); err != nil {
+	res := map[string]any{
+		"owner_id":      ownerID,
+		"owner_session": ownerSessionID,
+	}
+
+	if err := json.ResponseCreated(w, res); err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}

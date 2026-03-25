@@ -14,10 +14,10 @@ type ownersRepo struct {
 	queries *dbsqlc.Queries
 }
 
-func (r *ownersRepo) Create(ctx context.Context, username, email, passwordHash string) (ownerID int64, ownerSessionID string, err error) {
+func (r *ownersRepo) Create(ctx context.Context, username, email, passwordHash string) (ownerID int64, ownerSessionID string, exp time.Time, err error) {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
-		return 0, "", err
+		return
 	}
 	defer tx.Rollback(ctx)
 	qtx := r.queries.WithTx(tx)
@@ -28,27 +28,29 @@ func (r *ownersRepo) Create(ctx context.Context, username, email, passwordHash s
 		PasswordHash: passwordHash,
 	})
 	if err != nil {
-		return 0, "", err
+		return
 	}
 
 	// create new session
 	ttl, err := time.ParseDuration(ownerSessionTTL)
 	if err != nil {
-		return 0, "", err
+		return
 	}
+	exp = time.Now().Add(ttl)
 	ownerSession, err := qtx.CreateOwnerSession(ctx, dbsqlc.CreateOwnerSessionParams{
 		OwnerID:   owner.ID,
-		ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(ttl), Valid: true},
+		ExpiresAt: pgtype.Timestamptz{Time: exp, Valid: true},
 	})
 	if err != nil {
-		return 0, "", err
+		return
 	}
 
-	if err := tx.Commit(ctx); err != nil {
-		return 0, "", err
+	err = tx.Commit(ctx)
+	if err != nil {
+		return
 	}
 
-	return owner.ID, ownerSession.ID.String(), nil
+	return owner.ID, ownerSession.ID.String(), exp, nil
 }
 
 func (r *ownersRepo) GetByID(ctx context.Context, id int64) (*dbsqlc.Owner, error) {

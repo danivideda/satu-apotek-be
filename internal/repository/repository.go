@@ -14,7 +14,7 @@ var ownerSessionTTL = env.GetString("OWNER_SESSION_TTL", "168h")
 type Repository struct {
 	Owners interface {
 		GetByID(ctx context.Context, id int64) (*dbsqlc.Owner, error)
-		Create(ctx context.Context, username, email, passwordHash string) (ownerID int64, ownerSessionID string, err error)
+		Create(ctx context.Context, username, email, passwordHash string) (ownerID int64, ownerSessionID string, exp time.Time, err error)
 		GetByUsername(ctx context.Context, username string) (*dbsqlc.GetOwnerByUsernameRow, error)
 	}
 
@@ -57,30 +57,3 @@ func New(db *pgxpool.Pool, cs *CacheStore) Repository {
 		CacheStore:    cs,
 	}
 }
-
-// func runInTx(
-// 	ctx context.Context,
-// 	db *pgxpool.Pool,
-// 	queries *dbsqlc.Queries,
-// 	fn func(qtx *dbsqlc.Queries) (any, error),
-// ) (result any, err error) {
-// 	tx, err := db.Begin(ctx)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	qtx := queries.WithTx(tx)
-// 	defer tx.Rollback(ctx)
-
-// 	result, err = fn(qtx)
-// 	if err != nil {
-// 		return nil, err
-
-// 	}
-
-// 	err = tx.Commit(ctx)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	return result, nil
-// }
