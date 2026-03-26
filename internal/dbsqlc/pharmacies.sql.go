@@ -10,17 +10,18 @@ import (
 )
 
 const createPharmacy = `-- name: CreatePharmacy :one
-INSERT INTO pharmacies (owner_id, name) 
-VALUES ($1, $2) RETURNING id, owner_id, name, created_at, updated_at
+INSERT INTO pharmacies (owner_id, name, app_id) 
+VALUES ($1, $2, $3) RETURNING id, owner_id, name, created_at, updated_at, app_id
 `
 
 type CreatePharmacyParams struct {
 	OwnerID int64  `json:"owner_id"`
 	Name    string `json:"name"`
+	AppID   string `json:"app_id"`
 }
 
 func (q *Queries) CreatePharmacy(ctx context.Context, arg CreatePharmacyParams) (Pharmacy, error) {
-	row := q.db.QueryRow(ctx, createPharmacy, arg.OwnerID, arg.Name)
+	row := q.db.QueryRow(ctx, createPharmacy, arg.OwnerID, arg.Name, arg.AppID)
 	var i Pharmacy
 	err := row.Scan(
 		&i.ID,
@@ -28,12 +29,13 @@ func (q *Queries) CreatePharmacy(ctx context.Context, arg CreatePharmacyParams) 
 		&i.Name,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.AppID,
 	)
 	return i, err
 }
 
 const getPharmaciesByOwner = `-- name: GetPharmaciesByOwner :many
-SELECT id, owner_id, name, created_at, updated_at FROM pharmacies
+SELECT id, owner_id, name, created_at, updated_at, app_id FROM pharmacies
 WHERE owner_id = $1
 ORDER BY created_at DESC
 `
@@ -53,6 +55,7 @@ func (q *Queries) GetPharmaciesByOwner(ctx context.Context, ownerID int64) ([]Ph
 			&i.Name,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.AppID,
 		); err != nil {
 			return nil, err
 		}
@@ -62,4 +65,29 @@ func (q *Queries) GetPharmaciesByOwner(ctx context.Context, ownerID int64) ([]Ph
 		return nil, err
 	}
 	return items, nil
+}
+
+const insertAppID = `-- name: InsertAppID :one
+UPDATE pharmacies
+SET app_id = $1
+WHERE id = $2 RETURNING id, owner_id, name, created_at, updated_at, app_id
+`
+
+type InsertAppIDParams struct {
+	AppID string `json:"app_id"`
+	ID    int64  `json:"id"`
+}
+
+func (q *Queries) InsertAppID(ctx context.Context, arg InsertAppIDParams) (Pharmacy, error) {
+	row := q.db.QueryRow(ctx, insertAppID, arg.AppID, arg.ID)
+	var i Pharmacy
+	err := row.Scan(
+		&i.ID,
+		&i.OwnerID,
+		&i.Name,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.AppID,
+	)
+	return i, err
 }

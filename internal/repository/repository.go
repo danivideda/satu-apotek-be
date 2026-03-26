@@ -52,7 +52,7 @@ func New(db *pgxpool.Pool, cs *CacheStore) Repository {
 		Owners:        &ownersRepo{db: db, queries: q},
 		Users:         &usersRepo{queries: q},
 		OwnerSessions: &ownerSessionsRepo{queries: q},
-		Pharmacies:    &pharmaciesRepo{queries: q},
+		Pharmacies:    &pharmaciesRepo{db: db, queries: q},
 		PharmacyCode:  &pharmacyCodesRepo{queries: q},
 		CacheStore:    cs,
 	}

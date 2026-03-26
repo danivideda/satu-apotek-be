@@ -12,6 +12,13 @@ type pharmacyHandler struct {
 	repo repository.Repository
 }
 
+type pharmacyJSON struct {
+	AppID     any `json:"app_id"`
+	Name      any `json:"name"`
+	CreatedAt any `json:"created_at"`
+	UpdatedAt any `json:"updated_at"`
+}
+
 func (h *pharmacyHandler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -21,9 +28,6 @@ func (h *pharmacyHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO:
-	// 1. input necessary data about the Apotek
-	// 2. Apotek Name
 	var payload struct {
 		ApotekName string `json:"apotek_name"`
 	}
@@ -34,17 +38,18 @@ func (h *pharmacyHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	// TODO:
 	// 1. Create new Apotek under the OwnerID relation in DB table
-	// 2. Return ApotekID
+	// 2. Return AppID
 	apotek, err := h.repo.Pharmacies.Create(ctx, authOwner.ID, payload.ApotekName)
 	if err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}
 
-	res := map[string]any{
-		"owner_id":    authOwner.ID,
-		"apotek_name": payload.ApotekName,
-		"apotek_id":   apotek.ID,
+	res := pharmacyJSON{
+		AppID:     apotek.AppID,
+		Name:      apotek.Name,
+		CreatedAt: apotek.CreatedAt,
+		UpdatedAt: apotek.UpdatedAt,
 	}
 	if err := json.ResponseCreated(w, res); err != nil {
 		json.ResponseInternalServerError(w, r, err)
@@ -66,7 +71,17 @@ func (h *pharmacyHandler) GetByOwner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := json.ResponseOK(w, pharmacies); err != nil {
+	res := []pharmacyJSON{}
+	for _, pharmacy := range *pharmacies {
+		item := pharmacyJSON{
+			AppID:     pharmacy.AppID,
+			Name:      pharmacy.Name,
+			CreatedAt: pharmacy.CreatedAt,
+			UpdatedAt: pharmacy.UpdatedAt,
+		}
+		res = append(res, item)
+	}
+	if err := json.ResponseOK(w, res); err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}

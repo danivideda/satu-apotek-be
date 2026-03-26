@@ -9,6 +9,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/patrickmn/go-cache v2.1.0+incompatible
+	github.com/sqids/sqids-go v0.4.1
 )
 
 require (
