@@ -50,6 +50,10 @@ type PharmacySession struct {
 	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
 }
 
+type SqidsConfig struct {
+	Alphabets string `json:"alphabets"`
+}
+
 type User struct {
 	ID           int64              `json:"id"`
 	Username     string             `json:"username"`

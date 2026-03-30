@@ -31,6 +31,3 @@ export CRON_DURATION_CLEAR_APTK_CODE="10s"
 
 # CSRF secret
 export CSRF_SECRET="gkeidgVznqRuazfmqVXuwdcNY4doNAafAi5MBmHDBcc="
-
-# Sqids alphabet list
-export SQIDS_LIST="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"

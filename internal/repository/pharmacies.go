@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/danivideda/satu-apotek-be/internal/dbsqlc"
-	"github.com/danivideda/satu-apotek-be/internal/env"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sqids/sqids-go"
 )
@@ -30,8 +29,14 @@ func (r *pharmaciesRepo) Create(ctx context.Context, ownerID int64, name string)
 		return nil, err
 	}
 
+	alphabets, err := qtx.GetAlphabets(ctx)
+	if err != nil {
+		err := fmt.Errorf("sqids config not set, %s", err)
+		return nil, err
+	}
+	
 	sq, err := sqids.New(sqids.Options{
-		Alphabet:  env.GetString("SQIDS_LIST", "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"),
+		Alphabet:  alphabets,
 		MinLength: 5,
 	})
 	if err != nil {
