@@ -69,6 +69,7 @@ func (app *application) mount() http.Handler {
 				r.Get("/", app.handler.Pharmacy.GetByOwner)
 				r.Post("/create", app.handler.Pharmacy.Create)
 				r.Post("/disconnect", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("/disconnect")) })
+				r.Post("/create-code", app.handler.Pharmacy.CreateCode)
 			})
 			r.Post("/connect", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("/connect")) })
 		})

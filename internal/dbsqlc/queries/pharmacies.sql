@@ -1,3 +1,11 @@
+-- name: GetPharmacyByID :one
+SELECT * FROM pharmacies
+WHERE id = @id;
+
+-- name: GetPharmacyByAppID :one
+SELECT * FROM pharmacies
+WHERE app_id = @app_id;
+
 -- name: CreatePharmacy :one
 INSERT INTO pharmacies (owner_id, name, app_id) 
 VALUES ($1, $2, $3) RETURNING *;

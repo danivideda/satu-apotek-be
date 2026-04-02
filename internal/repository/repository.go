@@ -31,14 +31,13 @@ type Repository struct {
 	}
 
 	Pharmacies interface {
-		Create(ctx context.Context, ownerID int64, name string) (*dbsqlc.Pharmacy, error)
-		GetByOwner(ctx context.Context, ownerID int64) (*[]dbsqlc.Pharmacy, error)
-	}
-
-	PharmacyCode interface {
-		Get(ctx context.Context, apotekID int64) (*dbsqlc.PharmacyCode, error)
+		GetByID(ctx context.Context, pharmacyID int64) (*dbsqlc.Pharmacy, error)
+		GetByAppID(ctx context.Context, appID string) (*dbsqlc.Pharmacy, error)
 		GetByCode(ctx context.Context, code string) (*dbsqlc.PharmacyCode, error)
-		Upsert(ctx context.Context, apotekID int64, code string) (*dbsqlc.PharmacyCode, error)
+		GetByOwnerID(ctx context.Context, ownerID int64) (*[]dbsqlc.Pharmacy, error)
+		Create(ctx context.Context, ownerID int64, name string) (*dbsqlc.Pharmacy, error)
+		UpsertCode(ctx context.Context, apotekID int64, code string) (*dbsqlc.PharmacyCode, error)
+		GetCodeByID(ctx context.Context, apotekID int64) (*dbsqlc.PharmacyCode, error)
 		DeleteExpired(ctx context.Context) (*[]dbsqlc.PharmacyCode, error)
 	}
 
@@ -53,7 +52,6 @@ func New(db *pgxpool.Pool, cs *CacheStore) Repository {
 		Users:         &usersRepo{queries: q},
 		OwnerSessions: &ownerSessionsRepo{queries: q},
 		Pharmacies:    &pharmaciesRepo{db: db, queries: q},
-		PharmacyCode:  &pharmacyCodesRepo{queries: q},
 		CacheStore:    cs,
 	}
 }

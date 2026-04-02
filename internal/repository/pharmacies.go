@@ -2,9 +2,15 @@ package repository
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
+	"time"
 
 	"github.com/danivideda/satu-apotek-be/internal/dbsqlc"
+	"github.com/danivideda/satu-apotek-be/internal/env"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sqids/sqids-go"
 )
@@ -12,6 +18,43 @@ import (
 type pharmaciesRepo struct {
 	db      *pgxpool.Pool
 	queries *dbsqlc.Queries
+}
+
+func (r *pharmaciesRepo) GetByID(ctx context.Context, pharmacyID int64) (*dbsqlc.Pharmacy, error) {
+	pharmacy, err := r.queries.GetPharmacyByID(ctx, pharmacyID)
+	if err != nil {
+		return nil, err
+	}
+	return &pharmacy, nil
+}
+
+func (r *pharmaciesRepo) GetByAppID(ctx context.Context, AppID string) (*dbsqlc.Pharmacy, error) {
+	pharmacy, err := r.queries.GetPharmacyByAppID(ctx, AppID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	return &pharmacy, nil
+}
+
+
+func (r *pharmaciesRepo) GetByCode(ctx context.Context, code string) (*dbsqlc.PharmacyCode, error) {
+	apotekCode, err := r.queries.GetApotekCodeByCode(ctx, code)
+	if err != nil {
+		return nil, err
+	}
+
+	return &apotekCode, nil
+}
+
+func (r *pharmaciesRepo) GetByOwnerID(ctx context.Context, ownerID int64) (*[]dbsqlc.Pharmacy, error) {
+	pharmacies, err := r.queries.GetPharmaciesByOwner(ctx, ownerID)
+	if err != nil {
+		return nil, err
+	}
+	return &pharmacies, nil
 }
 
 func (r *pharmaciesRepo) Create(ctx context.Context, ownerID int64, name string) (*dbsqlc.Pharmacy, error) {
@@ -34,7 +77,7 @@ func (r *pharmaciesRepo) Create(ctx context.Context, ownerID int64, name string)
 		err := fmt.Errorf("sqids config not set, %s", err)
 		return nil, err
 	}
-	
+
 	sq, err := sqids.New(sqids.Options{
 		Alphabet:  alphabets,
 		MinLength: 5,
@@ -54,7 +97,6 @@ func (r *pharmaciesRepo) Create(ctx context.Context, ownerID int64, name string)
 	}
 	pharmacyWithAppID, err := qtx.InsertAppID(ctx, params2)
 	if err != nil {
-		fmt.Println("ERR: no 2")
 		return nil, err
 	}
 
@@ -65,10 +107,48 @@ func (r *pharmaciesRepo) Create(ctx context.Context, ownerID int64, name string)
 	return &pharmacyWithAppID, nil
 }
 
-func (r *pharmaciesRepo) GetByOwner(ctx context.Context, ownerID int64) (*[]dbsqlc.Pharmacy, error) {
-	pharmacies, err := r.queries.GetPharmaciesByOwner(ctx, ownerID)
+func (r *pharmaciesRepo) GetCodeByID(ctx context.Context, pharmacyID int64) (*dbsqlc.PharmacyCode, error) {
+	apotekCode, err := r.queries.GetApotekCode(ctx, pharmacyID)
 	if err != nil {
 		return nil, err
 	}
-	return &pharmacies, nil
+
+	return &apotekCode, nil
+}
+
+func (r *pharmaciesRepo) UpsertCode(ctx context.Context, pharmacyID int64, code string) (*dbsqlc.PharmacyCode, error) {
+	ttl, err := time.ParseDuration(env.GetString("CODE_TTL", "5m"))
+	if err != nil {
+		return nil, err
+	}
+	exp := pgtype.Timestamptz{
+		Time:  time.Now().Add(ttl),
+		Valid: true,
+	}
+	params := dbsqlc.UpsertApotekCodeParams{
+		ApotekID:  pharmacyID,
+		Code:      code,
+		ExpiresAt: exp,
+	}
+	apotekCode, err := r.queries.UpsertApotekCode(ctx, params)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			if pgErr.Code == "23505" {
+				return nil, ErrDuplicateValue
+			}
+		}
+		return nil, err
+	}
+
+	return &apotekCode, nil
+}
+
+func (r *pharmaciesRepo) DeleteExpired(ctx context.Context) (*[]dbsqlc.PharmacyCode, error) {
+	apotekCode, err := r.queries.DeleteExpiredApotekCode(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &apotekCode, nil
 }
