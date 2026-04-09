@@ -14,8 +14,8 @@ type ownerSessionsRepo struct {
 	queries *dbsqlc.Queries
 }
 
-func (s *ownerSessionsRepo) Create(ctx context.Context, ownerID int64, exp time.Time) (*dbsqlc.OwnerSession, error) {
-	ownerSession, err := s.queries.CreateOwnerSession(ctx, dbsqlc.CreateOwnerSessionParams{
+func (r *ownerSessionsRepo) Create(ctx context.Context, ownerID int64, exp time.Time) (*dbsqlc.OwnerSession, error) {
+	ownerSession, err := r.queries.CreateOwnerSession(ctx, dbsqlc.CreateOwnerSessionParams{
 		OwnerID:   ownerID,
 		ExpiresAt: pgtype.Timestamptz{Time: exp, Valid: true},
 	},
@@ -27,13 +27,13 @@ func (s *ownerSessionsRepo) Create(ctx context.Context, ownerID int64, exp time.
 	return &ownerSession, nil
 }
 
-func (s *ownerSessionsRepo) Update(ctx context.Context, sessionID string, exp time.Time) (*dbsqlc.OwnerSession, error) {
+func (r *ownerSessionsRepo) Update(ctx context.Context, sessionID string, exp time.Time) (*dbsqlc.OwnerSession, error) {
 	var sessionUUID pgtype.UUID
 	if err := sessionUUID.Scan(sessionID); err != nil {
 		return nil, err
 	}
 
-	ownerSession, err := s.queries.UpdateOwnerSession(ctx, dbsqlc.UpdateOwnerSessionParams{
+	ownerSession, err := r.queries.UpdateOwnerSession(ctx, dbsqlc.UpdateOwnerSessionParams{
 		SessionID: sessionUUID,
 		ExpiresAt: pgtype.Timestamptz{Time: exp, Valid: true},
 		UpdatedAt: pgtype.Timestamptz{Time: time.Now(), Valid: true},
@@ -49,13 +49,13 @@ func (s *ownerSessionsRepo) Update(ctx context.Context, sessionID string, exp ti
 	return &ownerSession, nil
 }
 
-func (s *ownerSessionsRepo) Get(ctx context.Context, sessionID string) (*dbsqlc.OwnerSession, error) {
+func (r *ownerSessionsRepo) Get(ctx context.Context, sessionID string) (*dbsqlc.OwnerSession, error) {
 	var sessionUUID pgtype.UUID
 	if err := sessionUUID.Scan(sessionID); err != nil {
 		return nil, err
 	}
 
-	ownerSession, err := s.queries.GetOwnerSession(ctx, sessionUUID)
+	ownerSession, err := r.queries.GetOwnerSession(ctx, sessionUUID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrNotFound
@@ -66,20 +66,20 @@ func (s *ownerSessionsRepo) Get(ctx context.Context, sessionID string) (*dbsqlc.
 	return &ownerSession, nil
 }
 
-func (s *ownerSessionsRepo) Delete(ctx context.Context, sessionID string) (*dbsqlc.OwnerSession, error) {
+func (r *ownerSessionsRepo) Delete(ctx context.Context, sessionID string) (*dbsqlc.OwnerSession, error) {
 	var sessionUUID pgtype.UUID
 	if err := sessionUUID.Scan(sessionID); err != nil {
 		return nil, err
 	}
-	deletedOwnerSession, err := s.queries.DeleteOwnerSession(ctx, sessionUUID)
+	deletedOwnerSession, err := r.queries.DeleteOwnerSession(ctx, sessionUUID)
 	if err != nil {
 		return nil, err
 	}
 	return &deletedOwnerSession, nil
 }
 
-func (s *ownerSessionsRepo) DeleteExpired(ctx context.Context) (*[]dbsqlc.OwnerSession, error) {
-	items, err := s.queries.DeleteExpiredOwnerSessions(ctx)
+func (r *ownerSessionsRepo) DeleteExpired(ctx context.Context) (*[]dbsqlc.OwnerSession, error) {
+	items, err := r.queries.DeleteExpiredOwnerSessions(ctx)
 	if err != nil {
 		return nil, err
 	}

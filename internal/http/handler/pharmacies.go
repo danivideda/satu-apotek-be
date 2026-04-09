@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
 	"github.com/danivideda/satu-apotek-be/internal/http/middleware"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
+	"github.com/danivideda/satu-apotek-be/internal/service"
 )
 
 type pharmacyHandler struct {
@@ -90,10 +92,51 @@ func (h *pharmacyHandler) GetByOwner(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *pharmacyHandler) Connect(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	// TODO:
 	// Connect the Pharmacy to the browser
-	// 1. Find the code associated in pharmacy_codes table
-	// 2. Send the pharmacy_session cookies to the user
+
+	// 1. Client send a request to connect a pharmacy with a code
+	var payload struct {
+		Code string `json:"code"`
+	}
+	if err := json.Read(w, r, &payload); err != nil {
+		json.ResponseBadRequest(w, r, err)
+		return
+	}
+
+	// 2. Find the code associated in pharmacy_codes table
+	pharmacyCode, err := h.repo.Pharmacies.GetCodeByCode(ctx, payload.Code)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			json.ResponseBadRequest(w, r, fmt.Errorf("%w: no pharmacy_code matched", err))
+		} else {
+			json.ResponseInternalServerError(w, r, err)
+		}
+		return
+	}
+	// --check if expired
+	if time.Now().After(pharmacyCode.ExpiresAt.Time) {
+		json.ResponseBadRequest(w, r, ErrPharmacyCodeExpired)
+		return
+	}
+
+	// 3. Create pharmacy_sessions and send the pharmacy_session cookies to the user
+	pharmacySession, err := h.repo.PharmacySessions.Create(ctx, pharmacyCode.ApotekID, time.Now().Add(5 * time.Minute))
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			json.ResponseBadRequest(w, r, err)
+		} else {
+			json.ResponseInternalServerError(w, r, err)
+		}
+		return
+	}
+
+	service.SetPharmacyCookies(w, pharmacySession.ID.String(), time.Now().Add(5 * time.Minute))
+	if err := json.ResponseNoContent(w); err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
 }
 
 func (h *pharmacyHandler) CreateCode(w http.ResponseWriter, r *http.Request) {

@@ -30,10 +30,18 @@ type Repository struct {
 		DeleteExpired(ctx context.Context) (*[]dbsqlc.OwnerSession, error)
 	}
 
+	PharmacySessions interface {
+		Create(ctx context.Context, pharmacyID int64, exp time.Time) (*dbsqlc.PharmacySession, error)
+		Update(ctx context.Context, sessionID string, exp time.Time) (*dbsqlc.PharmacySession, error)
+		Get(ctx context.Context, sessionID string) (*dbsqlc.PharmacySession, error)
+		Delete(ctx context.Context, sessionID string) (*dbsqlc.PharmacySession, error)
+		DeleteExpired(ctx context.Context) (*[]dbsqlc.PharmacySession, error)
+	}
+
 	Pharmacies interface {
 		GetByID(ctx context.Context, pharmacyID int64) (*dbsqlc.Pharmacy, error)
 		GetByAppID(ctx context.Context, appID string) (*dbsqlc.Pharmacy, error)
-		GetByCode(ctx context.Context, code string) (*dbsqlc.PharmacyCode, error)
+		GetCodeByCode(ctx context.Context, code string) (*dbsqlc.PharmacyCode, error)
 		GetByOwnerID(ctx context.Context, ownerID int64) (*[]dbsqlc.Pharmacy, error)
 		Create(ctx context.Context, ownerID int64, name string) (*dbsqlc.Pharmacy, error)
 		UpsertCode(ctx context.Context, apotekID int64, code string) (*dbsqlc.PharmacyCode, error)
@@ -48,10 +56,11 @@ func New(db *pgxpool.Pool, cs *CacheStore) Repository {
 	q := dbsqlc.New(db)
 
 	return Repository{
-		Owners:        &ownersRepo{db: db, queries: q},
-		Users:         &usersRepo{queries: q},
-		OwnerSessions: &ownerSessionsRepo{queries: q},
-		Pharmacies:    &pharmaciesRepo{db: db, queries: q},
-		CacheStore:    cs,
+		Owners:           &ownersRepo{db: db, queries: q},
+		Users:            &usersRepo{queries: q},
+		OwnerSessions:    &ownerSessionsRepo{queries: q},
+		PharmacySessions: &pharmacySessionsRepo{queries: q},
+		Pharmacies:       &pharmaciesRepo{db: db, queries: q},
+		CacheStore:       cs,
 	}
 }

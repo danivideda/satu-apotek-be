@@ -71,7 +71,7 @@ func (app *application) mount() http.Handler {
 				r.Post("/disconnect", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("/disconnect")) })
 				r.Post("/create-code", app.handler.Pharmacy.CreateCode)
 			})
-			r.Post("/connect", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("/connect")) })
+			r.Post("/connect", app.handler.Pharmacy.Connect)
 		})
 
 		r.Route("/users", func(r chi.Router) {

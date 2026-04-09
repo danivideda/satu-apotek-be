@@ -50,7 +50,7 @@ func (h *authHandler) OwnerRegister(w http.ResponseWriter, r *http.Request) {
 
 	res := map[string]any{
 		"owner_id":      ownerID,
-		"owner_session": ownerSessionID,
+		// "owner_session": ownerSessionID, **SESSION SHOULD NOT BE INCLUDED IN ANY JSON PAYLOAD***
 	}
 
 	if err := json.ResponseCreated(w, res); err != nil {

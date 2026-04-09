@@ -9,6 +9,7 @@ import (
 
 	"github.com/danivideda/satu-apotek-be/internal/dbsqlc"
 	"github.com/danivideda/satu-apotek-be/internal/env"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -40,13 +41,16 @@ func (r *pharmaciesRepo) GetByAppID(ctx context.Context, AppID string) (*dbsqlc.
 }
 
 
-func (r *pharmaciesRepo) GetByCode(ctx context.Context, code string) (*dbsqlc.PharmacyCode, error) {
-	apotekCode, err := r.queries.GetApotekCodeByCode(ctx, code)
+func (r *pharmaciesRepo) GetCodeByCode(ctx context.Context, code string) (*dbsqlc.PharmacyCode, error) {
+	pharmacyCode, err := r.queries.GetApotekCodeByCode(ctx, code)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrNotFound
+		}
 		return nil, err
 	}
 
-	return &apotekCode, nil
+	return &pharmacyCode, nil
 }
 
 func (r *pharmaciesRepo) GetByOwnerID(ctx context.Context, ownerID int64) (*[]dbsqlc.Pharmacy, error) {

@@ -49,3 +49,15 @@ func DeleteOwnerCookies(w http.ResponseWriter) {
 	}
 	http.SetCookie(w, csrf)
 }
+
+func SetPharmacyCookies(w http.ResponseWriter, sessionID string, exp time.Time) {
+	c := &http.Cookie{
+		Name:    "pharmacy_session",
+		Value:   sessionID,
+		Path:    "/",
+		Expires: exp,
+		Secure:   false,
+		HttpOnly: true,
+	}
+	http.SetCookie(w, c)
+}
