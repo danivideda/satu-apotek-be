@@ -10,7 +10,7 @@ import (
 type CacheStore struct {
 	OwnerSessions  *cache.Cache
 	UserSessions   *cache.Cache
-	ApotekSessions *cache.Cache
+	PharmacySessions *cache.Cache
 }
 
 func NewCacheStore() (*CacheStore, error) {
@@ -23,7 +23,7 @@ func NewCacheStore() (*CacheStore, error) {
 	cs := &CacheStore{
 		OwnerSessions:  cache.New(cacheTTL, 2*cacheTTL),
 		UserSessions:   cache.New(cacheTTL, 2*cacheTTL),
-		ApotekSessions: cache.New(cacheTTL, 2*cacheTTL),
+		PharmacySessions: cache.New(cacheTTL, 2*cacheTTL),
 	}
 
 	return cs, nil

@@ -12,29 +12,31 @@ import (
 	"github.com/danivideda/satu-apotek-be/internal/service"
 )
 
-const authOwnerCtx = "AuthOwnerSessionCtx"
+const (
+	authOwnerCtx    = "AuthOwnerCtx"
+	authPharmacyCtx = "AuthPharmacyCtx"
+)
+
+var (
+	ownerSessionTTL    = env.GetString("OWNER_SESSION_TTL", "168h")
+	pharmacySessionTTL = env.GetString("PHARMACY_SESSION_TTL", "168h")
+)
 
 type authOwner struct {
 	ID        int64
 	SessionID string
 }
 
-func AuthOwnerFromCtx(ctx context.Context) (*authOwner, error) {
-	authOwner, ok := ctx.Value(authOwnerCtx).(authOwner)
-	if !ok {
-		return nil, errors.New("AuthOwnerCtx type assertion missmatch")
-	}
-	return &authOwner, nil
+type authPharmacy struct {
+	ID        int64
+	SessionID string
 }
-
-var (
-	ownerSessionTTL = env.GetString("OWNER_SESSION_TTL", "168h")
-)
 
 func (m *AppMiddleware) AuthOwner(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
+		// 1. Get session from cookie
 		sessionCookie, err := r.Cookie("owner_session")
 		if err != nil {
 			json.ResponseUnauthorized(w, r, err)
@@ -46,7 +48,7 @@ func (m *AppMiddleware) AuthOwner(next http.Handler) http.Handler {
 		if val, found := m.repo.CacheStore.OwnerSessions.Get(sessionID); found {
 			ownerID, ok := val.(int64)
 			if !ok {
-				json.ResponseInternalServerError(w, r, errors.New("incorrect type assertion of OwnerID"))
+				json.ResponseInternalServerError(w, r, errors.New("type assertion failed, ownerID is not int64"))
 				return
 			}
 
@@ -88,4 +90,78 @@ func (m *AppMiddleware) AuthOwner(next http.Handler) http.Handler {
 	}
 
 	return http.HandlerFunc(fn)
+}
+
+func (m *AppMiddleware) AuthPharmacy(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
+		sessionCookie, err := r.Cookie("pharmacy_session")
+		if err != nil {
+			json.ResponseUnauthorized(w, r, err)
+			return
+		}
+		sessionID := sessionCookie.Value
+
+		if val, found := m.repo.CacheStore.PharmacySessions.Get(sessionID); found {
+			pharmacyID, ok := val.(int64)
+			if !ok {
+				json.ResponseInternalServerError(w, r, errors.New("type assertion failed, pharmacyID is not int64"))
+				return
+			}
+
+			authPharmacy := authPharmacy{
+				ID:        pharmacyID,
+				SessionID: sessionID,
+			}
+			ctx := context.WithValue(ctx, authPharmacyCtx, authPharmacy)
+			next.ServeHTTP(w, r.WithContext(ctx))
+			return
+		}
+
+		ttl, err := time.ParseDuration(pharmacySessionTTL)
+		if err != nil {
+			json.ResponseInternalServerError(w, r, err)
+			return
+		}
+
+		pharmacySession, err := m.repo.PharmacySessions.Update(ctx, sessionID, time.Now().Add(ttl))
+		if err != nil {
+			if errors.Is(err, repository.ErrNotFound) {
+				json.ResponseUnauthorized(w, r, err)
+			} else {
+				json.ResponseInternalServerError(w, r, err)
+			}
+			return
+		}
+		// update sessionID
+		sessionID = pharmacySession.ID.String()
+		m.repo.CacheStore.PharmacySessions.SetDefault(sessionID, pharmacySession.PharmacyID)
+		service.SetPharmacyCookies(w, sessionID, pharmacySession.ExpiresAt.Time)
+
+		authPharmacy := authPharmacy{
+			ID:        pharmacySession.PharmacyID,
+			SessionID: sessionID,
+		}
+		ctx = context.WithValue(ctx, authPharmacyCtx, authPharmacy)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	}
+
+	return http.HandlerFunc(fn)
+}
+
+func AuthOwnerFromCtx(ctx context.Context) (*authOwner, error) {
+	authOwner, ok := ctx.Value(authOwnerCtx).(authOwner)
+	if !ok {
+		return nil, errors.New("AuthOwnerCtx type assertion missmatch")
+	}
+	return &authOwner, nil
+}
+
+func AuthPharmacyFromCtx(ctx context.Context) (*authPharmacy, error) {
+	authPharmacy, ok := ctx.Value(authPharmacyCtx).(authPharmacy)
+	if !ok {
+		return nil, errors.New("AuthPharmacyCtx type assertion missmatch")
+	}
+	return &authPharmacy, nil
 }

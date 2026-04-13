@@ -122,7 +122,7 @@ func (h *pharmacyHandler) Connect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 3. Create pharmacy_sessions and send the pharmacy_session cookies to the user
-	pharmacySession, err := h.repo.PharmacySessions.Create(ctx, pharmacyCode.ApotekID, time.Now().Add(5 * time.Minute))
+	pharmacySession, err := h.repo.PharmacySessions.Create(ctx, pharmacyCode.ApotekID, time.Now().Add(5*time.Minute))
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			json.ResponseBadRequest(w, r, err)
@@ -132,7 +132,9 @@ func (h *pharmacyHandler) Connect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	service.SetPharmacyCookies(w, pharmacySession.ID.String(), time.Now().Add(5 * time.Minute))
+	service.SetPharmacyCookies(w, pharmacySession.ID.String(), time.Now().Add(5*time.Minute))
+	h.repo.CacheStore.PharmacySessions.SetDefault(pharmacySession.ID.String(), pharmacyCode.ApotekID)
+
 	if err := json.ResponseNoContent(w); err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return
@@ -218,6 +220,27 @@ func (h *pharmacyHandler) CreateCode(w http.ResponseWriter, r *http.Request) {
 		ExpiredAt: pharmacyCode.ExpiresAt.Time,
 	}
 	if err := json.ResponseCreated(w, res); err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+}
+
+func (h *pharmacyHandler) GetLanding(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	authPharmacy, err := middleware.AuthPharmacyFromCtx(ctx)
+	if err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+
+	res := struct {
+		PharmacyID any `json:"pharmacy_id"`
+		SessionID  any `json:"session_id"`
+	}{
+		PharmacyID: authPharmacy.ID,
+		SessionID:  authPharmacy.SessionID,
+	}
+	if err := json.ResponseOK(w, res); err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}

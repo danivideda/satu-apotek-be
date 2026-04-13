@@ -52,7 +52,7 @@ func DeleteOwnerCookies(w http.ResponseWriter) {
 
 func SetPharmacyCookies(w http.ResponseWriter, sessionID string, exp time.Time) {
 	c := &http.Cookie{
-		Name:    "app_session",
+		Name:    "pharmacy_session",
 		Value:   sessionID,
 		Path:    "/",
 		Expires: exp,
