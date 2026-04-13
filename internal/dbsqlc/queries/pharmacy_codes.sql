@@ -19,3 +19,7 @@ RETURNING *;
 -- name: DeleteExpiredApotekCode :many
 DELETE FROM pharmacy_codes
 WHERE expires_at < NOW() RETURNING *;
+
+-- name: DeletePharmacyCode :one
+DELETE FROM pharmacy_codes
+WHERE code = @code RETURNING *;

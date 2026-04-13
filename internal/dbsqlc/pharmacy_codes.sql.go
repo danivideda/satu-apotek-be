@@ -66,6 +66,24 @@ func (q *Queries) DeleteExpiredApotekCode(ctx context.Context) ([]PharmacyCode, 
 	return items, nil
 }
 
+const deletePharmacyCode = `-- name: DeletePharmacyCode :one
+DELETE FROM pharmacy_codes
+WHERE code = $1 RETURNING apotek_id, code, expires_at, created_at, updated_at
+`
+
+func (q *Queries) DeletePharmacyCode(ctx context.Context, code string) (PharmacyCode, error) {
+	row := q.db.QueryRow(ctx, deletePharmacyCode, code)
+	var i PharmacyCode
+	err := row.Scan(
+		&i.ApotekID,
+		&i.Code,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getApotekCode = `-- name: GetApotekCode :one
 SELECT apotek_id, code, expires_at, created_at, updated_at FROM pharmacy_codes
 WHERE apotek_id = $1

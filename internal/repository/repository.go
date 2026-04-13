@@ -46,7 +46,8 @@ type Repository struct {
 		Create(ctx context.Context, ownerID int64, name string) (*dbsqlc.Pharmacy, error)
 		UpsertCode(ctx context.Context, apotekID int64, code string) (*dbsqlc.PharmacyCode, error)
 		GetCodeByID(ctx context.Context, apotekID int64) (*dbsqlc.PharmacyCode, error)
-		DeleteExpired(ctx context.Context) (*[]dbsqlc.PharmacyCode, error)
+		DeleteExpiredCode(ctx context.Context) (*[]dbsqlc.PharmacyCode, error)
+		DeleteCode(ctx context.Context, code string) (*dbsqlc.PharmacyCode, error)
 	}
 
 	CacheStore *CacheStore

@@ -40,7 +40,6 @@ func (r *pharmaciesRepo) GetByAppID(ctx context.Context, AppID string) (*dbsqlc.
 	return &pharmacy, nil
 }
 
-
 func (r *pharmaciesRepo) GetCodeByCode(ctx context.Context, code string) (*dbsqlc.PharmacyCode, error) {
 	pharmacyCode, err := r.queries.GetApotekCodeByCode(ctx, code)
 	if err != nil {
@@ -114,6 +113,9 @@ func (r *pharmaciesRepo) Create(ctx context.Context, ownerID int64, name string)
 func (r *pharmaciesRepo) GetCodeByID(ctx context.Context, pharmacyID int64) (*dbsqlc.PharmacyCode, error) {
 	apotekCode, err := r.queries.GetApotekCode(ctx, pharmacyID)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrNotFound
+		}
 		return nil, err
 	}
 
@@ -148,7 +150,16 @@ func (r *pharmaciesRepo) UpsertCode(ctx context.Context, pharmacyID int64, code 
 	return &apotekCode, nil
 }
 
-func (r *pharmaciesRepo) DeleteExpired(ctx context.Context) (*[]dbsqlc.PharmacyCode, error) {
+func (r *pharmaciesRepo) DeleteCode(ctx context.Context, code string) (*dbsqlc.PharmacyCode, error) {
+	pharmacyCode, err := r.queries.DeletePharmacyCode(ctx, code)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pharmacyCode, nil
+}
+
+func (r *pharmaciesRepo) DeleteExpiredCode(ctx context.Context) (*[]dbsqlc.PharmacyCode, error) {
 	apotekCode, err := r.queries.DeleteExpiredApotekCode(ctx)
 	if err != nil {
 		return nil, err

@@ -93,9 +93,6 @@ func (h *pharmacyHandler) GetByOwner(w http.ResponseWriter, r *http.Request) {
 
 func (h *pharmacyHandler) Connect(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	// TODO:
-	// Connect the Pharmacy to the browser
-
 	// 1. Client send a request to connect a pharmacy with a code
 	var payload struct {
 		Code string `json:"code"`
@@ -121,7 +118,13 @@ func (h *pharmacyHandler) Connect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 3. Create pharmacy_sessions and send the pharmacy_session cookies to the user
+	// 3. Delete pharmacy code after used
+	if _, err := h.repo.Pharmacies.DeleteCode(ctx, pharmacyCode.Code); err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+
+	// 4. Create pharmacy_sessions and send the pharmacy_session cookies to the user
 	pharmacySession, err := h.repo.PharmacySessions.Create(ctx, pharmacyCode.ApotekID, time.Now().Add(5*time.Minute))
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
@@ -174,7 +177,7 @@ func (h *pharmacyHandler) CreateCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 3. Create new code for connection in pharmacy_codes table
+	// 3. Create new pharmacy code in pharmacy_codes table
 	exec := func() (*dbsqlc.PharmacyCode, error) {
 		newCode, err := h.generateApotekCode()
 		if err != nil {
