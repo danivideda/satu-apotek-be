@@ -18,6 +18,9 @@ func (r *usersRepo) Create(ctx context.Context, username, passwordHash string, p
 	}
 	user, err := r.queries.CreateUser(ctx, params)
 	if err != nil {
+		if isDuplicateError(err) {
+			return nil, ErrDuplicateValue
+		}
 		return nil, err
 	}
 

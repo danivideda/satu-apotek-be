@@ -80,6 +80,8 @@ func (app *application) mount() http.Handler {
 
 		r.Route("/users", func(r chi.Router) {
 			r.Group(func(r chi.Router) {
+				r.Use(app.middleware.AuthOwner)
+				r.Use(app.middleware.CSRFProtectionOwner)
 				r.Post("/create", app.handler.User.Create)
 			})
 		})
