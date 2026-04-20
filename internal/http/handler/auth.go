@@ -3,7 +3,6 @@ package handler
 import (
 	"fmt"
 	"net/http"
-	"slices"
 	"time"
 
 	"github.com/alexedwards/argon2id"
@@ -176,13 +175,7 @@ func (h *authHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}
-	userExists := slices.ContainsFunc(authPharmacy.Users, func(u repository.UserCache) bool {
-		if u.ID == user.ID {
-			return true
-		}
-		return false
-	})
-	if !userExists {
+	if !service.UserExistsInPharmacy(authPharmacy.Users, user.ID) {
 		json.ResponseForbidden(w, r, fmt.Errorf("user doesn't belong to current authd pharmacy"))
 		return
 	}

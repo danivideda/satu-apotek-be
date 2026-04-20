@@ -2,11 +2,9 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/danivideda/satu-apotek-be/internal/dbsqlc"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -34,7 +32,7 @@ func (r *userSessionsRepo) Update(ctx context.Context, sessionID string, exp tim
 
 	userSession, err := r.queries.UpdateUserSession(ctx, dbsqlc.UpdateUserSessionParams{
 		SessionID: sessionUUID,
-		ExpiresAt: pgtype.Timestamptz{Time: time.Now(), Valid: true},
+		ExpiresAt: pgtype.Timestamptz{Time: exp, Valid: true},
 		UpdatedAt: pgtype.Timestamptz{Time: time.Now(), Valid: true},
 	})
 	if err != nil {
@@ -52,7 +50,7 @@ func (r *userSessionsRepo) Get(ctx context.Context, sessionID string) (*dbsqlc.U
 
 	userSession, err := r.queries.GetUserSession(ctx, sessionUUID)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if isNotFoundError(err) {
 			return nil, ErrNotFound
 		} else {
 			return nil, err

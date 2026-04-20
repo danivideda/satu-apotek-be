@@ -85,6 +85,13 @@ func (app *application) mount() http.Handler {
 				r.Use(app.middleware.CSRFProtectionOwner)
 				r.Post("/create", app.handler.User.Create)
 			})
+			r.Group(func(r chi.Router) {
+				r.Use(app.middleware.AuthPharmacy)
+				r.Use(app.middleware.AuthUser)
+				r.Use(app.middleware.CSRFProtectionUser)
+				r.Get("/profile", app.handler.User.GetProfile)
+				r.Post("/profile/edit/save", func(w http.ResponseWriter, r *http.Request) {w.Write([]byte("edit profile save"))})
+			})
 		})
 
 		r.Route("/owners", func(r chi.Router) {

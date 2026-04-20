@@ -78,3 +78,10 @@ func (h *userHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+func (h *userHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
+	if err := json.ResponseOK(w, "from profile"); err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+}

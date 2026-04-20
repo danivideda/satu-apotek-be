@@ -36,3 +36,32 @@ func (m *AppMiddleware) CSRFProtectionOwner(next http.Handler) http.Handler {
 	}
 	return http.HandlerFunc(fn)
 }
+
+func (m *AppMiddleware) CSRFProtectionUser(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		// CSRF Token is not required on GET request
+		if r.Method == http.MethodGet {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		csrfToken := r.Header.Get("X-CSRF-Token")
+		userSessionCookie, _ := r.Cookie("user_session")
+		ok, err := service.VerifyCSRFToken(userSessionCookie.Value, csrfToken)
+		if err != nil {
+			if errors.Is(err, service.ErrMalformedCSRFToken) {
+				json.ResponseInvalidCSRFToken(w, r, err)
+			} else {
+				json.ResponseInternalServerError(w, r, err)
+			}
+			return
+		}
+		if !ok {
+			json.ResponseInvalidCSRFToken(w, r, service.ErrInvalidCSRFToken)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	}
+	return http.HandlerFunc(fn)
+}

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"slices"
 
 	"github.com/danivideda/satu-apotek-be/internal/repository"
 )
@@ -27,4 +28,14 @@ func GetUsersFromPharmacyID(ctx context.Context, r repository.Repository, pharma
 		}
 	}
 	return &usersCache, nil
+}
+
+func UserExistsInPharmacy(users []repository.UserCache, userID int64) bool {
+	userExists := slices.ContainsFunc(users, func(u repository.UserCache) bool {
+		if u.ID == userID {
+			return true
+		}
+		return false
+	})
+	return userExists
 }
