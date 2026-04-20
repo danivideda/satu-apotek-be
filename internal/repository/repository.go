@@ -20,6 +20,9 @@ type Repository struct {
 
 	Users interface {
 		Create(ctx context.Context, username, passwordHash string, pharmacyID int64) (*dbsqlc.User, error)
+		GetByID(ctx context.Context, id int64) (*dbsqlc.User, error)
+		GetByUsername(ctx context.Context, username string) (*dbsqlc.GetUserByUsernameRow, error)
+		GetByPharmacyID(ctx context.Context, pharmacyID int64) (*[]dbsqlc.GetUserByPharmacyIDRow, error)
 	}
 
 	OwnerSessions interface {
@@ -28,6 +31,14 @@ type Repository struct {
 		Get(ctx context.Context, sessionID string) (*dbsqlc.OwnerSession, error)
 		Delete(ctx context.Context, sessionID string) (*dbsqlc.OwnerSession, error)
 		DeleteExpired(ctx context.Context) (*[]dbsqlc.OwnerSession, error)
+	}
+
+	UserSessions interface {
+		Create(ctx context.Context, userID int64, exp time.Time) (*dbsqlc.UserSession, error)
+		Update(ctx context.Context, sessionID string, exp time.Time) (*dbsqlc.UserSession, error)
+		Get(ctx context.Context, sessionID string) (*dbsqlc.UserSession, error)
+		Delete(ctx context.Context, sessionID string) (*dbsqlc.UserSession, error)
+		DeleteExpired(ctx context.Context) (*[]dbsqlc.UserSession, error)
 	}
 
 	PharmacySessions interface {
@@ -60,6 +71,7 @@ func New(db *pgxpool.Pool, cs *CacheStore) Repository {
 		Owners:           &ownersRepo{db: db, queries: q},
 		Users:            &usersRepo{queries: q},
 		OwnerSessions:    &ownerSessionsRepo{queries: q},
+		UserSessions:     &userSessionsRepo{queries: q},
 		PharmacySessions: &pharmacySessionsRepo{queries: q},
 		Pharmacies:       &pharmaciesRepo{db: db, queries: q},
 		CacheStore:       cs,

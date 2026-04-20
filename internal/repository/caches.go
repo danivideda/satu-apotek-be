@@ -8,9 +8,19 @@ import (
 )
 
 type CacheStore struct {
-	OwnerSessions  *cache.Cache
-	UserSessions   *cache.Cache
+	OwnerSessions    *cache.Cache
+	UserSessions     *cache.Cache
 	PharmacySessions *cache.Cache
+}
+
+type PharmacySessionCacheValue struct {
+	PharmacyID int64
+	Users      []UserCache
+}
+
+type UserCache struct {
+	ID       int64
+	Username string
 }
 
 func NewCacheStore() (*CacheStore, error) {
@@ -21,8 +31,8 @@ func NewCacheStore() (*CacheStore, error) {
 	}
 
 	cs := &CacheStore{
-		OwnerSessions:  cache.New(cacheTTL, 2*cacheTTL),
-		UserSessions:   cache.New(cacheTTL, 2*cacheTTL),
+		OwnerSessions:    cache.New(cacheTTL, 2*cacheTTL),
+		UserSessions:     cache.New(cacheTTL, 2*cacheTTL),
 		PharmacySessions: cache.New(cacheTTL, 2*cacheTTL),
 	}
 

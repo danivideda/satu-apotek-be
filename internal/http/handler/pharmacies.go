@@ -124,7 +124,7 @@ func (h *pharmacyHandler) Connect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 4. Create pharmacy_sessions and send the pharmacy_session cookies to the user
+	// 4. Create pharmacy_sessions
 	pharmacySession, err := h.repo.PharmacySessions.Create(ctx, pharmacyCode.ApotekID, time.Now().Add(5*time.Minute))
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
@@ -135,8 +135,17 @@ func (h *pharmacyHandler) Connect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 5. Set pharmacy cache
+	users, err := service.GetUsersFromPharmacyID(ctx, h.repo, pharmacySession.PharmacyID)
+	if err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
 	service.SetPharmacyCookies(w, pharmacySession.ID.String(), time.Now().Add(5*time.Minute))
-	h.repo.CacheStore.PharmacySessions.SetDefault(pharmacySession.ID.String(), pharmacyCode.ApotekID)
+	h.repo.CacheStore.PharmacySessions.SetDefault(pharmacySession.ID.String(), repository.PharmacySessionCacheValue{
+		PharmacyID: pharmacySession.PharmacyID,
+		Users:      *users,
+	})
 
 	if err := json.ResponseNoContent(w); err != nil {
 		json.ResponseInternalServerError(w, r, err)

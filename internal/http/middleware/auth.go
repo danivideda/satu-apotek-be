@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -30,6 +31,7 @@ type authOwner struct {
 type authPharmacy struct {
 	ID        int64
 	SessionID string
+	Users     []repository.UserCache
 }
 
 func (m *AppMiddleware) AuthOwner(next http.Handler) http.Handler {
@@ -98,21 +100,23 @@ func (m *AppMiddleware) AuthPharmacy(next http.Handler) http.Handler {
 
 		sessionCookie, err := r.Cookie("pharmacy_session")
 		if err != nil {
-			json.ResponseUnauthorized(w, r, err)
+			json.ResponseUnauthorized(w, r, fmt.Errorf("%w: no pharmacy session", err))
 			return
 		}
 		sessionID := sessionCookie.Value
 
 		if val, found := m.repo.CacheStore.PharmacySessions.Get(sessionID); found {
-			pharmacyID, ok := val.(int64)
+			pharmacySessionCache, ok := val.(repository.PharmacySessionCacheValue)
 			if !ok {
-				json.ResponseInternalServerError(w, r, errors.New("type assertion failed, pharmacyID is not int64"))
+				json.ResponseInternalServerError(w, r, errors.New("type assertion failed, incorrect Pharmacy Session Cache Value form"))
 				return
 			}
 
+			// Pass the Cache value to authPharmacyCtx
 			authPharmacy := authPharmacy{
-				ID:        pharmacyID,
+				ID:        pharmacySessionCache.PharmacyID,
 				SessionID: sessionID,
+				Users:     pharmacySessionCache.Users,
 			}
 			ctx := context.WithValue(ctx, authPharmacyCtx, authPharmacy)
 			next.ServeHTTP(w, r.WithContext(ctx))
@@ -134,14 +138,26 @@ func (m *AppMiddleware) AuthPharmacy(next http.Handler) http.Handler {
 			}
 			return
 		}
+
+		// get Users[] that's associated with PharmacyID
+		usersCache, err := service.GetUsersFromPharmacyID(ctx, m.repo, pharmacySession.PharmacyID)
+		if err != nil {
+			json.ResponseInternalServerError(w, r, err)
+			return
+		}
+
 		// update sessionID
 		sessionID = pharmacySession.ID.String()
-		m.repo.CacheStore.PharmacySessions.SetDefault(sessionID, pharmacySession.PharmacyID)
+		m.repo.CacheStore.PharmacySessions.SetDefault(sessionID, repository.PharmacySessionCacheValue{
+			PharmacyID: pharmacySession.PharmacyID,
+			Users:      *usersCache,
+		})
 		service.SetPharmacyCookies(w, sessionID, pharmacySession.ExpiresAt.Time)
 
 		authPharmacy := authPharmacy{
 			ID:        pharmacySession.PharmacyID,
 			SessionID: sessionID,
+			Users:     *usersCache,
 		}
 		ctx = context.WithValue(ctx, authPharmacyCtx, authPharmacy)
 		next.ServeHTTP(w, r.WithContext(ctx))

@@ -33,3 +33,70 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	)
 	return i, err
 }
+
+const getUserByID = `-- name: GetUserByID :one
+SELECT id, username, password_hash, pharmacy_id, created_at, updated_at FROM users
+WHERE id = $1
+`
+
+func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByID, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.PasswordHash,
+		&i.PharmacyID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getUserByPharmacyID = `-- name: GetUserByPharmacyID :many
+SELECT id, username FROM users
+WHERE pharmacy_id = $1
+`
+
+type GetUserByPharmacyIDRow struct {
+	ID       int64  `json:"id"`
+	Username string `json:"username"`
+}
+
+func (q *Queries) GetUserByPharmacyID(ctx context.Context, pharmacyID int64) ([]GetUserByPharmacyIDRow, error) {
+	rows, err := q.db.Query(ctx, getUserByPharmacyID, pharmacyID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetUserByPharmacyIDRow
+	for rows.Next() {
+		var i GetUserByPharmacyIDRow
+		if err := rows.Scan(&i.ID, &i.Username); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getUserByUsername = `-- name: GetUserByUsername :one
+SELECT id, username, password_hash FROM users
+WHERE username = $1
+`
+
+type GetUserByUsernameRow struct {
+	ID           int64  `json:"id"`
+	Username     string `json:"username"`
+	PasswordHash string `json:"password_hash"`
+}
+
+func (q *Queries) GetUserByUsername(ctx context.Context, username string) (GetUserByUsernameRow, error) {
+	row := q.db.QueryRow(ctx, getUserByUsername, username)
+	var i GetUserByUsernameRow
+	err := row.Scan(&i.ID, &i.Username, &i.PasswordHash)
+	return i, err
+}

@@ -58,7 +58,8 @@ func (app *application) mount() http.Handler {
 				).Post("/logout", app.handler.Auth.OwnerLogout)
 			})
 			r.Route("/users", func(r chi.Router) {
-				// ..
+				r.Use(app.middleware.AuthPharmacy)
+				r.Post("/login", app.handler.Auth.UserLogin)
 			})
 		})
 

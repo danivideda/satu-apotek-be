@@ -7,10 +7,10 @@ import (
 
 func SetOwnerCookies(w http.ResponseWriter, sessionID string, exp time.Time) {
 	c := &http.Cookie{
-		Name:    "owner_session",
-		Value:   sessionID,
-		Path:    "/",
-		Expires: exp,
+		Name:     "owner_session",
+		Value:    sessionID,
+		Path:     "/",
+		Expires:  exp,
 		Secure:   false,
 		HttpOnly: true,
 	}
@@ -18,10 +18,10 @@ func SetOwnerCookies(w http.ResponseWriter, sessionID string, exp time.Time) {
 
 	csrfToken, _ := NewCSRFToken(sessionID)
 	csrf := &http.Cookie{
-		Name:    "owner_csrf",
-		Value:   csrfToken,
-		Path:    "/",
-		Expires: exp,
+		Name:     "owner_csrf",
+		Value:    csrfToken,
+		Path:     "/",
+		Expires:  exp,
 		Secure:   false,
 		HttpOnly: false,
 	}
@@ -30,20 +30,20 @@ func SetOwnerCookies(w http.ResponseWriter, sessionID string, exp time.Time) {
 
 func DeleteOwnerCookies(w http.ResponseWriter) {
 	c := &http.Cookie{
-		Name:    "owner_session",
-		Value:   "",
-		Path:    "/",
-		Expires: time.Now().Add(1 * time.Second),
+		Name:     "owner_session",
+		Value:    "",
+		Path:     "/",
+		Expires:  time.Now().Add(1 * time.Second),
 		Secure:   false,
 		HttpOnly: true,
 	}
 	http.SetCookie(w, c)
 
 	csrf := &http.Cookie{
-		Name:    "owner_csrf",
-		Value:   "",
-		Path:    "/",
-		Expires: time.Now().Add(1 * time.Second),
+		Name:     "owner_csrf",
+		Value:    "",
+		Path:     "/",
+		Expires:  time.Now().Add(1 * time.Second),
 		Secure:   false,
 		HttpOnly: false,
 	}
@@ -52,12 +52,35 @@ func DeleteOwnerCookies(w http.ResponseWriter) {
 
 func SetPharmacyCookies(w http.ResponseWriter, sessionID string, exp time.Time) {
 	c := &http.Cookie{
-		Name:    "pharmacy_session",
-		Value:   sessionID,
-		Path:    "/",
-		Expires: exp,
+		Name:     "pharmacy_session",
+		Value:    sessionID,
+		Path:     "/",
+		Expires:  exp,
 		Secure:   false,
 		HttpOnly: true,
 	}
 	http.SetCookie(w, c)
+}
+
+func SetUserCookies(w http.ResponseWriter, sessionID string, exp time.Time) {
+	c := &http.Cookie{
+		Name:     "user_session",
+		Value:    sessionID,
+		Path:     "/",
+		Expires:  exp,
+		Secure:   false,
+		HttpOnly: true,
+	}
+	http.SetCookie(w, c)
+
+	csrfToken, _ := NewCSRFToken(sessionID)
+	csrf := &http.Cookie{
+		Name:     "user_csrf",
+		Value:    csrfToken,
+		Path:     "/",
+		Expires:  exp,
+		Secure:   false,
+		HttpOnly: false,
+	}
+	http.SetCookie(w, csrf)
 }

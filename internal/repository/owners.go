@@ -64,6 +64,9 @@ func (r *ownersRepo) GetByID(ctx context.Context, id int64) (*dbsqlc.Owner, erro
 func (r *ownersRepo) GetByUsername(ctx context.Context, username string) (*dbsqlc.GetOwnerByUsernameRow, error) {
 	owner, err := r.queries.GetOwnerByUsername(ctx, username)
 	if err != nil {
+		if isNotFoundError(err) {
+			return nil, ErrNotFound
+		}
 		return nil, err
 	}
 	return &owner, nil
