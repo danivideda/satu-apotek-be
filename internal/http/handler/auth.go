@@ -27,12 +27,11 @@ func (h *authHandler) OwnerRegister(w http.ResponseWriter, r *http.Request) {
 
 	// Get payload of username, email, and password
 	var payload struct {
-		Username string `json:"username"`
-		Email    string `json:"email"`
-		Password string `json:"password"`
+		Username string `json:"username" validate:"required,min=3,max=20,alphanum"`
+		Email    string `json:"email" validate:"required,email"`
+		Password string `json:"password" validate:"required,min=6,max=64,excludesall=\t\n "`
 	}
-	if err := json.Read(w, r, &payload); err != nil {
-		json.ResponseBadRequest(w, r, err)
+	if ok := parseAndValidateJSONPayload(w, r, &payload); !ok {
 		return
 	}
 
@@ -66,11 +65,10 @@ func (h *authHandler) OwnerLogin(w http.ResponseWriter, r *http.Request) {
 
 	// Get payload of username and password
 	var payload struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
+		Username string `json:"username" validate:"required,min=3,max=20,alphanum"`
+		Password string `json:"password" validate:"required,min=6,max=64,excludesall=\t\n "`
 	}
-	if err := json.Read(w, r, &payload); err != nil {
-		json.ResponseBadRequest(w, r, err)
+	if ok := parseAndValidateJSONPayload(w, r, &payload); !ok {
 		return
 	}
 
@@ -145,8 +143,7 @@ func (h *authHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 		UserID   int64  `json:"user_id"`
 		Password string `json:"password"`
 	}
-	if err := json.Read(w, r, &payload); err != nil {
-		json.ResponseBadRequest(w, r, err)
+	if ok := parseAndValidateJSONPayload(w, r, &payload); !ok {
 		return
 	}
 

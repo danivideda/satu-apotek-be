@@ -36,10 +36,9 @@ func (h *pharmacyHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var payload struct {
-		ApotekName string `json:"apotek_name"`
+		ApotekName string `json:"apotek_name" validate:"required,min=1,max=100,alphanumspace"`
 	}
-	if err := json.Read(w, r, &payload); err != nil {
-		json.ResponseBadRequest(w, r, err)
+	if ok := parseAndValidateJSONPayload(w, r, &payload); !ok {
 		return
 	}
 
@@ -95,10 +94,9 @@ func (h *pharmacyHandler) Connect(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	// 1. Client send a request to connect a pharmacy with a code
 	var payload struct {
-		Code string `json:"code"`
+		Code string `json:"code" validate:"required,hexadecimal,len=6"`
 	}
-	if err := json.Read(w, r, &payload); err != nil {
-		json.ResponseBadRequest(w, r, err)
+	if ok := parseAndValidateJSONPayload(w, r, &payload); !ok {
 		return
 	}
 
@@ -158,10 +156,9 @@ func (h *pharmacyHandler) CreateCode(w http.ResponseWriter, r *http.Request) {
 
 	// 1. client send which pharmacy to connect: app_id
 	var payload struct {
-		AppID string `json:"app_id"`
+		AppID string `json:"app_id" validate:"required"`
 	}
-	if err := json.Read(w, r, &payload); err != nil {
-		json.ResponseBadRequest(w, r, err)
+	if ok := parseAndValidateJSONPayload(w, r, &payload); !ok {
 		return
 	}
 

@@ -18,15 +18,12 @@ type userHandler struct {
 func (h *userHandler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	type createUserPayload struct {
+	var payload struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
 		AppID    string `json:"app_id"`
 	}
-
-	var payload createUserPayload
-	if err := json.Read(w, r, &payload); err != nil {
-		json.ResponseBadRequest(w, r, err)
+	if ok := parseAndValidateJSONPayload(w, r, &payload); !ok {
 		return
 	}
 
