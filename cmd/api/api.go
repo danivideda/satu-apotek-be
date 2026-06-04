@@ -9,6 +9,7 @@ import (
 	"github.com/danivideda/satu-apotek-be/internal/http/middleware"
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 )
 
 type application struct {
@@ -43,6 +44,11 @@ func (app *application) mount() http.Handler {
 	r.Route("/v1", func(r chi.Router) {
 		// Only allow `application/json` for requests.
 		r.Use(chiMiddleware.AllowContentType("application/json"))
+		r.Use(cors.Handler(cors.Options{
+			AllowedOrigins: []string{"http://localhost:3000"},
+			AllowedMethods: []string{"GET", "POST"},
+			AllowCredentials: true,
+		}))
 
 		r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("Health check: OK\n"))
@@ -90,7 +96,7 @@ func (app *application) mount() http.Handler {
 				r.Use(app.middleware.AuthUser)
 				r.Use(app.middleware.CSRFProtectionUser)
 				r.Get("/profile", app.handler.User.GetProfile)
-				r.Post("/profile/edit/save", func(w http.ResponseWriter, r *http.Request) {w.Write([]byte("edit profile save"))})
+				r.Post("/profile/edit/save", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("edit profile save")) })
 			})
 		})
 
