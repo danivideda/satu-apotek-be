@@ -135,6 +135,13 @@ func (h *authHandler) OwnerLogout(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *authHandler) OwnerCheck(w http.ResponseWriter, r *http.Request) {
+	if err := json.ResponseNoContent(w); err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+}
+
 func (h *authHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

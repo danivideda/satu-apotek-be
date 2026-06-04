@@ -80,6 +80,7 @@ func (m *AppMiddleware) AuthOwner(next http.Handler) http.Handler {
 		ownerSession, err := m.repo.OwnerSessions.Update(ctx, sessionID, time.Now().Add(ttl))
 		if err != nil {
 			if errors.Is(err, repository.ErrNotFound) {
+				service.DeleteOwnerCookies(w)
 				json.ResponseUnauthorized(w, r, err)
 			} else {
 				json.ResponseInternalServerError(w, r, err)

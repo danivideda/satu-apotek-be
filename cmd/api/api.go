@@ -45,8 +45,8 @@ func (app *application) mount() http.Handler {
 		// Only allow `application/json` for requests.
 		r.Use(chiMiddleware.AllowContentType("application/json"))
 		r.Use(cors.Handler(cors.Options{
-			AllowedOrigins: []string{"http://localhost:3000"},
-			AllowedMethods: []string{"GET", "POST"},
+			AllowedOrigins:   []string{"http://localhost:3000", "http://localhost:4173"},
+			AllowedMethods:   []string{"GET", "POST"},
 			AllowCredentials: true,
 		}))
 
@@ -62,6 +62,7 @@ func (app *application) mount() http.Handler {
 					app.middleware.AuthOwner,
 					app.middleware.CSRFProtectionOwner,
 				).Post("/logout", app.handler.Auth.OwnerLogout)
+				r.With(app.middleware.AuthOwner).Get("/check", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
 			})
 			r.Route("/users", func(r chi.Router) {
 				r.Use(app.middleware.AuthPharmacy)

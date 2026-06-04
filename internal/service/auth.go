@@ -33,7 +33,7 @@ func DeleteOwnerCookies(w http.ResponseWriter) {
 		Name:     "owner_session",
 		Value:    "",
 		Path:     "/",
-		Expires:  time.Now().Add(1 * time.Second),
+		Expires:  time.Now(),
 		Secure:   false,
 		HttpOnly: true,
 	}
@@ -43,7 +43,7 @@ func DeleteOwnerCookies(w http.ResponseWriter) {
 		Name:     "owner_csrf",
 		Value:    "",
 		Path:     "/",
-		Expires:  time.Now().Add(1 * time.Second),
+		Expires:  time.Now(),
 		Secure:   false,
 		HttpOnly: false,
 	}
