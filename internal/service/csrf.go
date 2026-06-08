@@ -27,10 +27,10 @@ func NewCSRFToken(sessionID string) (string, error) {
 	return csrfToken, nil
 }
 
-func VerifyCSRFToken(sessionID, csrfToken string) (bool, error) {
+func VerifyCSRFToken(sessionID, csrfToken string) error {
 	csrf := strings.Split(csrfToken, ".")
 	if len(csrf) < 2 {
-		return false, ErrMalformedCSRFToken
+		return ErrMalformedCSRFToken
 	}
 	hmacFromRequest := csrf[0]
 	randomVal := csrf[1]
@@ -39,14 +39,18 @@ func VerifyCSRFToken(sessionID, csrfToken string) (bool, error) {
 	hash := hmac.New(sha256.New, []byte(CSRF_SECRET))
 	_, err := hash.Write([]byte(message))
 	if err != nil {
-		return false, err
+		return err
 	}
 	expectedHmac := hash.Sum(nil)
 
 	bytesArrayHmacFromRequest, err := base64.StdEncoding.DecodeString(hmacFromRequest)
 	if err != nil {
-		return false, err
+		return ErrInvalidCSRFToken
 	}
 	isValid := hmac.Equal(bytesArrayHmacFromRequest, expectedHmac)
-	return isValid, nil
+	if isValid {
+		return nil
+	} else {
+		return ErrInvalidCSRFToken
+	}
 }

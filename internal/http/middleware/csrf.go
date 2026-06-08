@@ -18,17 +18,15 @@ func (m *AppMiddleware) CSRFProtectionOwner(next http.Handler) http.Handler {
 
 		csrfToken := r.Header.Get("X-CSRF-Token")
 		ownerSessionCookie, _ := r.Cookie("owner_session")
-		ok, err := service.VerifyCSRFToken(ownerSessionCookie.Value, csrfToken)
-		if err != nil {
-			if errors.Is(err, service.ErrMalformedCSRFToken) {
+		err := service.VerifyCSRFToken(ownerSessionCookie.Value, csrfToken)
+		if err != nil { 
+			// If any error happen, immediately delete CSRF cookie so it can be refreshed in /check endpoint later
+			service.DeleteOwnerCSRFCookie(w)
+			if errors.Is(err, service.ErrMalformedCSRFToken) || errors.Is(err, service.ErrInvalidCSRFToken) {
 				json.ResponseInvalidCSRFToken(w, r, err)
 			} else {
 				json.ResponseInternalServerError(w, r, err)
 			}
-			return
-		}
-		if !ok {
-			json.ResponseInvalidCSRFToken(w, r, service.ErrInvalidCSRFToken)
 			return
 		}
 
@@ -47,17 +45,13 @@ func (m *AppMiddleware) CSRFProtectionUser(next http.Handler) http.Handler {
 
 		csrfToken := r.Header.Get("X-CSRF-Token")
 		userSessionCookie, _ := r.Cookie("user_session")
-		ok, err := service.VerifyCSRFToken(userSessionCookie.Value, csrfToken)
+		err := service.VerifyCSRFToken(userSessionCookie.Value, csrfToken)
 		if err != nil {
-			if errors.Is(err, service.ErrMalformedCSRFToken) {
+			if errors.Is(err, service.ErrMalformedCSRFToken) || errors.Is(err, service.ErrInvalidCSRFToken) {
 				json.ResponseInvalidCSRFToken(w, r, err)
 			} else {
 				json.ResponseInternalServerError(w, r, err)
 			}
-			return
-		}
-		if !ok {
-			json.ResponseInvalidCSRFToken(w, r, service.ErrInvalidCSRFToken)
 			return
 		}
 

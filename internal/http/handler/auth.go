@@ -136,6 +136,22 @@ func (h *authHandler) OwnerLogout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *authHandler) OwnerCheck(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	authOwner, err := middleware.AuthOwnerFromCtx(ctx)
+	if err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+
+	// Resend CSRF Cookie if it's missing.
+	// When CSRF cookie is missing, it means the CSRF protection middleware is unable to validate previous request,
+	// hence, it deletes the CSRF cookie with `Set-Cookie` sent from the server.
+	_, err = r.Cookie("owner_csrf")
+	if err != nil {
+		fmt.Println(err)
+		service.SetOwnerCookies(w, authOwner.SessionID, authOwner.SessionExp)
+	}
+
 	if err := json.ResponseNoContent(w); err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return

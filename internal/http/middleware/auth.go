@@ -26,8 +26,9 @@ var (
 )
 
 type authOwner struct {
-	ID        int64
-	SessionID string
+	ID         int64
+	SessionID  string
+	SessionExp time.Time
 }
 
 type authUser struct {
@@ -52,6 +53,7 @@ func (m *AppMiddleware) AuthOwner(next http.Handler) http.Handler {
 			return
 		}
 		sessionID := sessionCookie.Value
+		sessionExp := sessionCookie.Expires
 
 		// 2. Check if session exist in cache. If exist, pass the request.
 		if val, found := m.repo.CacheStore.OwnerSessions.Get(sessionID); found {
@@ -62,8 +64,9 @@ func (m *AppMiddleware) AuthOwner(next http.Handler) http.Handler {
 			}
 
 			authOwner := authOwner{
-				ID:        ownerID,
-				SessionID: sessionID,
+				ID:         ownerID,
+				SessionID:  sessionID,
+				SessionExp: sessionExp,
 			}
 			ctx := context.WithValue(ctx, authOwnerCtx, authOwner)
 			next.ServeHTTP(w, r.WithContext(ctx))
@@ -87,13 +90,16 @@ func (m *AppMiddleware) AuthOwner(next http.Handler) http.Handler {
 			}
 			return
 		}
+		ownerID := ownerSession.OwnerID
 		sessionID = ownerSession.ID.String()
-		m.repo.CacheStore.OwnerSessions.SetDefault(sessionID, ownerSession.OwnerID)
-		service.SetOwnerCookies(w, sessionID, ownerSession.ExpiresAt.Time)
+		sessionExp = ownerSession.ExpiresAt.Time
+		m.repo.CacheStore.OwnerSessions.SetDefault(sessionID, ownerID)
+		service.SetOwnerCookies(w, sessionID, sessionExp)
 
 		authOwner := authOwner{
-			ID:        ownerSession.OwnerID,
-			SessionID: sessionID,
+			ID:         ownerID,
+			SessionID:  sessionID,
+			SessionExp: sessionExp,
 		}
 		ctx = context.WithValue(ctx, authOwnerCtx, authOwner)
 		next.ServeHTTP(w, r.WithContext(ctx))

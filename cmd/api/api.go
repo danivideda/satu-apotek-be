@@ -29,6 +29,12 @@ type dbConfig struct {
 
 func (app *application) mount() http.Handler {
 	r := chi.NewRouter()
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:3000", "http://localhost:4173"},
+		AllowedMethods:   []string{"GET", "POST"},
+		AllowedHeaders:   []string{"X-CSRF-Token", "Content-Type"},
+		AllowCredentials: true,
+	}))
 
 	// A good base middleware stack
 	r.Use(chiMiddleware.RequestID)
@@ -44,11 +50,6 @@ func (app *application) mount() http.Handler {
 	r.Route("/v1", func(r chi.Router) {
 		// Only allow `application/json` for requests.
 		r.Use(chiMiddleware.AllowContentType("application/json"))
-		r.Use(cors.Handler(cors.Options{
-			AllowedOrigins:   []string{"http://localhost:3000", "http://localhost:4173"},
-			AllowedMethods:   []string{"GET", "POST"},
-			AllowCredentials: true,
-		}))
 
 		r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("Health check: OK\n"))
@@ -62,7 +63,7 @@ func (app *application) mount() http.Handler {
 					app.middleware.AuthOwner,
 					app.middleware.CSRFProtectionOwner,
 				).Post("/logout", app.handler.Auth.OwnerLogout)
-				r.With(app.middleware.AuthOwner).Get("/check", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
+				r.With(app.middleware.AuthOwner).Get("/check", app.handler.Auth.OwnerCheck)
 			})
 			r.Route("/users", func(r chi.Router) {
 				r.Use(app.middleware.AuthPharmacy)
