@@ -43,6 +43,24 @@ func (q *Queries) CreateOwner(ctx context.Context, arg CreateOwnerParams) (Creat
 	return i, err
 }
 
+const getOwnerByEmail = `-- name: GetOwnerByEmail :one
+SELECT id, username, password_hash FROM owners
+WHERE email = $1
+`
+
+type GetOwnerByEmailRow struct {
+	ID           int64  `json:"id"`
+	Username     string `json:"username"`
+	PasswordHash string `json:"password_hash"`
+}
+
+func (q *Queries) GetOwnerByEmail(ctx context.Context, email string) (GetOwnerByEmailRow, error) {
+	row := q.db.QueryRow(ctx, getOwnerByEmail, email)
+	var i GetOwnerByEmailRow
+	err := row.Scan(&i.ID, &i.Username, &i.PasswordHash)
+	return i, err
+}
+
 const getOwnerByID = `-- name: GetOwnerByID :one
 SELECT id, email, username, password_hash, created_at, updated_at FROM owners
 WHERE id = $1

@@ -65,7 +65,7 @@ func (h *authHandler) OwnerLogin(w http.ResponseWriter, r *http.Request) {
 
 	// Get payload of username and password
 	var payload struct {
-		Username string `json:"username" validate:"required,min=3,max=20,alphanum"`
+		Email    string `json:"email" validate:"required,email"`
 		Password string `json:"password" validate:"required,min=6,max=64,excludesall=\t\n "`
 	}
 	if ok := parseAndValidateJSONPayload(w, r, &payload); !ok {
@@ -73,7 +73,7 @@ func (h *authHandler) OwnerLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get owner password
-	owner, err := h.repo.Owners.GetByUsername(ctx, payload.Username)
+	owner, err := h.repo.Owners.GetByEmail(ctx, payload.Email)
 	if err != nil {
 		json.ResponseBadRequest(w, r, err)
 		return

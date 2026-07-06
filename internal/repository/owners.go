@@ -71,3 +71,14 @@ func (r *ownersRepo) GetByUsername(ctx context.Context, username string) (*dbsql
 	}
 	return &owner, nil
 }
+
+func (r *ownersRepo) GetByEmail(ctx context.Context, email string) (*dbsqlc.GetOwnerByEmailRow, error) {
+	owner, err := r.queries.GetOwnerByEmail(ctx, email)
+	if err != nil {
+		if isNotFoundError(err) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	return &owner, nil
+}

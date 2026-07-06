@@ -13,3 +13,7 @@ WHERE id = @id;
 -- name: GetOwnerByUsername :one
 SELECT id, username, password_hash FROM owners
 WHERE username = @username;
+
+-- name: GetOwnerByEmail :one
+SELECT id, username, password_hash FROM owners
+WHERE email = @email;
