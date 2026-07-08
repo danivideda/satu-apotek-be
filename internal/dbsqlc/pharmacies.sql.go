@@ -11,7 +11,7 @@ import (
 
 const createPharmacy = `-- name: CreatePharmacy :one
 INSERT INTO pharmacies (owner_id, name, app_id) 
-VALUES ($1, $2, $3) RETURNING id, owner_id, name, created_at, updated_at, app_id
+VALUES ($1, $2, $3) RETURNING id, owner_id, name, created_at, updated_at, app_id, address
 `
 
 type CreatePharmacyParams struct {
@@ -30,12 +30,13 @@ func (q *Queries) CreatePharmacy(ctx context.Context, arg CreatePharmacyParams) 
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.AppID,
+		&i.Address,
 	)
 	return i, err
 }
 
 const getPharmaciesByOwner = `-- name: GetPharmaciesByOwner :many
-SELECT id, owner_id, name, created_at, updated_at, app_id FROM pharmacies
+SELECT id, owner_id, name, created_at, updated_at, app_id, address FROM pharmacies
 WHERE owner_id = $1
 ORDER BY created_at DESC
 `
@@ -56,6 +57,7 @@ func (q *Queries) GetPharmaciesByOwner(ctx context.Context, ownerID int64) ([]Ph
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.AppID,
+			&i.Address,
 		); err != nil {
 			return nil, err
 		}
@@ -68,7 +70,7 @@ func (q *Queries) GetPharmaciesByOwner(ctx context.Context, ownerID int64) ([]Ph
 }
 
 const getPharmacyByAppID = `-- name: GetPharmacyByAppID :one
-SELECT id, owner_id, name, created_at, updated_at, app_id FROM pharmacies
+SELECT id, owner_id, name, created_at, updated_at, app_id, address FROM pharmacies
 WHERE app_id = $1
 `
 
@@ -82,12 +84,13 @@ func (q *Queries) GetPharmacyByAppID(ctx context.Context, appID string) (Pharmac
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.AppID,
+		&i.Address,
 	)
 	return i, err
 }
 
 const getPharmacyByID = `-- name: GetPharmacyByID :one
-SELECT id, owner_id, name, created_at, updated_at, app_id FROM pharmacies
+SELECT id, owner_id, name, created_at, updated_at, app_id, address FROM pharmacies
 WHERE id = $1
 `
 
@@ -101,6 +104,7 @@ func (q *Queries) GetPharmacyByID(ctx context.Context, id int64) (Pharmacy, erro
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.AppID,
+		&i.Address,
 	)
 	return i, err
 }
@@ -108,7 +112,7 @@ func (q *Queries) GetPharmacyByID(ctx context.Context, id int64) (Pharmacy, erro
 const insertAppID = `-- name: InsertAppID :one
 UPDATE pharmacies
 SET app_id = $1
-WHERE id = $2 RETURNING id, owner_id, name, created_at, updated_at, app_id
+WHERE id = $2 RETURNING id, owner_id, name, created_at, updated_at, app_id, address
 `
 
 type InsertAppIDParams struct {
@@ -126,6 +130,7 @@ func (q *Queries) InsertAppID(ctx context.Context, arg InsertAppIDParams) (Pharm
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.AppID,
+		&i.Address,
 	)
 	return i, err
 }

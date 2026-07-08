@@ -1,0 +1,2 @@
+ALTER TABLE IF EXISTS pharmacies
+DROP COLUMN IF EXISTS address;

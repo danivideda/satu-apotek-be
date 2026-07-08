@@ -32,6 +32,7 @@ type Pharmacy struct {
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 	AppID     string             `json:"app_id"`
+	Address   string             `json:"address"`
 }
 
 type PharmacyCode struct {

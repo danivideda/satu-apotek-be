@@ -22,6 +22,7 @@ type pharmacyHandler struct {
 type pharmacyJSON struct {
 	AppID     any `json:"app_id"`
 	Name      any `json:"name"`
+	Address   any `json:"address"`
 	CreatedAt any `json:"created_at,omitempty"`
 	UpdatedAt any `json:"updated_at,omitempty"`
 }
@@ -79,6 +80,7 @@ func (h *pharmacyHandler) GetByOwner(w http.ResponseWriter, r *http.Request) {
 		item := pharmacyJSON{
 			AppID:     pharmacy.AppID,
 			Name:      pharmacy.Name,
+			Address:   pharmacy.Address,
 			CreatedAt: pharmacy.CreatedAt,
 			UpdatedAt: pharmacy.UpdatedAt,
 		}
