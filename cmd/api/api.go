@@ -95,6 +95,7 @@ func (app *application) mount() http.Handler {
 				r.Get("/", app.handler.Pharmacy.GetByOwner)
 				r.Post("/create", app.handler.Pharmacy.Create)
 				r.Post("/create-code", app.handler.Pharmacy.CreateCode)
+				r.Get("/{appID}", app.handler.Pharmacy.GetDetailByAppID)
 			})
 
 			r.Route("/users", func(r chi.Router) {

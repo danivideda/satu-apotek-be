@@ -13,18 +13,24 @@ import (
 	"github.com/danivideda/satu-apotek-be/internal/http/middleware"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
 	"github.com/danivideda/satu-apotek-be/internal/service"
+	"github.com/go-chi/chi/v5"
 )
 
 type pharmacyHandler struct {
 	repo repository.Repository
 }
 
-type pharmacyJSON struct {
+type PharmacyJSON struct {
 	AppID     any `json:"app_id"`
 	Name      any `json:"name"`
 	Address   any `json:"address"`
 	CreatedAt any `json:"created_at,omitempty"`
 	UpdatedAt any `json:"updated_at,omitempty"`
+}
+
+type UserJSON struct {
+	ID       int64  `json:"id"`
+	Username string `json:"username"`
 }
 
 func (h *pharmacyHandler) Create(w http.ResponseWriter, r *http.Request) {
@@ -49,7 +55,7 @@ func (h *pharmacyHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := pharmacyJSON{
+	res := PharmacyJSON{
 		AppID:     apotek.AppID,
 		Name:      apotek.Name,
 		CreatedAt: apotek.CreatedAt,
@@ -75,14 +81,12 @@ func (h *pharmacyHandler) GetByOwner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := []pharmacyJSON{}
+	res := []PharmacyJSON{}
 	for _, pharmacy := range *pharmacies {
-		item := pharmacyJSON{
-			AppID:     pharmacy.AppID,
-			Name:      pharmacy.Name,
-			Address:   pharmacy.Address,
-			CreatedAt: pharmacy.CreatedAt,
-			UpdatedAt: pharmacy.UpdatedAt,
+		item := PharmacyJSON{
+			AppID:   pharmacy.AppID,
+			Name:    pharmacy.Name,
+			Address: pharmacy.Address,
 		}
 		res = append(res, item)
 	}
@@ -219,11 +223,11 @@ func (h *pharmacyHandler) CreateCode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res := struct {
-		pharmacyJSON
+		PharmacyJSON
 		Code      string    `json:"code"`
 		ExpiredAt time.Time `json:"expired_at"`
 	}{
-		pharmacyJSON: pharmacyJSON{
+		PharmacyJSON: PharmacyJSON{
 			AppID: pharmacy.AppID,
 			Name:  pharmacy.Name,
 		},
@@ -251,6 +255,61 @@ func (h *pharmacyHandler) GetLanding(w http.ResponseWriter, r *http.Request) {
 		PharmacyID: authPharmacy.ID,
 		SessionID:  authPharmacy.SessionID,
 	}
+	if err := json.ResponseOK(w, res); err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+}
+
+func (h *pharmacyHandler) GetDetailByAppID(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	appID := chi.URLParam(r, "appID")
+
+	pharmacy, err := h.repo.Pharmacies.GetByAppID(ctx, appID)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			json.ResponseNotFound(w, r, err)
+		} else {
+			json.ResponseInternalServerError(w, r, err)
+		}
+		return
+	}
+
+	users, err := h.repo.Users.GetByPharmacyID(ctx, pharmacy.ID)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			json.ResponseNotFound(w, r, err)
+		} else {
+			json.ResponseInternalServerError(w, r, err)
+		}
+		return
+	}
+
+	usersJSON := []UserJSON{}
+	for _, user := range *users {
+		item := UserJSON{
+			ID:       user.ID,
+			Username: user.Username,
+		}
+		usersJSON = append(usersJSON, item)
+	}
+
+	pharmacyJSON := PharmacyJSON{
+		AppID:     pharmacy.AppID,
+		Name:      pharmacy.Name,
+		Address:   pharmacy.Address,
+		CreatedAt: pharmacy.CreatedAt,
+		UpdatedAt: pharmacy.UpdatedAt,
+	}
+
+	res := struct {
+		PharmacyJSON
+		Users []UserJSON `json:"users"`
+	}{
+		PharmacyJSON: pharmacyJSON,
+		Users:        usersJSON,
+	}
+
 	if err := json.ResponseOK(w, res); err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return
