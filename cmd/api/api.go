@@ -51,10 +51,16 @@ func (app *application) mount() http.Handler {
 		// Only allow `application/json` for requests.
 		r.Use(chiMiddleware.AllowContentType("application/json"))
 
+		// ============================
+		// Public Routes
+		// ============================
 		r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("Health check: OK\n"))
 		})
 
+		// ============================
+		// Auth Routes
+		// ============================
 		r.Route("/auth", func(r chi.Router) {
 			r.Route("/owners", func(r chi.Router) {
 				r.Post("/register", app.handler.Auth.OwnerRegister)
@@ -65,47 +71,57 @@ func (app *application) mount() http.Handler {
 				).Post("/logout", app.handler.Auth.OwnerLogout)
 				r.With(app.middleware.AuthOwner).Get("/check", app.handler.Auth.OwnerCheck)
 			})
+
 			r.Route("/users", func(r chi.Router) {
 				r.Use(app.middleware.AuthPharmacy)
 				r.Post("/login", app.handler.Auth.UserLogin)
 			})
+
+			r.Route("/pharmacies", func(r chi.Router) {
+				r.Post("/connect", app.handler.Pharmacy.Connect)
+			})
 		})
 
-		r.Route("/pharmacies", func(r chi.Router) {
-			r.Group(func(r chi.Router) {
-				r.Use(app.middleware.AuthOwner)
-				r.Use(app.middleware.CSRFProtectionOwner)
+		// ============================
+		// Authenticated Owner Routes
+		// ============================
+		r.Route("/owner", func(r chi.Router) {
+			r.Use(app.middleware.AuthOwner)
+			r.Use(app.middleware.CSRFProtectionOwner)
+
+			r.Get("/profile", app.handler.Owner.GetByID)
+
+			r.Route("/pharmacies", func(r chi.Router) {
 				r.Get("/", app.handler.Pharmacy.GetByOwner)
 				r.Post("/create", app.handler.Pharmacy.Create)
-				r.Post("/disconnect", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("/disconnect")) })
 				r.Post("/create-code", app.handler.Pharmacy.CreateCode)
 			})
-			r.Post("/connect", app.handler.Pharmacy.Connect)
-			r.Group(func(r chi.Router) {
-				r.Use(app.middleware.AuthPharmacy)
-				r.Get("/landing", app.handler.Pharmacy.GetLanding)
+
+			r.Route("/users", func(r chi.Router) {
+				r.Post("/create", app.handler.User.Create)
 			})
 		})
 
-		r.Route("/users", func(r chi.Router) {
-			r.Group(func(r chi.Router) {
-				r.Use(app.middleware.AuthOwner)
-				r.Use(app.middleware.CSRFProtectionOwner)
-				r.Post("/create", app.handler.User.Create)
-			})
-			r.Group(func(r chi.Router) {
-				r.Use(app.middleware.AuthPharmacy)
-				r.Use(app.middleware.AuthUser)
-				r.Use(app.middleware.CSRFProtectionUser)
+		// ============================
+		// Authenticated Pharmacy Routes
+		// ============================
+		r.Route("/pharmacy", func(r chi.Router) {
+			r.Use(app.middleware.AuthPharmacy)
+			r.Get("/landing", app.handler.Pharmacy.GetLanding)
+		})
+
+		// ============================
+		// Authenticated User Routes
+		// ============================
+		r.Group(func(r chi.Router) {
+			r.Use(app.middleware.AuthPharmacy)
+			r.Use(app.middleware.AuthUser)
+			r.Use(app.middleware.CSRFProtectionUser)
+
+			r.Route("/users", func(r chi.Router) {
 				r.Get("/profile", app.handler.User.GetProfile)
 				r.Post("/profile/edit/save", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("edit profile save")) })
 			})
-		})
-
-		r.Route("/owners", func(r chi.Router) {
-			r.Use(app.middleware.AuthOwner)
-			r.Use(app.middleware.CSRFProtectionOwner)
-			r.Get("/", app.handler.Owner.GetByID)
 		})
 	})
 
