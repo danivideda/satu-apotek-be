@@ -1,10 +1,10 @@
--- name: GetPharmacyByID :one
+-- name: GetPharmacyByIDForOwner :one
 SELECT * FROM pharmacies
-WHERE id = @id;
+WHERE id = @id AND owner_id = @owner_id;
 
--- name: GetPharmacyByAppID :one
+-- name: GetPharmacyByAppIDForOwner :one
 SELECT * FROM pharmacies
-WHERE app_id = @app_id;
+WHERE app_id = @app_id AND owner_id = @owner_id;
 
 -- name: CreatePharmacy :one
 INSERT INTO pharmacies (owner_id, name, app_id) 

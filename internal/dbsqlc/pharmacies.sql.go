@@ -69,13 +69,18 @@ func (q *Queries) GetPharmaciesByOwner(ctx context.Context, ownerID int64) ([]Ph
 	return items, nil
 }
 
-const getPharmacyByAppID = `-- name: GetPharmacyByAppID :one
+const getPharmacyByAppIDForOwner = `-- name: GetPharmacyByAppIDForOwner :one
 SELECT id, owner_id, name, created_at, updated_at, app_id, address FROM pharmacies
-WHERE app_id = $1
+WHERE app_id = $1 AND owner_id = $2
 `
 
-func (q *Queries) GetPharmacyByAppID(ctx context.Context, appID string) (Pharmacy, error) {
-	row := q.db.QueryRow(ctx, getPharmacyByAppID, appID)
+type GetPharmacyByAppIDForOwnerParams struct {
+	AppID   string `json:"app_id"`
+	OwnerID int64  `json:"owner_id"`
+}
+
+func (q *Queries) GetPharmacyByAppIDForOwner(ctx context.Context, arg GetPharmacyByAppIDForOwnerParams) (Pharmacy, error) {
+	row := q.db.QueryRow(ctx, getPharmacyByAppIDForOwner, arg.AppID, arg.OwnerID)
 	var i Pharmacy
 	err := row.Scan(
 		&i.ID,
@@ -89,13 +94,18 @@ func (q *Queries) GetPharmacyByAppID(ctx context.Context, appID string) (Pharmac
 	return i, err
 }
 
-const getPharmacyByID = `-- name: GetPharmacyByID :one
+const getPharmacyByIDForOwner = `-- name: GetPharmacyByIDForOwner :one
 SELECT id, owner_id, name, created_at, updated_at, app_id, address FROM pharmacies
-WHERE id = $1
+WHERE id = $1 AND owner_id = $2
 `
 
-func (q *Queries) GetPharmacyByID(ctx context.Context, id int64) (Pharmacy, error) {
-	row := q.db.QueryRow(ctx, getPharmacyByID, id)
+type GetPharmacyByIDForOwnerParams struct {
+	ID      int64 `json:"id"`
+	OwnerID int64 `json:"owner_id"`
+}
+
+func (q *Queries) GetPharmacyByIDForOwner(ctx context.Context, arg GetPharmacyByIDForOwnerParams) (Pharmacy, error) {
+	row := q.db.QueryRow(ctx, getPharmacyByIDForOwner, arg.ID, arg.OwnerID)
 	var i Pharmacy
 	err := row.Scan(
 		&i.ID,

@@ -174,18 +174,13 @@ func (h *pharmacyHandler) CreateCode(w http.ResponseWriter, r *http.Request) {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}
-	pharmacy, err := h.repo.Pharmacies.GetByAppID(ctx, payload.AppID)
+	pharmacy, err := h.repo.Pharmacies.GetByAppIDForOwner(ctx, payload.AppID, authOwner.ID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			json.ResponseBadRequest(w, r, err)
 		} else {
 			json.ResponseInternalServerError(w, r, err)
 		}
-		return
-	}
-
-	if pharmacy.OwnerID != authOwner.ID {
-		json.ResponseForbidden(w, r, ErrAppIDNotAllowed)
 		return
 	}
 
@@ -265,7 +260,12 @@ func (h *pharmacyHandler) GetDetailByAppID(w http.ResponseWriter, r *http.Reques
 	ctx := r.Context()
 	appID := chi.URLParam(r, "appID")
 
-	pharmacy, err := h.repo.Pharmacies.GetByAppID(ctx, appID)
+	authOwner, err := middleware.AuthOwnerFromCtx(ctx)
+	if err != nil {
+		json.ResponseInternalServerError(w, r, err)
+	}
+
+	pharmacy, err := h.repo.Pharmacies.GetByAppIDForOwner(ctx, appID, authOwner.ID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			json.ResponseNotFound(w, r, err)

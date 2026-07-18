@@ -21,16 +21,22 @@ type pharmaciesRepo struct {
 	queries *dbsqlc.Queries
 }
 
-func (r *pharmaciesRepo) GetByID(ctx context.Context, pharmacyID int64) (*dbsqlc.Pharmacy, error) {
-	pharmacy, err := r.queries.GetPharmacyByID(ctx, pharmacyID)
+func (r *pharmaciesRepo) GetByIDForOwner(ctx context.Context, pharmacyID, ownerID int64) (*dbsqlc.Pharmacy, error) {
+	pharmacy, err := r.queries.GetPharmacyByIDForOwner(ctx, dbsqlc.GetPharmacyByIDForOwnerParams{
+		ID:      pharmacyID,
+		OwnerID: ownerID,
+	})
 	if err != nil {
 		return nil, err
 	}
 	return &pharmacy, nil
 }
 
-func (r *pharmaciesRepo) GetByAppID(ctx context.Context, AppID string) (*dbsqlc.Pharmacy, error) {
-	pharmacy, err := r.queries.GetPharmacyByAppID(ctx, AppID)
+func (r *pharmaciesRepo) GetByAppIDForOwner(ctx context.Context, appID string, ownerID int64) (*dbsqlc.Pharmacy, error) {
+	pharmacy, err := r.queries.GetPharmacyByAppIDForOwner(ctx, dbsqlc.GetPharmacyByAppIDForOwnerParams{
+		AppID:   appID,
+		OwnerID: ownerID,
+	})
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound

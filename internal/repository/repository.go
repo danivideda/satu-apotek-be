@@ -51,8 +51,8 @@ type Repository struct {
 	}
 
 	Pharmacies interface {
-		GetByID(ctx context.Context, pharmacyID int64) (*dbsqlc.Pharmacy, error)
-		GetByAppID(ctx context.Context, appID string) (*dbsqlc.Pharmacy, error)
+		GetByIDForOwner(ctx context.Context, pharmacyID, ownerID int64) (*dbsqlc.Pharmacy, error)
+		GetByAppIDForOwner(ctx context.Context, appID string, ownerID int64) (*dbsqlc.Pharmacy, error)
 		GetCodeByCode(ctx context.Context, code string) (*dbsqlc.PharmacyCode, error)
 		GetByOwnerID(ctx context.Context, ownerID int64) (*[]dbsqlc.Pharmacy, error)
 		Create(ctx context.Context, ownerID int64, name string) (*dbsqlc.Pharmacy, error)

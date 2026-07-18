@@ -33,7 +33,7 @@ func (h *userHandler) Create(w http.ResponseWriter, r *http.Request) {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}
-	pharmacy, err := h.repo.Pharmacies.GetByAppID(ctx, payload.AppID)
+	pharmacy, err := h.repo.Pharmacies.GetByAppIDForOwner(ctx, payload.AppID, authOwner.ID)
 	if err != nil {
 		switch {
 		case errors.Is(err, repository.ErrNotFound):
@@ -41,11 +41,6 @@ func (h *userHandler) Create(w http.ResponseWriter, r *http.Request) {
 		default:
 			json.ResponseInternalServerError(w, r, err)
 		}
-		return
-	}
-	// only pass if ownerID matches
-	if pharmacy.OwnerID != authOwner.ID {
-		json.ResponseForbidden(w, r, ErrAppIDNotAllowed)
 		return
 	}
 
