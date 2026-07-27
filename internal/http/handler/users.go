@@ -71,6 +71,15 @@ func (h *userHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *userHandler) GetAllByAppID(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	_, err := middleware.AuthOwnerFromCtx(ctx)
+	if err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+}
+
 func (h *userHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	if err := json.ResponseOK(w, "from profile"); err != nil {
 		json.ResponseInternalServerError(w, r, err)

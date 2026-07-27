@@ -13,7 +13,6 @@ import (
 	"github.com/danivideda/satu-apotek-be/internal/http/middleware"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
 	"github.com/danivideda/satu-apotek-be/internal/service"
-	"github.com/go-chi/chi/v5"
 )
 
 type pharmacyHandler struct {
@@ -31,6 +30,11 @@ type PharmacyJSON struct {
 type UserJSON struct {
 	ID       int64  `json:"id"`
 	Username string `json:"username"`
+}
+
+type ApotekCodeJSON struct {
+	Code      string `json:"code"`
+	ExpiresAt any    `json:"expires_at"`
 }
 
 func (h *pharmacyHandler) Create(w http.ResponseWriter, r *http.Request) {
@@ -258,20 +262,27 @@ func (h *pharmacyHandler) GetLanding(w http.ResponseWriter, r *http.Request) {
 
 func (h *pharmacyHandler) GetDetailByAppID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	appID := chi.URLParam(r, "appID")
+	// appID := chi.URLParam(r, "appID")
 
-	authOwner, err := middleware.AuthOwnerFromCtx(ctx)
+	// authOwner, err := middleware.AuthOwnerFromCtx(ctx)
+	// if err != nil {
+	// 	json.ResponseInternalServerError(w, r, err)
+	// 	return
+	// }
+
+	// pharmacy, err := h.repo.Pharmacies.GetByAppIDForOwner(ctx, appID, authOwner.ID)
+	// if err != nil {
+	// 	if errors.Is(err, repository.ErrNotFound) {
+	// 		json.ResponseNotFound(w, r, err)
+	// 	} else {
+	// 		json.ResponseInternalServerError(w, r, err)
+	// 	}
+	// 	return
+	// }
+
+	pharmacy, err := middleware.PharmacyDetailFromCtx(ctx)
 	if err != nil {
 		json.ResponseInternalServerError(w, r, err)
-	}
-
-	pharmacy, err := h.repo.Pharmacies.GetByAppIDForOwner(ctx, appID, authOwner.ID)
-	if err != nil {
-		if errors.Is(err, repository.ErrNotFound) {
-			json.ResponseNotFound(w, r, err)
-		} else {
-			json.ResponseInternalServerError(w, r, err)
-		}
 		return
 	}
 
@@ -302,12 +313,29 @@ func (h *pharmacyHandler) GetDetailByAppID(w http.ResponseWriter, r *http.Reques
 		UpdatedAt: pharmacy.UpdatedAt,
 	}
 
+	// fmt.Println(pharmacy.ID)
+
+	// apotekCode, err := h.repo.Pharmacies.GetCodeByID(ctx, pharmacy.ID)
+	// if err != nil {
+	// 	if errors.Is(err, repository.ErrNotFound) {
+	// 		json.ResponseBadRequest(w, r, fmt.Errorf("%w: no active codes matched for this Pharmacy", err))
+	// 	} else {
+	// 		json.ResponseInternalServerError(w, r, err)
+	// 	}
+	// 	return
+	// }
+
 	res := struct {
 		PharmacyJSON
-		Users []UserJSON `json:"users"`
+		Users      []UserJSON     `json:"users"`
+		// ApotekCode ApotekCodeJSON `json:"apotek_code"`
 	}{
 		PharmacyJSON: pharmacyJSON,
 		Users:        usersJSON,
+		// ApotekCode: ApotekCodeJSON{
+		// 	Code:      apotekCode.Code,
+		// 	ExpiresAt: apotekCode.ExpiresAt,
+		// },
 	}
 
 	if err := json.ResponseOK(w, res); err != nil {
