@@ -164,31 +164,14 @@ func (h *pharmacyHandler) Connect(w http.ResponseWriter, r *http.Request) {
 func (h *pharmacyHandler) CreateCode(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	// 1. client send which pharmacy to connect: app_id
-	var payload struct {
-		AppID string `json:"app_id" validate:"required"`
-	}
-	if ok := parseAndValidateJSONPayload(w, r, &payload); !ok {
-		return
-	}
-
-	// 2. check if app_id is indeed the Owner's
-	authOwner, err := middleware.AuthOwnerFromCtx(ctx)
+	// 1. get pharmacy that's already parsed through `middleware.GuardPharmacyDetailByOwner`
+	pharmacy, err := middleware.PharmacyDetailFromCtx(ctx)
 	if err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}
-	pharmacy, err := h.repo.Pharmacies.GetByAppIDForOwner(ctx, payload.AppID, authOwner.ID)
-	if err != nil {
-		if errors.Is(err, repository.ErrNotFound) {
-			json.ResponseBadRequest(w, r, err)
-		} else {
-			json.ResponseInternalServerError(w, r, err)
-		}
-		return
-	}
 
-	// 3. Create new pharmacy code in pharmacy_codes table
+	// 2. Create or Update (Upsert) pharmacy code in pharmacy_codes table
 	exec := func() (*dbsqlc.PharmacyCode, error) {
 		newCode, err := h.generateApotekCode()
 		if err != nil {
@@ -224,16 +207,47 @@ func (h *pharmacyHandler) CreateCode(w http.ResponseWriter, r *http.Request) {
 	res := struct {
 		PharmacyJSON
 		Code      string    `json:"code"`
-		ExpiredAt time.Time `json:"expired_at"`
+		ExpiresAt time.Time `json:"expires_at"`
 	}{
 		PharmacyJSON: PharmacyJSON{
 			AppID: pharmacy.AppID,
 			Name:  pharmacy.Name,
 		},
 		Code:      pharmacyCode.Code,
-		ExpiredAt: pharmacyCode.ExpiresAt.Time,
+		ExpiresAt: pharmacyCode.ExpiresAt.Time,
 	}
 	if err := json.ResponseCreated(w, res); err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+}
+
+func (h *pharmacyHandler) GetCodeByPharmacy(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	pharmacy, err := middleware.PharmacyDetailFromCtx(ctx)
+	if err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+
+	code, err := h.repo.Pharmacies.GetCodeByID(ctx, pharmacy.ID)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			json.ResponseNotFound(w, r, err)
+		} else {
+			json.ResponseInternalServerError(w, r, err)
+		}
+		return
+	}
+
+	response := struct {
+		Code      string `json:"code"`
+		ExpiresAt any    `json:"expires_at"`
+	}{
+		Code:      code.Code,
+		ExpiresAt: code.ExpiresAt,
+	}
+	if err := json.ResponseOK(w, response); err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}
@@ -327,7 +341,7 @@ func (h *pharmacyHandler) GetDetailByAppID(w http.ResponseWriter, r *http.Reques
 
 	res := struct {
 		PharmacyJSON
-		Users      []UserJSON     `json:"users"`
+		Users []UserJSON `json:"users"`
 		// ApotekCode ApotekCodeJSON `json:"apotek_code"`
 	}{
 		PharmacyJSON: pharmacyJSON,
