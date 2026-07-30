@@ -205,14 +205,9 @@ func (h *pharmacyHandler) CreateCode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res := struct {
-		PharmacyJSON
 		Code      string    `json:"code"`
 		ExpiresAt time.Time `json:"expires_at"`
 	}{
-		PharmacyJSON: PharmacyJSON{
-			AppID: pharmacy.AppID,
-			Name:  pharmacy.Name,
-		},
 		Code:      pharmacyCode.Code,
 		ExpiresAt: pharmacyCode.ExpiresAt.Time,
 	}
