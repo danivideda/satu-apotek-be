@@ -79,6 +79,7 @@ func (app *application) mount() http.Handler {
 
 			r.Route("/pharmacies", func(r chi.Router) {
 				r.Post("/connect", app.handler.Pharmacy.Connect)
+				r.With(app.middleware.AuthPharmacy).Get("/check", app.handler.Auth.PharmacyCheck)
 			})
 		})
 

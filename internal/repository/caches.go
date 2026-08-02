@@ -15,6 +15,7 @@ type CacheStore struct {
 
 type PharmacySessionCacheValue struct {
 	PharmacyID int64
+	Name       string
 	Users      []UserCache
 }
 

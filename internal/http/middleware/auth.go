@@ -37,9 +37,9 @@ type authUser struct {
 }
 
 type authPharmacy struct {
-	ID        int64
-	SessionID string
-	Users     []repository.UserCache
+	ID    int64
+	Name  string
+	Users []repository.UserCache
 }
 
 func (m *AppMiddleware) AuthOwner(next http.Handler) http.Handler {
@@ -221,9 +221,9 @@ func (m *AppMiddleware) AuthPharmacy(next http.Handler) http.Handler {
 
 			// Pass the Cache value to authPharmacyCtx
 			authPharmacy := authPharmacy{
-				ID:        pharmacySessionCache.PharmacyID,
-				SessionID: sessionID,
-				Users:     pharmacySessionCache.Users,
+				ID:    pharmacySessionCache.PharmacyID,
+				Name:  pharmacySessionCache.Name,
+				Users: pharmacySessionCache.Users,
 			}
 			ctx := context.WithValue(ctx, authPharmacyCtx, authPharmacy)
 			next.ServeHTTP(w, r.WithContext(ctx))
@@ -235,7 +235,6 @@ func (m *AppMiddleware) AuthPharmacy(next http.Handler) http.Handler {
 			json.ResponseInternalServerError(w, r, err)
 			return
 		}
-
 		pharmacySession, err := m.repo.PharmacySessions.Update(ctx, sessionID, time.Now().Add(ttl))
 		if err != nil {
 			if errors.Is(err, repository.ErrNotFound) {
@@ -243,6 +242,12 @@ func (m *AppMiddleware) AuthPharmacy(next http.Handler) http.Handler {
 			} else {
 				json.ResponseInternalServerError(w, r, err)
 			}
+			return
+		}
+
+		pharmacyDetail, err := m.repo.Pharmacies.GetByID(ctx, pharmacySession.PharmacyID)
+		if err != nil {
+			json.ResponseInternalServerError(w, r, err)
 			return
 		}
 
@@ -257,14 +262,15 @@ func (m *AppMiddleware) AuthPharmacy(next http.Handler) http.Handler {
 		sessionID = pharmacySession.ID.String()
 		m.repo.CacheStore.PharmacySessions.SetDefault(sessionID, repository.PharmacySessionCacheValue{
 			PharmacyID: pharmacySession.PharmacyID,
+			Name:       pharmacyDetail.Name,
 			Users:      *usersCache,
 		})
 		service.SetPharmacyCookies(w, sessionID, pharmacySession.ExpiresAt.Time)
 
 		authPharmacy := authPharmacy{
-			ID:        pharmacySession.PharmacyID,
-			SessionID: sessionID,
-			Users:     *usersCache,
+			ID:    pharmacySession.PharmacyID,
+			Name:  pharmacyDetail.Name,
+			Users: *usersCache,
 		}
 		ctx = context.WithValue(ctx, authPharmacyCtx, authPharmacy)
 		next.ServeHTTP(w, r.WithContext(ctx))

@@ -28,7 +28,7 @@ type PharmacyJSON struct {
 }
 
 type UserJSON struct {
-	ID       int64  `json:"id"`
+	ID       *int64 `json:"id,omitempty"`
 	Username string `json:"username"`
 }
 
@@ -256,12 +256,21 @@ func (h *pharmacyHandler) GetLanding(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	usersJSON := []UserJSON{}
+	for _, user := range authPharmacy.Users {
+		item := UserJSON{
+			ID:       &user.ID,
+			Username: user.Username,
+		}
+		usersJSON = append(usersJSON, item)
+	}
+
 	res := struct {
-		PharmacyID any `json:"pharmacy_id"`
-		SessionID  any `json:"session_id"`
+		Name  string     `json:"name"`
+		Users []UserJSON `json:"users"`
 	}{
-		PharmacyID: authPharmacy.ID,
-		SessionID:  authPharmacy.SessionID,
+		Name:  authPharmacy.Name,
+		Users: usersJSON,
 	}
 	if err := json.ResponseOK(w, res); err != nil {
 		json.ResponseInternalServerError(w, r, err)
@@ -308,7 +317,7 @@ func (h *pharmacyHandler) GetDetailByAppID(w http.ResponseWriter, r *http.Reques
 	usersJSON := []UserJSON{}
 	for _, user := range *users {
 		item := UserJSON{
-			ID:       user.ID,
+			ID:       &user.ID,
 			Username: user.Username,
 		}
 		usersJSON = append(usersJSON, item)

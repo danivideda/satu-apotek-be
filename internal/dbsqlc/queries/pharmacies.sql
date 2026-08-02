@@ -1,3 +1,7 @@
+-- name: GetPharmacyByID :one
+SELECT * FROM pharmacies
+WHERE id = @id;
+
 -- name: GetPharmacyByIDForOwner :one
 SELECT * FROM pharmacies
 WHERE id = @id AND owner_id = @owner_id;

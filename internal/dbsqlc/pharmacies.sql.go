@@ -94,6 +94,26 @@ func (q *Queries) GetPharmacyByAppIDForOwner(ctx context.Context, arg GetPharmac
 	return i, err
 }
 
+const getPharmacyByID = `-- name: GetPharmacyByID :one
+SELECT id, owner_id, name, created_at, updated_at, app_id, address FROM pharmacies
+WHERE id = $1
+`
+
+func (q *Queries) GetPharmacyByID(ctx context.Context, id int64) (Pharmacy, error) {
+	row := q.db.QueryRow(ctx, getPharmacyByID, id)
+	var i Pharmacy
+	err := row.Scan(
+		&i.ID,
+		&i.OwnerID,
+		&i.Name,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.AppID,
+		&i.Address,
+	)
+	return i, err
+}
+
 const getPharmacyByIDForOwner = `-- name: GetPharmacyByIDForOwner :one
 SELECT id, owner_id, name, created_at, updated_at, app_id, address FROM pharmacies
 WHERE id = $1 AND owner_id = $2

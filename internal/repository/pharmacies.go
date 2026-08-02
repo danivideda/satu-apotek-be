@@ -21,6 +21,14 @@ type pharmaciesRepo struct {
 	queries *dbsqlc.Queries
 }
 
+func (r *pharmaciesRepo) GetByID(ctx context.Context, pharmacyID int64) (*dbsqlc.Pharmacy, error) {
+	pharmacy, err := r.queries.GetPharmacyByID(ctx, pharmacyID)
+	if err != nil {
+		return nil, err
+	}
+	return &pharmacy, nil
+}
+
 func (r *pharmaciesRepo) GetByIDForOwner(ctx context.Context, pharmacyID, ownerID int64) (*dbsqlc.Pharmacy, error) {
 	pharmacy, err := r.queries.GetPharmacyByIDForOwner(ctx, dbsqlc.GetPharmacyByIDForOwnerParams{
 		ID:      pharmacyID,

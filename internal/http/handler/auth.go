@@ -218,3 +218,17 @@ func (h *authHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+func (h *authHandler) PharmacyCheck(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	_, err := middleware.AuthPharmacyFromCtx(ctx)
+	if err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+
+	if err := json.ResponseNoContent(w); err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+}
