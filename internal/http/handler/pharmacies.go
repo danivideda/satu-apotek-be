@@ -149,9 +149,16 @@ func (h *pharmacyHandler) Connect(w http.ResponseWriter, r *http.Request) {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}
+	pharmacy, err := h.repo.Pharmacies.GetByID(ctx, pharmacySession.PharmacyID)
+	if err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+
 	service.SetPharmacyCookies(w, pharmacySession.ID.String(), time.Now().Add(5*time.Minute))
 	h.repo.CacheStore.PharmacySessions.SetDefault(pharmacySession.ID.String(), repository.PharmacySessionCacheValue{
 		PharmacyID: pharmacySession.PharmacyID,
+		Name:       pharmacy.Name,
 		Users:      *users,
 	})
 
