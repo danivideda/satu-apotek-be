@@ -20,8 +20,8 @@ type PharmacyCacheValue struct {
 }
 
 type UserCacheValue struct {
-	ID       int64
-	Username string
+	ID        int64
+	Username  string
 }
 
 func NewCacheStore() (*CacheStore, error) {

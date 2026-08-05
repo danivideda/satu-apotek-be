@@ -224,6 +224,45 @@ func (h *authHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *authHandler) UserCheck(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	_, err := middleware.AuthUserFromCtx(ctx)
+	if err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+
+	if err := json.ResponseNoContent(w); err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+}
+
+func (h *authHandler) UserLogout(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	authUser, err := middleware.AuthUserFromCtx(ctx)
+	if err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+
+	deletedUserSession, err := h.repo.UserSessions.Delete(ctx, authUser.SessionID)
+	if err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+
+	service.DeleteUserCookies(w)
+
+	res := map[string]string{
+		"deleted_session": deletedUserSession.ID.String(),
+	}
+	if err := json.ResponseOK(w, res); err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+}
+
 func (h *authHandler) PharmacyCheck(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	_, err := middleware.AuthPharmacyFromCtx(ctx)

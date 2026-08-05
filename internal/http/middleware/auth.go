@@ -33,6 +33,7 @@ type authOwner struct {
 
 type authUser struct {
 	repository.UserCacheValue
+	SessionID string
 }
 
 type authPharmacy struct {
@@ -142,6 +143,7 @@ func (m *AppMiddleware) AuthUser(next http.Handler) http.Handler {
 			// 2.2 return the context for user
 			authUser := authUser{
 				UserCacheValue: userCache,
+				SessionID:      sessionID,
 			}
 			ctx := context.WithValue(ctx, authUserCtx, authUser)
 			next.ServeHTTP(w, r.WithContext(ctx))
@@ -177,7 +179,7 @@ func (m *AppMiddleware) AuthUser(next http.Handler) http.Handler {
 			json.ResponseForbidden(w, r, fmt.Errorf("user doesn't belong to current authd pharmacy"))
 			return
 		}
-		
+
 		user, err := m.repo.Users.GetByID(ctx, userSession.UserID)
 		if err != nil {
 			json.ResponseInternalServerError(w, r, err)
@@ -193,6 +195,7 @@ func (m *AppMiddleware) AuthUser(next http.Handler) http.Handler {
 
 		authUser := authUser{
 			UserCacheValue: userCache,
+			SessionID:      sessionID,
 		}
 		ctx = context.WithValue(ctx, authUserCtx, authUser)
 		next.ServeHTTP(w, r.WithContext(ctx))

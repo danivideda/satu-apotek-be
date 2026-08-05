@@ -75,6 +75,11 @@ func (app *application) mount() http.Handler {
 			r.Route("/users", func(r chi.Router) {
 				r.Use(app.middleware.AuthPharmacy)
 				r.Post("/login", app.handler.Auth.UserLogin)
+				r.With(
+					app.middleware.AuthUser,
+					app.middleware.CSRFProtectionUser,
+				).Post("/logout", app.handler.Auth.UserLogout)
+				r.With(app.middleware.AuthUser).Get("/check", app.handler.Auth.UserCheck)
 			})
 
 			r.Route("/pharmacies", func(r chi.Router) {
@@ -121,7 +126,7 @@ func (app *application) mount() http.Handler {
 		// ============================
 		// Authenticated User Routes
 		// ============================
-		r.Route("/user",func(r chi.Router) {
+		r.Route("/user", func(r chi.Router) {
 			r.Use(app.middleware.AuthPharmacy)
 			r.Use(app.middleware.AuthUser)
 			r.Use(app.middleware.CSRFProtectionUser)
