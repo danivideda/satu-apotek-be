@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// Owner sessions
 func setOwnerCookiesBase(w http.ResponseWriter, sessionID string, csrfToken string, exp time.Time) {
 	c := &http.Cookie{
 		Name:     "owner_session",
@@ -56,7 +57,8 @@ func SetPharmacyCookies(w http.ResponseWriter, sessionID string, exp time.Time) 
 	http.SetCookie(w, c)
 }
 
-func SetUserCookies(w http.ResponseWriter, sessionID string, exp time.Time) {
+// User sessions
+func setUserCookiesBase(w http.ResponseWriter, sessionID string, csrfToken string, exp time.Time) {
 	c := &http.Cookie{
 		Name:     "user_session",
 		Value:    sessionID,
@@ -67,7 +69,10 @@ func SetUserCookies(w http.ResponseWriter, sessionID string, exp time.Time) {
 	}
 	http.SetCookie(w, c)
 
-	csrfToken, _ := NewCSRFToken(sessionID)
+	setUserCSRFCookiesBase(w, csrfToken, exp)
+}
+
+func setUserCSRFCookiesBase(w http.ResponseWriter, csrfToken string, exp time.Time) {
 	csrf := &http.Cookie{
 		Name:     "user_csrf",
 		Value:    csrfToken,
@@ -77,4 +82,17 @@ func SetUserCookies(w http.ResponseWriter, sessionID string, exp time.Time) {
 		HttpOnly: false,
 	}
 	http.SetCookie(w, csrf)
+}
+
+func SetUserCookies(w http.ResponseWriter, sessionID string, exp time.Time) {
+	csrfToken, _ := NewCSRFToken(sessionID)
+	setUserCookiesBase(w, sessionID, csrfToken, exp)
+}
+
+func DeleteUserCookies(w http.ResponseWriter) {
+	setUserCookiesBase(w, "", "", time.Now())
+}
+
+func DeleteUserCSRFCookie(w http.ResponseWriter) {
+	setUserCSRFCookiesBase(w, "", time.Now())
 }

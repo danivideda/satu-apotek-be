@@ -13,13 +13,13 @@ type CacheStore struct {
 	PharmacySessions *cache.Cache
 }
 
-type PharmacySessionCacheValue struct {
+type PharmacyCacheValue struct {
 	PharmacyID int64
 	Name       string
-	Users      []UserCache
+	Users      []UserCacheValue
 }
 
-type UserCache struct {
+type UserCacheValue struct {
 	ID       int64
 	Username string
 }

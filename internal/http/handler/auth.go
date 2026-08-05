@@ -210,8 +210,13 @@ func (h *authHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}
+	sessionID := userSession.ID.String()
+	userCache := repository.UserCacheValue{
+		ID:       userSession.UserID,
+		Username: user.Username,
+	}
 	service.SetUserCookies(w, userSession.ID.String(), userSession.ExpiresAt.Time)
-	h.repo.CacheStore.UserSessions.SetDefault(userSession.ID.String(), user.ID)
+	h.repo.CacheStore.UserSessions.SetDefault(sessionID, userCache)
 
 	if err := json.ResponseNoContent(w); err != nil {
 		json.ResponseInternalServerError(w, r, err)

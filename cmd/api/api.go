@@ -121,7 +121,7 @@ func (app *application) mount() http.Handler {
 		// ============================
 		// Authenticated User Routes
 		// ============================
-		r.Group(func(r chi.Router) {
+		r.Route("/user",func(r chi.Router) {
 			r.Use(app.middleware.AuthPharmacy)
 			r.Use(app.middleware.AuthUser)
 			r.Use(app.middleware.CSRFProtectionUser)

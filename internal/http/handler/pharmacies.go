@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/danivideda/satu-apotek-be/internal/dbsqlc"
+	"github.com/danivideda/satu-apotek-be/internal/env"
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
 	"github.com/danivideda/satu-apotek-be/internal/http/middleware"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
@@ -18,6 +19,8 @@ import (
 type pharmacyHandler struct {
 	repo repository.Repository
 }
+
+var pharmacySessionTTL = env.GetString("PHARMACY_SESSION_TTL", "168h")
 
 type PharmacyJSON struct {
 	AppID     any `json:"app_id"`
@@ -133,7 +136,12 @@ func (h *pharmacyHandler) Connect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 4. Create pharmacy_sessions
-	pharmacySession, err := h.repo.PharmacySessions.Create(ctx, pharmacyCode.ApotekID, time.Now().Add(5*time.Minute))
+	ttl, err := time.ParseDuration(pharmacySessionTTL)
+	if err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+	pharmacySession, err := h.repo.PharmacySessions.Create(ctx, pharmacyCode.ApotekID, time.Now().Add(ttl))
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			json.ResponseBadRequest(w, r, err)
@@ -156,7 +164,7 @@ func (h *pharmacyHandler) Connect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	service.SetPharmacyCookies(w, pharmacySession.ID.String(), time.Now().Add(5*time.Minute))
-	h.repo.CacheStore.PharmacySessions.SetDefault(pharmacySession.ID.String(), repository.PharmacySessionCacheValue{
+	h.repo.CacheStore.PharmacySessions.SetDefault(pharmacySession.ID.String(), repository.PharmacyCacheValue{
 		PharmacyID: pharmacySession.PharmacyID,
 		Name:       pharmacy.Name,
 		Users:      *users,

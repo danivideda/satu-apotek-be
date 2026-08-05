@@ -81,7 +81,14 @@ func (h *userHandler) GetAllByAppID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *userHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
-	if err := json.ResponseOK(w, "from profile"); err != nil {
+	ctx := r.Context()
+
+	userAuth, err := middleware.AuthUserFromCtx(ctx)
+	if err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+	if err := json.ResponseOK(w, map[string]any{"userAuthCtx": userAuth}); err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}
