@@ -6,24 +6,24 @@ Built with **Go + Chi**, PostgreSQL, sqlc, and golang-migrate.
 
 ## Tech Stack
 
-| Layer | Choice |
-|-------|--------|
-| Language | Go 1.25.3 |
-| HTTP Router | [Chi v5](https://github.com/go-chi/chi) |
-| Database | PostgreSQL 17 |
-| Migrations | [golang-migrate](https://github.com/golang-migrate/migrate) |
-| Query generation | [sqlc](https://sqlc.dev) |
-| Auth | Session cookies + CSRF (HMAC) + argon2id |
-| Session cache | [go-cache](https://github.com/patrickmn/go-cache) |
-| Live reload | [Air](https://github.com/air-verse/air) |
-| Task runner | [Just](https://github.com/casey/just) |
-| Env loading | [direnv](https://direnv.net/docs/installation.html) |
+| Layer            | Choice                                                      |
+| ---------------- | ----------------------------------------------------------- |
+| Language         | Go 1.25.3                                                   |
+| HTTP Router      | [Chi v5](https://github.com/go-chi/chi)                     |
+| Database         | PostgreSQL 17                                               |
+| Migrations       | [golang-migrate](https://github.com/golang-migrate/migrate) |
+| Query generation | [sqlc](https://sqlc.dev)                                    |
+| Auth             | Session cookies + CSRF (HMAC) + argon2id                    |
+| Session cache    | [go-cache](https://github.com/patrickmn/go-cache)           |
+| Live reload      | [Air](https://github.com/air-verse/air)                     |
+| Task runner      | [Just](https://github.com/casey/just)                       |
+| Env loading      | [direnv](https://direnv.net/docs/installation.html)         |
 
 ## Prerequisites
 
 - **Go** 1.25.3+
 - **Docker** + **Docker Compose**
-- **direnv** ≥ 2.35 
+- **direnv** ≥ 2.35
 - **Just** ≥ 1.41
 
 ## Quick Start
@@ -61,24 +61,22 @@ All variables are loaded via direnv from `.envrc`.
 See `.envrc.example` for the full list.
 
 > [!NOTE]
-> All secret values shown below are for **local development only**.
+> All secret values are for **local development only**
 
-Key ones:
-
-| Variable | Purpose | Default (local) |
-|----------|---------|-----------------|
-| `ADDR` | HTTP listen address | `:8080` |
-| `DATABASE_URL` | Postgres connection string (pgx) | `postgres://admin:adminpassword@localhost/satuapotek?sslmode=disable` |
-| `MIGRATE_URL` | Same DB but with `pgx5://` scheme for migrate | `pgx5://admin:...` |
-| `OWNER_SESSION_TTL` | Owner session lifetime | `10m` |
-| `USER_SESSION_TTL` | User session lifetime | `10m` |
-| `PHARMACY_SESSION_TTL` | Pharmacy session lifetime | `10m` |
-| `CACHE_SESSION_TTL` | In-memory cache TTL for sessions | `1m` |
-| `CODE_TTL` | Pharmacy code lifetime | `1m` |
-| `CSRF_SECRET` | Secret used to sign CSRF tokens | (see `.envrc.example`) |
-| `RUN_JOB` | Enable background jobs | `false` |
-| `CRON_DURATION_DEL_EXP_SESSION` | How often to clean expired sessions | `10s` |
-| `CRON_DURATION_CLEAR_APTK_CODE` | How often to clear expired pharmacy codes | `10s` |
+| Variable                        | Purpose                                       |
+| ------------------------------- | --------------------------------------------- |
+| `ADDR`                          | HTTP listen address                           |
+| `DATABASE_URL`                  | Postgres connection string (pgx)              |
+| `MIGRATE_URL`                   | Same DB but with `pgx5://` scheme for migrate |
+| `OWNER_SESSION_TTL`             | Owner session lifetime                        |
+| `USER_SESSION_TTL`              | User session lifetime                         |
+| `PHARMACY_SESSION_TTL`          | Pharmacy session lifetime                     |
+| `CACHE_SESSION_TTL`             | In-memory cache TTL for sessions              |
+| `CODE_TTL`                      | Pharmacy code lifetime                        |
+| `CSRF_SECRET`                   | Secret used to sign CSRF tokens               |
+| `RUN_JOB`                       | Enable background jobs                        |
+| `CRON_DURATION_DEL_EXP_SESSION` | How often to clean expired sessions           |
+| `CRON_DURATION_CLEAR_APTK_CODE` | How often to clear expired pharmacy codes     |
 
 > [!NOTE]
 > The JWT-related variables (`JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `ACCESS_TTL`, `REFRESH_TTL`) still exist in `.envrc.example` but are currently unused. Auth is fully session + cookie based.
@@ -158,21 +156,21 @@ just migrate-version
 
 ```markdown
 cmd/
-├── api/                 # HTTP server entrypoint
-└── migrate/             # migration files + (future) seed
+├── api/ # HTTP server entrypoint
+└── migrate/ # migration files + (future) seed
 internal/
-├── db/                  # pgx connection helper
-├── dbsqlc/              # generated sqlc code + raw queries
-├── env/                 # env helpers
+├── db/ # pgx connection helper
+├── dbsqlc/ # generated sqlc code + raw queries
+├── env/ # env helpers
 ├── http/
-│   ├── handler/         # HTTP handlers
-│   ├── middleware/      # auth, CSRF, guards
-│   ├── jwt/             # leftover JWT helpers (currently unused)
-│   └── json/            # response helpers
-├── repository/          # data access + in-memory session cache
-├── service/             # business logic (cookies, CSRF, etc.)
-└── job/                 # background jobs (gocron)
-bin/                     # local tool binaries
+│ ├── handler/ # HTTP handlers
+│ ├── middleware/ # auth, CSRF, guards
+│ ├── jwt/ # leftover JWT helpers (currently unused)
+│ └── json/ # response helpers
+├── repository/ # data access + in-memory session cache
+├── service/ # business logic (cookies, CSRF, etc.)
+└── job/ # background jobs (gocron)
+bin/ # local tool binaries
 ```
 
 ## Notes
