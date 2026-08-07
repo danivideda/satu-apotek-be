@@ -8,7 +8,7 @@ import (
 	"github.com/danivideda/satu-apotek-be/internal/repository"
 )
 
-func GetUsersFromPharmacyID(ctx context.Context, r repository.Repository, pharmacyID int64) (*[]repository.UserCache, error) {
+func GetUsersFromPharmacyID(ctx context.Context, r repository.Repository, pharmacyID int64) (*[]repository.UserCacheValue, error) {
 	users, err := r.Users.GetByPharmacyID(ctx, pharmacyID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
@@ -17,10 +17,10 @@ func GetUsersFromPharmacyID(ctx context.Context, r repository.Repository, pharma
 			return nil, err
 		}
 	}
-	var usersCache []repository.UserCache
+	var usersCache []repository.UserCacheValue
 	if users != nil {
 		for _, user := range *users {
-			userItem := repository.UserCache{
+			userItem := repository.UserCacheValue{
 				ID:       user.ID,
 				Username: user.Username,
 			}
@@ -30,8 +30,8 @@ func GetUsersFromPharmacyID(ctx context.Context, r repository.Repository, pharma
 	return &usersCache, nil
 }
 
-func UserExistsInPharmacy(users []repository.UserCache, userID int64) bool {
-	userExists := slices.ContainsFunc(users, func(u repository.UserCache) bool {
+func UserExistsInPharmacy(users []repository.UserCacheValue, userID int64) bool {
+	userExists := slices.ContainsFunc(users, func(u repository.UserCacheValue) bool {
 		if u.ID == userID {
 			return true
 		}

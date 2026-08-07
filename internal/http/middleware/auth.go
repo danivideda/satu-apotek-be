@@ -32,14 +32,14 @@ type authOwner struct {
 }
 
 type authUser struct {
-	ID        int64
+	repository.UserCacheValue
 	SessionID string
 }
 
 type authPharmacy struct {
 	ID    int64
 	Name  string
-	Users []repository.UserCache
+	Users []repository.UserCacheValue
 }
 
 func (m *AppMiddleware) AuthOwner(next http.Handler) http.Handler {
@@ -122,7 +122,7 @@ func (m *AppMiddleware) AuthUser(next http.Handler) http.Handler {
 
 		// 2. Check if session exist in cache. If exist, pass the request.
 		if val, found := m.repo.CacheStore.UserSessions.Get(sessionID); found {
-			userID, ok := val.(int64)
+			userCache, ok := val.(repository.UserCacheValue)
 			if !ok {
 				json.ResponseInternalServerError(w, r, errors.New("type assertion failed, userID is not int64"))
 				return
@@ -134,31 +134,40 @@ func (m *AppMiddleware) AuthUser(next http.Handler) http.Handler {
 				json.ResponseInternalServerError(w, r, err)
 				return
 			}
-			if !service.UserExistsInPharmacy(authPharmacy.Users, userID) {
+			if !service.UserExistsInPharmacy(authPharmacy.Users, userCache.ID) {
+				service.DeleteUserCookies(w)
 				json.ResponseForbidden(w, r, fmt.Errorf("user doesn't belong to current authd pharmacy"))
 				return
 			}
 
 			// 2.2 return the context for user
 			authUser := authUser{
-				ID:        userID,
-				SessionID: sessionID,
+				UserCacheValue: userCache,
+				SessionID:      sessionID,
 			}
 			ctx := context.WithValue(ctx, authUserCtx, authUser)
 			next.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}
 
-		// 3. Check if session exists in DB
-		userSession, err := m.repo.UserSessions.Get(ctx, sessionID)
+		// 3. Check if session exist in DB. If exist, renew the session_id and expires_at value. If not exist
+		// or is expired, then the session is invalid
+		ttl, err := time.ParseDuration(userSessionTTL)
+		if err != nil {
+			json.ResponseInternalServerError(w, r, err)
+			return
+		}
+		userSession, err := m.repo.UserSessions.Update(ctx, sessionID, time.Now().Add(ttl))
 		if err != nil {
 			if errors.Is(err, repository.ErrNotFound) {
+				service.DeleteUserCookies(w)
 				json.ResponseUnauthorized(w, r, err)
 			} else {
 				json.ResponseInternalServerError(w, r, err)
 			}
 			return
 		}
+
 		// 3.1 Check if user exists in the authd pharmacy
 		authPharmacy, err := AuthPharmacyFromCtx(ctx)
 		if err != nil {
@@ -166,33 +175,27 @@ func (m *AppMiddleware) AuthUser(next http.Handler) http.Handler {
 			return
 		}
 		if !service.UserExistsInPharmacy(authPharmacy.Users, userSession.UserID) {
+			service.DeleteUserCookies(w)
 			json.ResponseForbidden(w, r, fmt.Errorf("user doesn't belong to current authd pharmacy"))
 			return
 		}
 
-		// 4. Check if session exist in DB. If exist, renew the session_id and expires_at value. If not exist
-		// or is expired, then the session is invalid
-		ttl, err := time.ParseDuration(userSessionTTL)
+		user, err := m.repo.Users.GetByID(ctx, userSession.UserID)
 		if err != nil {
 			json.ResponseInternalServerError(w, r, err)
 			return
 		}
-		userSession, err = m.repo.UserSessions.Update(ctx, sessionID, time.Now().Add(ttl))
-		if err != nil {
-			if errors.Is(err, repository.ErrNotFound) {
-				json.ResponseUnauthorized(w, r, err)
-			} else {
-				json.ResponseInternalServerError(w, r, err)
-			}
-			return
-		}
 		sessionID = userSession.ID.String()
-		m.repo.CacheStore.UserSessions.SetDefault(sessionID, userSession.UserID)
+		userCache := repository.UserCacheValue{
+			ID:       userSession.UserID,
+			Username: user.Username,
+		}
+		m.repo.CacheStore.UserSessions.SetDefault(sessionID, userCache)
 		service.SetUserCookies(w, sessionID, userSession.ExpiresAt.Time)
 
 		authUser := authUser{
-			ID:        userSession.UserID,
-			SessionID: sessionID,
+			UserCacheValue: userCache,
+			SessionID:      sessionID,
 		}
 		ctx = context.WithValue(ctx, authUserCtx, authUser)
 		next.ServeHTTP(w, r.WithContext(ctx))
@@ -213,7 +216,7 @@ func (m *AppMiddleware) AuthPharmacy(next http.Handler) http.Handler {
 		sessionID := sessionCookie.Value
 
 		if val, found := m.repo.CacheStore.PharmacySessions.Get(sessionID); found {
-			pharmacySessionCache, ok := val.(repository.PharmacySessionCacheValue)
+			pharmacyCache, ok := val.(repository.PharmacyCacheValue)
 			if !ok {
 				json.ResponseInternalServerError(w, r, errors.New("type assertion failed, incorrect Pharmacy Session Cache Value form"))
 				return
@@ -221,9 +224,9 @@ func (m *AppMiddleware) AuthPharmacy(next http.Handler) http.Handler {
 
 			// Pass the Cache value to authPharmacyCtx
 			authPharmacy := authPharmacy{
-				ID:    pharmacySessionCache.PharmacyID,
-				Name:  pharmacySessionCache.Name,
-				Users: pharmacySessionCache.Users,
+				ID:    pharmacyCache.PharmacyID,
+				Name:  pharmacyCache.Name,
+				Users: pharmacyCache.Users,
 			}
 			ctx := context.WithValue(ctx, authPharmacyCtx, authPharmacy)
 			next.ServeHTTP(w, r.WithContext(ctx))
@@ -260,7 +263,7 @@ func (m *AppMiddleware) AuthPharmacy(next http.Handler) http.Handler {
 
 		// update sessionID
 		sessionID = pharmacySession.ID.String()
-		m.repo.CacheStore.PharmacySessions.SetDefault(sessionID, repository.PharmacySessionCacheValue{
+		m.repo.CacheStore.PharmacySessions.SetDefault(sessionID, repository.PharmacyCacheValue{
 			PharmacyID: pharmacySession.PharmacyID,
 			Name:       pharmacyDetail.Name,
 			Users:      *usersCache,
