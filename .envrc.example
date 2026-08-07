@@ -2,7 +2,7 @@
 export GOBIN=$PWD/bin
 export PATH=$GOBIN:$PATH
 
-export ADDR="localhost:8080"
+export ADDR=":8080"
 
 # postgres database
 postgres_addr="admin:adminpassword@localhost/satuapotek?sslmode=disable"
@@ -18,11 +18,13 @@ export REFRESH_TTL="5m"
 export ACCESS_TTL="5m"
 
 # Apotek Code TTL
-export CODE_TTL="10s"
+export CODE_TTL="1m"
 
 # Sessions TTL
-export CACHE_SESSION_TTL="5m"
+export CACHE_SESSION_TTL="1m"
 export OWNER_SESSION_TTL="10m" # 7 days
+export USER_SESSION_TTL="10m" # 7 days
+export PHARMACY_SESSION_TTL="10m" # 7 days
 
 # CRON Duration
 export RUN_JOB=false
