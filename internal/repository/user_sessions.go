@@ -36,6 +36,9 @@ func (r *userSessionsRepo) Update(ctx context.Context, sessionID string, exp tim
 		UpdatedAt: pgtype.Timestamptz{Time: time.Now(), Valid: true},
 	})
 	if err != nil {
+		if isNotFoundError(err) {
+			return nil, ErrNotFound
+		}
 		return nil, err
 	}
 
@@ -66,7 +69,9 @@ func (r *userSessionsRepo) Delete(ctx context.Context, sessionID string) (*dbsql
 	}
 	deletedUserSession, err := r.queries.DeleteUserSession(ctx, sessionUUID)
 	if err != nil {
-		return nil, err
+		if isNotFoundError(err) {
+			return nil, ErrNotFound
+		}
 	}
 	return &deletedUserSession, nil
 }

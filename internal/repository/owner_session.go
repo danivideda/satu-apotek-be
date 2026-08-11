@@ -2,11 +2,9 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/danivideda/satu-apotek-be/internal/dbsqlc"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -39,11 +37,10 @@ func (r *ownerSessionsRepo) Update(ctx context.Context, sessionID string, exp ti
 		UpdatedAt: pgtype.Timestamptz{Time: time.Now(), Valid: true},
 	})
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if isNotFoundError(err) {
 			return nil, ErrNotFound
-		} else {
-			return nil, err
 		}
+		return nil, err
 	}
 
 	return &ownerSession, nil
@@ -57,11 +54,10 @@ func (r *ownerSessionsRepo) Get(ctx context.Context, sessionID string) (*dbsqlc.
 
 	ownerSession, err := r.queries.GetOwnerSession(ctx, sessionUUID)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if isNotFoundError(err) {
 			return nil, ErrNotFound
-		} else {
-			return nil, err
 		}
+		return nil, err
 	}
 	return &ownerSession, nil
 }
@@ -73,7 +69,9 @@ func (r *ownerSessionsRepo) Delete(ctx context.Context, sessionID string) (*dbsq
 	}
 	deletedOwnerSession, err := r.queries.DeleteOwnerSession(ctx, sessionUUID)
 	if err != nil {
-		return nil, err
+		if isNotFoundError(err) {
+			return nil, ErrNotFound
+		}
 	}
 	return &deletedOwnerSession, nil
 }

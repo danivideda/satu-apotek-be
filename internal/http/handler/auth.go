@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -120,6 +121,12 @@ func (h *authHandler) OwnerLogout(w http.ResponseWriter, r *http.Request) {
 
 	deletedOwnerSession, err := h.repo.OwnerSessions.Delete(ctx, authOwner.SessionID)
 	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			h.repo.CacheStore.OwnerSessions.Delete(deletedOwnerSession.ID.String())
+			service.DeleteOwnerCookies(w)
+			json.ResponseBadRequest(w, r, err)
+			return
+		}
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}
@@ -248,10 +255,18 @@ func (h *authHandler) UserLogout(w http.ResponseWriter, r *http.Request) {
 
 	deletedUserSession, err := h.repo.UserSessions.Delete(ctx, authUser.SessionID)
 	if err != nil {
-		json.ResponseInternalServerError(w, r, err)
+		if errors.Is(err, repository.ErrNotFound) {
+			h.repo.CacheStore.UserSessions.Delete(deletedUserSession.ID.String())
+			service.DeleteUserCookies(w)
+			json.ResponseBadRequest(w, r, err)
+			return
+		} else {
+			json.ResponseInternalServerError(w, r, err)
+		}
 		return
 	}
 
+	h.repo.CacheStore.UserSessions.Delete(deletedUserSession.ID.String())
 	service.DeleteUserCookies(w)
 
 	res := map[string]string{
