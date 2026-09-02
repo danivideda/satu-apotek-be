@@ -12,58 +12,65 @@ import (
 var ownerSessionTTL = env.GetString("OWNER_SESSION_TTL", "168h")
 
 type Repository struct {
-	Owners interface {
-		GetByID(ctx context.Context, id int64) (*dbsqlc.Owner, error)
-		Create(ctx context.Context, username, email, passwordHash string) (ownerID int64, ownerSessionID string, exp time.Time, err error)
-		GetByUsername(ctx context.Context, username string) (*dbsqlc.GetOwnerByUsernameRow, error)
-		GetByEmail(ctx context.Context, email string) (*dbsqlc.GetOwnerByEmailRow, error)
-	}
-
-	Users interface {
-		Create(ctx context.Context, username, passwordHash string, pharmacyID int64) (*dbsqlc.User, error)
-		GetByID(ctx context.Context, id int64) (*dbsqlc.User, error)
-		GetByUsername(ctx context.Context, username string) (*dbsqlc.GetUserByUsernameRow, error)
-		GetByPharmacyID(ctx context.Context, pharmacyID int64) (*[]dbsqlc.GetUserByPharmacyIDRow, error)
-	}
-
-	OwnerSessions interface {
-		Create(ctx context.Context, ownerID int64, exp time.Time) (*dbsqlc.OwnerSession, error)
-		Update(ctx context.Context, sessionID string, exp time.Time) (*dbsqlc.OwnerSession, error)
-		Get(ctx context.Context, sessionID string) (*dbsqlc.OwnerSession, error)
-		Delete(ctx context.Context, sessionID string) (*dbsqlc.OwnerSession, error)
-		DeleteExpired(ctx context.Context) (*[]dbsqlc.OwnerSession, error)
-	}
-
-	UserSessions interface {
-		Create(ctx context.Context, userID int64, exp time.Time) (*dbsqlc.UserSession, error)
-		Update(ctx context.Context, sessionID string, exp time.Time) (*dbsqlc.UserSession, error)
-		Get(ctx context.Context, sessionID string) (*dbsqlc.UserSession, error)
-		Delete(ctx context.Context, sessionID string) (*dbsqlc.UserSession, error)
-		DeleteExpired(ctx context.Context) (*[]dbsqlc.UserSession, error)
-	}
-
-	PharmacySessions interface {
-		Create(ctx context.Context, pharmacyID int64, exp time.Time) (*dbsqlc.PharmacySession, error)
-		Update(ctx context.Context, sessionID string, exp time.Time) (*dbsqlc.PharmacySession, error)
-		Get(ctx context.Context, sessionID string) (*dbsqlc.PharmacySession, error)
-		Delete(ctx context.Context, sessionID string) (*dbsqlc.PharmacySession, error)
-		DeleteExpired(ctx context.Context) (*[]dbsqlc.PharmacySession, error)
-	}
-
-	Pharmacies interface {
-		GetByIDForOwner(ctx context.Context, pharmacyID, ownerID int64) (*dbsqlc.Pharmacy, error)
-		GetByID(ctx context.Context, pharmacyID int64) (*dbsqlc.Pharmacy, error)
-		GetByAppIDForOwner(ctx context.Context, appID string, ownerID int64) (*dbsqlc.Pharmacy, error)
-		GetCodeByCode(ctx context.Context, code string) (*dbsqlc.PharmacyCode, error)
-		GetByOwnerID(ctx context.Context, ownerID int64) (*[]dbsqlc.Pharmacy, error)
-		Create(ctx context.Context, ownerID int64, name string) (*dbsqlc.Pharmacy, error)
-		UpsertCode(ctx context.Context, apotekID int64, code string) (*dbsqlc.PharmacyCode, error)
-		GetCodeByID(ctx context.Context, apotekID int64) (*dbsqlc.PharmacyCode, error)
-		DeleteExpiredCode(ctx context.Context) (*[]dbsqlc.PharmacyCode, error)
-		DeleteCode(ctx context.Context, code string) (*dbsqlc.PharmacyCode, error)
-	}
+	Owners OwnersRepository
+	Users UsersRepository
+	OwnerSessions OwnerSessionsRepository
+	UserSessions UserSessionsRepository
+	PharmacySessions PharmacySessionsRepository
+	Pharmacies PharmaciesRepository
 
 	CacheStore *CacheStore
+}
+
+type OwnersRepository interface {
+	GetByID(ctx context.Context, id int64) (*dbsqlc.Owner, error)
+	Create(ctx context.Context, username, email, passwordHash string) (ownerID int64, ownerSessionID string, exp time.Time, err error)
+	GetByUsername(ctx context.Context, username string) (*dbsqlc.GetOwnerByUsernameRow, error)
+	GetByEmail(ctx context.Context, email string) (*dbsqlc.GetOwnerByEmailRow, error)
+}
+
+type UsersRepository interface {
+	Create(ctx context.Context, username, passwordHash string, pharmacyID int64) (*dbsqlc.User, error)
+	GetByID(ctx context.Context, id int64) (*dbsqlc.User, error)
+	GetByUsername(ctx context.Context, username string) (*dbsqlc.GetUserByUsernameRow, error)
+	GetByPharmacyID(ctx context.Context, pharmacyID int64) (*[]dbsqlc.GetUserByPharmacyIDRow, error)
+}
+
+type OwnerSessionsRepository interface {
+	Create(ctx context.Context, ownerID int64, exp time.Time) (*dbsqlc.OwnerSession, error)
+	Update(ctx context.Context, sessionID string, exp time.Time) (*dbsqlc.OwnerSession, error)
+	Get(ctx context.Context, sessionID string) (*dbsqlc.OwnerSession, error)
+	Delete(ctx context.Context, sessionID string) (*dbsqlc.OwnerSession, error)
+	DeleteExpired(ctx context.Context) (*[]dbsqlc.OwnerSession, error)
+}
+
+type UserSessionsRepository interface {
+	Create(ctx context.Context, userID int64, exp time.Time) (*dbsqlc.UserSession, error)
+	Update(ctx context.Context, sessionID string, exp time.Time) (*dbsqlc.UserSession, error)
+	Get(ctx context.Context, sessionID string) (*dbsqlc.UserSession, error)
+	Delete(ctx context.Context, sessionID string) (*dbsqlc.UserSession, error)
+	DeleteExpired(ctx context.Context) (*[]dbsqlc.UserSession, error)
+}
+
+type PharmacySessionsRepository interface {
+	Create(ctx context.Context, pharmacyID int64, exp time.Time) (*dbsqlc.PharmacySession, error)
+	Update(ctx context.Context, sessionID string, exp time.Time) (*dbsqlc.PharmacySession, error)
+	Get(ctx context.Context, sessionID string) (*dbsqlc.PharmacySession, error)
+	Delete(ctx context.Context, sessionID string) (*dbsqlc.PharmacySession, error)
+	DeleteExpired(ctx context.Context) (*[]dbsqlc.PharmacySession, error)
+}
+
+type PharmaciesRepository interface {
+	GetByIDForOwner(ctx context.Context, pharmacyID, ownerID int64) (*dbsqlc.Pharmacy, error)
+	GetByID(ctx context.Context, pharmacyID int64) (*dbsqlc.Pharmacy, error)
+	GetByAppIDForOwner(ctx context.Context, appID string, ownerID int64) (*dbsqlc.Pharmacy, error)
+	GetCodeByCode(ctx context.Context, code string) (*dbsqlc.PharmacyCode, error)
+	GetByOwnerID(ctx context.Context, ownerID int64) (*[]dbsqlc.Pharmacy, error)
+	Create(ctx context.Context, ownerID int64, name string) (*dbsqlc.Pharmacy, error)
+	UpsertCode(ctx context.Context, apotekID int64, code string) (*dbsqlc.PharmacyCode, error)
+	GetCodeByID(ctx context.Context, apotekID int64) (*dbsqlc.PharmacyCode, error)
+	DeleteExpiredCode(ctx context.Context) (*[]dbsqlc.PharmacyCode, error)
+	DeleteCode(ctx context.Context, code string) (*dbsqlc.PharmacyCode, error)
 }
 
 func New(db *pgxpool.Pool, cs *CacheStore) Repository {
