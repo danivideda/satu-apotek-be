@@ -2,9 +2,8 @@ package job
 
 import (
 	"context"
-	"time"
 
-	"github.com/danivideda/satu-apotek-be/internal/env"
+	"github.com/danivideda/satu-apotek-be/internal/config"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
 	"github.com/go-co-op/gocron/v2"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -14,6 +13,7 @@ type MyScheduler struct {
 	scheduler gocron.Scheduler
 	logger    gocron.Logger
 	repo      repository.Repository
+	jobConfig config.JobConfig
 }
 
 func NewScheduler(r repository.Repository) (*MyScheduler, error) {
@@ -27,16 +27,13 @@ func NewScheduler(r repository.Repository) (*MyScheduler, error) {
 		scheduler: s,
 		logger:    l,
 		repo:      r,
+		jobConfig: config.Load().Job,
 	}
 	return &scheduler, nil
 }
 
 func (s *MyScheduler) AddClearApotekCodeJob() {
-	duration, err := time.ParseDuration(env.GetString("CRON_DURATION_CLEAR_APTK_CODE", "5m"))
-	if err != nil {
-		s.logger.Error(err.Error())
-		return
-	}
+	duration := s.jobConfig.ClearApotekCode
 
 	jobDuration := gocron.DurationJob(duration)
 	task := gocron.NewTask(func(ctx context.Context) {
@@ -65,11 +62,7 @@ func (s *MyScheduler) AddClearApotekCodeJob() {
 }
 
 func (s *MyScheduler) AddDeleteExpiredSessionsJob() {
-	duration, err := time.ParseDuration(env.GetString("CRON_DURATION_DEL_EXP_SESSION", "5m"))
-	if err != nil {
-		s.logger.Error(err.Error())
-		return
-	}
+	duration := s.jobConfig.DeleteExpiredSession
 
 	jobDuration := gocron.DurationJob(duration)
 	task := gocron.NewTask(func(ctx context.Context) {

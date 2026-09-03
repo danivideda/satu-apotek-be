@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/danivideda/satu-apotek-be/internal/config"
 	"github.com/danivideda/satu-apotek-be/internal/http/handler"
 	"github.com/danivideda/satu-apotek-be/internal/http/middleware"
 	"github.com/go-chi/chi/v5"
@@ -13,18 +14,9 @@ import (
 )
 
 type application struct {
-	config     config
+	config     config.Config
 	handler    handler.Handler
 	middleware middleware.AppMiddleware
-}
-
-type config struct {
-	addr string
-	db   dbConfig
-}
-
-type dbConfig struct {
-	url string
 }
 
 func (app *application) mount() http.Handler {
@@ -143,14 +135,14 @@ func (app *application) mount() http.Handler {
 
 func (app *application) run(mux http.Handler) error {
 	srv := http.Server{
-		Addr:         app.config.addr,
+		Addr:         app.config.Addr,
 		Handler:      mux,
 		WriteTimeout: time.Second * 30,
 		ReadTimeout:  time.Second * 30,
 		IdleTimeout:  time.Minute,
 	}
 
-	log.Printf("Listening on http://%s", app.config.addr)
+	log.Printf("Listening on http://%s", app.config.Addr)
 
 	return srv.ListenAndServe()
 }

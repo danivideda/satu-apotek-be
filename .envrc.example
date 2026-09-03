@@ -24,7 +24,7 @@ export CODE_TTL="1m"
 export CACHE_SESSION_TTL="1m"
 export OWNER_SESSION_TTL="10m" # 7 days
 export USER_SESSION_TTL="10m" # 7 days
-export PHARMACY_SESSION_TTL="10m" # 7 days
+export PHARMACY_SESSION_TTL="168h" # 7 days
 
 # CRON Duration
 export RUN_JOB=false

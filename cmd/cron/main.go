@@ -1,17 +1,24 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/danivideda/satu-apotek-be/internal/config"
 	"github.com/danivideda/satu-apotek-be/internal/db"
-	"github.com/danivideda/satu-apotek-be/internal/http/handler"
-	"github.com/danivideda/satu-apotek-be/internal/http/middleware"
+	"github.com/danivideda/satu-apotek-be/internal/job"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
 )
 
 func main() {
 	cfg := config.Load()
+
+	fmt.Println(cfg.Job.Enabled)
+
+	if !cfg.Job.Enabled {
+		fmt.Println("Cron not enabled")
+		return
+	}
 
 	db, err := db.NewPostgres(cfg.DB.URL)
 	if err != nil {
@@ -26,15 +33,20 @@ func main() {
 	}
 
 	r := repository.New(db, c)
-	h := handler.New(r)
-	md := middleware.New(r)
 
-	app := &application{
-		config:     cfg,
-		handler:    h,
-		middleware: md,
+	s, err := job.NewScheduler(r)
+	if err != nil {
+		log.Panic(err)
 	}
+	s.AddClearApotekCodeJob()
+	s.AddDeleteExpiredSessionsJob()
 
-	mux := app.mount()
-	log.Fatal(app.run(mux))
+	s.Start()
+	defer func() {
+		if err := s.Shutdown(); err != nil {
+			log.Panic(err)
+		}
+	}()
+
+	select {}
 }
