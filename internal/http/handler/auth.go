@@ -15,7 +15,8 @@ import (
 )
 
 type authHandler struct {
-	repo repository.Repository
+	repo           repository.Repository
+	sessionService service.Session
 }
 
 var (
@@ -48,7 +49,7 @@ func (h *authHandler) OwnerRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	service.SetOwnerCookies(w, ownerSessionID, exp)
+	h.sessionService.Owners.SetCookies(w, ownerSessionID, exp)
 
 	res := map[string]any{
 		"owner_id": ownerID,
@@ -102,7 +103,7 @@ func (h *authHandler) OwnerLogin(w http.ResponseWriter, r *http.Request) {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}
-	service.SetOwnerCookies(w, ownerSession.ID.String(), ownerSession.ExpiresAt.Time)
+	h.sessionService.Owners.SetCookies(w, ownerSession.ID.String(), ownerSession.ExpiresAt.Time)
 	h.repo.CacheStore.OwnerSessions.SetDefault(ownerSession.ID.String(), owner.ID)
 
 	if err := json.ResponseNoContent(w); err != nil {
@@ -123,7 +124,7 @@ func (h *authHandler) OwnerLogout(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			h.repo.CacheStore.OwnerSessions.Delete(deletedOwnerSession.ID.String())
-			service.DeleteOwnerCookies(w)
+			h.sessionService.Owners.DeleteCookies(w)
 			json.ResponseBadRequest(w, r, err)
 			return
 		}
@@ -131,7 +132,7 @@ func (h *authHandler) OwnerLogout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	service.DeleteOwnerCookies(w)
+	h.sessionService.Owners.DeleteCookies(w)
 
 	res := map[string]string{
 		"deleted_session": deletedOwnerSession.ID.String(),
@@ -156,7 +157,7 @@ func (h *authHandler) OwnerCheck(w http.ResponseWriter, r *http.Request) {
 	_, err = r.Cookie("owner_csrf")
 	if err != nil {
 		fmt.Println(err)
-		service.SetOwnerCookies(w, authOwner.SessionID, authOwner.SessionExp)
+		h.sessionService.Owners.SetCookies(w, authOwner.SessionID, authOwner.SessionExp)
 	}
 
 	if err := json.ResponseNoContent(w); err != nil {
@@ -222,7 +223,7 @@ func (h *authHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 		ID:       userSession.UserID,
 		Username: user.Username,
 	}
-	service.SetUserCookies(w, userSession.ID.String(), userSession.ExpiresAt.Time)
+	h.sessionService.Users.SetCookies(w, userSession.ID.String(), userSession.ExpiresAt.Time)
 	h.repo.CacheStore.UserSessions.SetDefault(sessionID, userCache)
 
 	if err := json.ResponseNoContent(w); err != nil {
@@ -257,7 +258,7 @@ func (h *authHandler) UserLogout(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			h.repo.CacheStore.UserSessions.Delete(deletedUserSession.ID.String())
-			service.DeleteUserCookies(w)
+			h.sessionService.Users.DeleteCookies(w)
 			json.ResponseBadRequest(w, r, err)
 			return
 		} else {
@@ -267,7 +268,7 @@ func (h *authHandler) UserLogout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.repo.CacheStore.UserSessions.Delete(deletedUserSession.ID.String())
-	service.DeleteUserCookies(w)
+	h.sessionService.Users.DeleteCookies(w)
 
 	res := map[string]string{
 		"deleted_session": deletedUserSession.ID.String(),

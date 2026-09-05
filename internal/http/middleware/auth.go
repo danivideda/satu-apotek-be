@@ -83,7 +83,7 @@ func (m *AppMiddleware) AuthOwner(next http.Handler) http.Handler {
 		ownerSession, err := m.repo.OwnerSessions.Update(ctx, sessionID, time.Now().Add(ttl))
 		if err != nil {
 			if errors.Is(err, repository.ErrNotFound) {
-				service.DeleteOwnerCookies(w)
+				m.s.Owners.DeleteCookies(w)
 				json.ResponseUnauthorized(w, r, err)
 			} else {
 				json.ResponseInternalServerError(w, r, err)
@@ -94,7 +94,7 @@ func (m *AppMiddleware) AuthOwner(next http.Handler) http.Handler {
 		sessionID = ownerSession.ID.String()
 		sessionExp = ownerSession.ExpiresAt.Time
 		m.repo.CacheStore.OwnerSessions.SetDefault(sessionID, ownerID)
-		service.SetOwnerCookies(w, sessionID, sessionExp)
+		m.s.Owners.SetCookies(w, sessionID, sessionExp)
 
 		authOwner := authOwner{
 			ID:         ownerID,
@@ -135,7 +135,7 @@ func (m *AppMiddleware) AuthUser(next http.Handler) http.Handler {
 				return
 			}
 			if !service.UserExistsInPharmacy(authPharmacy.Users, userCache.ID) {
-				service.DeleteUserCookies(w)
+				m.s.Users.DeleteCookies(w)
 				json.ResponseForbidden(w, r, fmt.Errorf("user doesn't belong to current authd pharmacy"))
 				return
 			}
@@ -160,7 +160,7 @@ func (m *AppMiddleware) AuthUser(next http.Handler) http.Handler {
 		userSession, err := m.repo.UserSessions.Update(ctx, sessionID, time.Now().Add(ttl))
 		if err != nil {
 			if errors.Is(err, repository.ErrNotFound) {
-				service.DeleteUserCookies(w)
+				m.s.Users.DeleteCookies(w)
 				json.ResponseUnauthorized(w, r, err)
 			} else {
 				json.ResponseInternalServerError(w, r, err)
@@ -175,7 +175,7 @@ func (m *AppMiddleware) AuthUser(next http.Handler) http.Handler {
 			return
 		}
 		if !service.UserExistsInPharmacy(authPharmacy.Users, userSession.UserID) {
-			service.DeleteUserCookies(w)
+			m.s.Users.DeleteCookies(w)
 			json.ResponseForbidden(w, r, fmt.Errorf("user doesn't belong to current authd pharmacy"))
 			return
 		}
@@ -191,7 +191,7 @@ func (m *AppMiddleware) AuthUser(next http.Handler) http.Handler {
 			Username: user.Username,
 		}
 		m.repo.CacheStore.UserSessions.SetDefault(sessionID, userCache)
-		service.SetUserCookies(w, sessionID, userSession.ExpiresAt.Time)
+		m.s.Users.SetCookies(w, sessionID, userSession.ExpiresAt.Time)
 
 		authUser := authUser{
 			UserCacheValue: userCache,
@@ -268,7 +268,7 @@ func (m *AppMiddleware) AuthPharmacy(next http.Handler) http.Handler {
 			Name:       pharmacyDetail.Name,
 			Users:      *usersCache,
 		})
-		service.SetPharmacyCookies(w, sessionID, pharmacySession.ExpiresAt.Time)
+		m.s.Pharmacies.SetCookies(w, sessionID, pharmacySession.ExpiresAt.Time)
 
 		authPharmacy := authPharmacy{
 			ID:    pharmacySession.PharmacyID,

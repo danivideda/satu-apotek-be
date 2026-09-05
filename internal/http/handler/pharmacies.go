@@ -17,7 +17,8 @@ import (
 )
 
 type pharmacyHandler struct {
-	repo repository.Repository
+	repo                    repository.Repository
+	pharmacySessionService service.PharmacySessionService
 }
 
 var pharmacySessionTTL = env.GetString("PHARMACY_SESSION_TTL", "168h")
@@ -163,7 +164,7 @@ func (h *pharmacyHandler) Connect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	service.SetPharmacyCookies(w, pharmacySession.ID.String(), time.Now().Add(5*time.Minute))
+	h.pharmacySessionService.SetCookies(w, pharmacySession.ID.String(), time.Now().Add(5*time.Minute))
 	h.repo.CacheStore.PharmacySessions.SetDefault(pharmacySession.ID.String(), repository.PharmacyCacheValue{
 		PharmacyID: pharmacySession.PharmacyID,
 		Name:       pharmacy.Name,

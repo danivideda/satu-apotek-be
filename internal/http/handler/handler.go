@@ -6,6 +6,7 @@ import (
 
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
+	"github.com/danivideda/satu-apotek-be/internal/service"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -16,12 +17,13 @@ type Handler struct {
 	Pharmacy *pharmacyHandler
 }
 
-func New(repo repository.Repository) Handler {
+func New(repo repository.Repository, sessionSvc service.Session) Handler {
+
 	return Handler{
-		Auth:     &authHandler{repo: repo},
+		Auth:     &authHandler{repo: repo, sessionService: sessionSvc},
 		Owner:    &ownerHandler{repo: repo},
 		User:     &userHandler{repo: repo},
-		Pharmacy: &pharmacyHandler{repo: repo},
+		Pharmacy: &pharmacyHandler{repo: repo, pharmacySessionService: sessionSvc.Pharmacies},
 	}
 }
 

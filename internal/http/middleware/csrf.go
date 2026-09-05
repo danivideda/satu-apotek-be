@@ -21,7 +21,7 @@ func (m *AppMiddleware) CSRFProtectionOwner(next http.Handler) http.Handler {
 		err := service.VerifyCSRFToken(ownerSessionCookie.Value, csrfToken)
 		if err != nil { 
 			// If any error happen, immediately delete CSRF cookie so it can be refreshed in /check endpoint later
-			service.DeleteOwnerCSRFCookie(w)
+			m.s.Owners.DeleteCSRFCookie(w)
 			if errors.Is(err, service.ErrMalformedCSRFToken) || errors.Is(err, service.ErrInvalidCSRFToken) {
 				json.ResponseInvalidCSRFToken(w, r, err)
 			} else {
