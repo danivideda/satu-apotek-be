@@ -15,6 +15,10 @@ type userHandler struct {
 	repo repository.Repository
 }
 
+func newUserHandler(repo repository.Repository) *userHandler {
+	return &userHandler{repo}
+}
+
 func (h *userHandler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

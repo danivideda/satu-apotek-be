@@ -12,6 +12,10 @@ type ownerHandler struct {
 	repo repository.Repository
 }
 
+func newOwnerHandler(repo repository.Repository) *ownerHandler {
+	return &ownerHandler{repo}
+}
+
 func (h *ownerHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
