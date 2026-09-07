@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/danivideda/satu-apotek-be/internal/config"
 	"github.com/danivideda/satu-apotek-be/internal/dbsqlc"
-	"github.com/danivideda/satu-apotek-be/internal/env"
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
 	"github.com/danivideda/satu-apotek-be/internal/http/middleware"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
@@ -17,11 +17,10 @@ import (
 )
 
 type pharmacyHandler struct {
-	repo                    repository.Repository
+	repo                   repository.Repository
 	pharmacySessionService service.PharmacySessionService
+	authConfig             config.AuthConfig
 }
-
-var pharmacySessionTTL = env.GetString("PHARMACY_SESSION_TTL", "168h")
 
 type PharmacyJSON struct {
 	AppID     any `json:"app_id"`
@@ -137,12 +136,7 @@ func (h *pharmacyHandler) Connect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 4. Create pharmacy_sessions
-	ttl, err := time.ParseDuration(pharmacySessionTTL)
-	if err != nil {
-		json.ResponseInternalServerError(w, r, err)
-		return
-	}
-	pharmacySession, err := h.repo.PharmacySessions.Create(ctx, pharmacyCode.ApotekID, time.Now().Add(ttl))
+	pharmacySession, err := h.repo.PharmacySessions.Create(ctx, pharmacyCode.ApotekID, time.Now().Add(h.authConfig.PharmacySessionTTL))
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			json.ResponseBadRequest(w, r, err)

@@ -28,8 +28,8 @@ func main() {
 
 	sessionSvc := service.NewSessionService()
 	r := repository.New(db, c)
-	h := handler.New(r, sessionSvc)
-	md := middleware.New(r, sessionSvc)
+	h := handler.New(r, sessionSvc, cfg)
+	md := middleware.New(r, sessionSvc, cfg)
 
 	app := &application{
 		config:     cfg,
@@ -37,6 +37,6 @@ func main() {
 		middleware: md,
 	}
 
-	mux := app.mount()
+	mux := app.mount(cfg.CORS)
 	log.Fatal(app.run(mux))
 }

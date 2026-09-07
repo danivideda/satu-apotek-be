@@ -9,8 +9,8 @@ import (
 type Config struct {
     Addr   string
     DB     dbConfig
-    CORS   corsConfig
-    Auth   authConfig
+    CORS   CORSConfig
+    Auth   AuthConfig
     Job    JobConfig
 }
 
@@ -18,11 +18,11 @@ type dbConfig struct {
     URL string
 }
 
-type corsConfig struct {
+type CORSConfig struct {
     Origins []string
 }
 
-type authConfig struct {
+type AuthConfig struct {
     OwnerSessionTTL    time.Duration
     UserSessionTTL     time.Duration
     PharmacySessionTTL time.Duration
@@ -41,18 +41,18 @@ func Load() Config {
     return Config{
         Addr: env.GetString("ADDR", "localhost:8080"),
         DB: dbConfig{
-            URL: env.GetString("DATABASE_URL", ""),
+            URL: env.GetString("DATABASE_URL", "postgres://admin:adminpassword@localhost/satuapotek?sslmode=disable"),
         },
-        CORS: corsConfig{
+        CORS: CORSConfig{
             Origins: []string{"http://localhost:3000", "http://localhost:4173"},
         },
-        Auth: authConfig{
+        Auth: AuthConfig{
             OwnerSessionTTL:    env.GetDuration("OWNER_SESSION_TTL", 168*time.Hour),
             UserSessionTTL:     env.GetDuration("USER_SESSION_TTL", 168*time.Hour),
             PharmacySessionTTL: env.GetDuration("PHARMACY_SESSION_TTL", 168*time.Hour),
             CacheSessionTTL:    env.GetDuration("CACHE_SESSION_TTL", 5*time.Minute),
             CodeTTL:            env.GetDuration("CODE_TTL", 5*time.Minute),
-            CSRFSecret:         env.GetString("CSRF_SECRET", ""),
+            CSRFSecret:         env.GetString("CSRF_SECRET", "set-your-secret-in-env-var"),
         },
         Job: JobConfig{
             Enabled:              env.GetBool("RUN_JOB", false),

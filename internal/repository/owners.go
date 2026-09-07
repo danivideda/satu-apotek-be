@@ -4,14 +4,16 @@ import (
 	"context"
 	"time"
 
+	"github.com/danivideda/satu-apotek-be/internal/config"
 	"github.com/danivideda/satu-apotek-be/internal/dbsqlc"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type ownersRepo struct {
-	db      *pgxpool.Pool
-	queries *dbsqlc.Queries
+	db         *pgxpool.Pool
+	queries    *dbsqlc.Queries
+	authConfig config.AuthConfig
 }
 
 func (r *ownersRepo) Create(ctx context.Context, username, email, passwordHash string) (ownerID int64, ownerSessionID string, exp time.Time, err error) {
@@ -32,11 +34,7 @@ func (r *ownersRepo) Create(ctx context.Context, username, email, passwordHash s
 	}
 
 	// create new session
-	ttl, err := time.ParseDuration(ownerSessionTTL)
-	if err != nil {
-		return
-	}
-	exp = time.Now().Add(ttl)
+	exp = time.Now().Add(r.authConfig.OwnerSessionTTL)
 	ownerSession, err := qtx.CreateOwnerSession(ctx, dbsqlc.CreateOwnerSessionParams{
 		OwnerID:   owner.ID,
 		ExpiresAt: pgtype.Timestamptz{Time: exp, Valid: true},

@@ -19,10 +19,10 @@ type application struct {
 	middleware middleware.AppMiddleware
 }
 
-func (app *application) mount() http.Handler {
+func (app *application) mount(corsConfig config.CORSConfig) http.Handler {
 	r := chi.NewRouter()
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000", "http://localhost:4173"},
+		AllowedOrigins:   corsConfig.Origins,
 		AllowedMethods:   []string{"GET", "POST"},
 		AllowedHeaders:   []string{"X-CSRF-Token", "Content-Type"},
 		AllowCredentials: true,

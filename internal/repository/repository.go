@@ -5,11 +5,8 @@ import (
 	"time"
 
 	"github.com/danivideda/satu-apotek-be/internal/dbsqlc"
-	"github.com/danivideda/satu-apotek-be/internal/env"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
-
-var ownerSessionTTL = env.GetString("OWNER_SESSION_TTL", "168h")
 
 type Repository struct {
 	Owners OwnersRepository

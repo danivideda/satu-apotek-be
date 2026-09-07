@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/alexedwards/argon2id"
-	"github.com/danivideda/satu-apotek-be/internal/env"
+	"github.com/danivideda/satu-apotek-be/internal/config"
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
 	"github.com/danivideda/satu-apotek-be/internal/http/middleware"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
@@ -17,12 +17,8 @@ import (
 type authHandler struct {
 	repo           repository.Repository
 	sessionService service.Session
+	authConfig     config.AuthConfig
 }
-
-var (
-	ownerSessionTTL = env.GetString("OWNER_SESSION_TTL", "168h")
-	userSessionTTL  = env.GetString("USER_SESSION_TTL", "168h")
-)
 
 func (h *authHandler) OwnerRegister(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -93,12 +89,7 @@ func (h *authHandler) OwnerLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ttl, err := time.ParseDuration(ownerSessionTTL)
-	if err != nil {
-		json.ResponseInternalServerError(w, r, err)
-		return
-	}
-	ownerSession, err := h.repo.OwnerSessions.Create(ctx, owner.ID, time.Now().Add(ttl))
+	ownerSession, err := h.repo.OwnerSessions.Create(ctx, owner.ID, time.Now().Add(h.authConfig.OwnerSessionTTL))
 	if err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return
@@ -208,12 +199,7 @@ func (h *authHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ttl, err := time.ParseDuration(userSessionTTL)
-	if err != nil {
-		json.ResponseInternalServerError(w, r, err)
-		return
-	}
-	userSession, err := h.repo.UserSessions.Create(ctx, user.ID, time.Now().Add(ttl))
+	userSession, err := h.repo.UserSessions.Create(ctx, user.ID, time.Now().Add(h.authConfig.UserSessionTTL))
 	if err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return

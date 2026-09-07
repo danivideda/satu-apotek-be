@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/danivideda/satu-apotek-be/internal/env"
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
 	"github.com/danivideda/satu-apotek-be/internal/service"
@@ -17,12 +16,6 @@ const (
 	authOwnerCtx    = "AuthOwnerCtx"
 	authUserCtx     = "AuthUserCtx"
 	authPharmacyCtx = "AuthPharmacyCtx"
-)
-
-var (
-	ownerSessionTTL    = env.GetString("OWNER_SESSION_TTL", "168h")
-	userSessionTTL     = env.GetString("USER_SESSION_TTL", "168h")
-	pharmacySessionTTL = env.GetString("PHARMACY_SESSION_TTL", "168h")
 )
 
 type authOwner struct {
@@ -75,12 +68,7 @@ func (m *AppMiddleware) AuthOwner(next http.Handler) http.Handler {
 
 		// 3. Check if session exist in DB. If exist, renew the session_id and expires_at value. If not exist
 		// or is expired, then the session is invalid
-		ttl, err := time.ParseDuration(ownerSessionTTL)
-		if err != nil {
-			json.ResponseInternalServerError(w, r, err)
-			return
-		}
-		ownerSession, err := m.repo.OwnerSessions.Update(ctx, sessionID, time.Now().Add(ttl))
+		ownerSession, err := m.repo.OwnerSessions.Update(ctx, sessionID, time.Now().Add(m.config.Auth.OwnerSessionTTL))
 		if err != nil {
 			if errors.Is(err, repository.ErrNotFound) {
 				m.s.Owners.DeleteCookies(w)
@@ -152,12 +140,7 @@ func (m *AppMiddleware) AuthUser(next http.Handler) http.Handler {
 
 		// 3. Check if session exist in DB. If exist, renew the session_id and expires_at value. If not exist
 		// or is expired, then the session is invalid
-		ttl, err := time.ParseDuration(userSessionTTL)
-		if err != nil {
-			json.ResponseInternalServerError(w, r, err)
-			return
-		}
-		userSession, err := m.repo.UserSessions.Update(ctx, sessionID, time.Now().Add(ttl))
+		userSession, err := m.repo.UserSessions.Update(ctx, sessionID, time.Now().Add(m.config.Auth.UserSessionTTL))
 		if err != nil {
 			if errors.Is(err, repository.ErrNotFound) {
 				m.s.Users.DeleteCookies(w)
@@ -233,12 +216,7 @@ func (m *AppMiddleware) AuthPharmacy(next http.Handler) http.Handler {
 			return
 		}
 
-		ttl, err := time.ParseDuration(pharmacySessionTTL)
-		if err != nil {
-			json.ResponseInternalServerError(w, r, err)
-			return
-		}
-		pharmacySession, err := m.repo.PharmacySessions.Update(ctx, sessionID, time.Now().Add(ttl))
+		pharmacySession, err := m.repo.PharmacySessions.Update(ctx, sessionID, time.Now().Add(m.config.Auth.PharmacySessionTTL))
 		if err != nil {
 			if errors.Is(err, repository.ErrNotFound) {
 				json.ResponseUnauthorized(w, r, err)
