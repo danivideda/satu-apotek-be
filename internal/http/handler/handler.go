@@ -8,6 +8,7 @@ import (
 	c "github.com/danivideda/satu-apotek-be/internal/http/cookie"
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
+	"github.com/danivideda/satu-apotek-be/internal/service"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -20,9 +21,9 @@ type Handler struct {
 
 var cookie = c.New()
 
-func New(repo repository.Repository, cfg config.Config) Handler {
+func New(repo repository.Repository, cfg config.Config, authSvc *service.Auth) Handler {
 	return Handler{
-		Auth:     newAuthHandler(repo, cfg.Auth.OwnerSessionTTL, cfg.Auth.UserSessionTTL),
+		Auth:     newAuthHandler(repo, authSvc, cfg.Auth.OwnerSessionTTL, cfg.Auth.UserSessionTTL),
 		Owner:    newOwnerHandler(repo),
 		User:     newUserHandler(repo),
 		Pharmacy: newPharmacyHandler(repo, cfg.Auth.PharmacySessionTTL),

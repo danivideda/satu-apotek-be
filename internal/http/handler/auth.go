@@ -15,12 +15,13 @@ import (
 
 type authHandler struct {
 	repo            repository.Repository
+	authService     *service.Auth
 	ownerSessionTTL time.Duration
 	userSessionTTL  time.Duration
 }
 
-func newAuthHandler(repo repository.Repository, ownerSessionTTL time.Duration, userSessionTTL time.Duration) *authHandler {
-	return &authHandler{repo, ownerSessionTTL, userSessionTTL}
+func newAuthHandler(repo repository.Repository, authService *service.Auth, ownerSessionTTL time.Duration, userSessionTTL time.Duration) *authHandler {
+	return &authHandler{repo, authService, ownerSessionTTL, userSessionTTL}
 }
 
 func (h *authHandler) OwnerRegister(w http.ResponseWriter, r *http.Request) {
@@ -73,32 +74,18 @@ func (h *authHandler) OwnerLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get owner password
-	owner, err := h.repo.Owners.GetByEmail(ctx, payload.Email)
+	// Handle Owner Login
+	ownerSessionID, expiresAt, err := h.authService.Owner.Login(ctx, payload.Email, payload.Password)
 	if err != nil {
-		json.ResponseBadRequest(w, r, err)
+		switch {
+		case errors.Is(err, service.ErrInvalidCredentials):
+			json.ResponseBadRequest(w, r, err)
+		default:
+			json.ResponseInternalServerError(w, r, err)
+		}
 		return
 	}
-
-	// check password hash to match
-	match, err := argon2id.ComparePasswordAndHash(payload.Password, owner.PasswordHash)
-	if err != nil {
-		json.ResponseBadRequest(w, r, err)
-		return
-	}
-
-	if !match {
-		json.ResponseBadRequest(w, r, ErrInvalidPassword)
-		return
-	}
-
-	ownerSession, err := h.repo.OwnerSessions.Create(ctx, owner.ID, time.Now().Add(h.ownerSessionTTL))
-	if err != nil {
-		json.ResponseInternalServerError(w, r, err)
-		return
-	}
-	cookie.Owner.SetSession(w, ownerSession.ID.String(), ownerSession.ExpiresAt.Time)
-	h.repo.CacheStore.OwnerSessions.SetDefault(ownerSession.ID.String(), owner.ID)
+	cookie.Owner.SetSession(w, ownerSessionID, expiresAt)
 
 	if err := json.ResponseNoContent(w); err != nil {
 		json.ResponseInternalServerError(w, r, err)

@@ -8,6 +8,7 @@ import (
 	"github.com/danivideda/satu-apotek-be/internal/http/handler"
 	"github.com/danivideda/satu-apotek-be/internal/http/middleware"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
+	"github.com/danivideda/satu-apotek-be/internal/service"
 )
 
 func main() {
@@ -26,7 +27,9 @@ func main() {
 	}
 
 	r := repository.New(db, c)
-	h := handler.New(r, cfg)
+	sessionSvc := service.NewSession(r, cfg.Auth)
+	authSvc := service.NewAuth(r, sessionSvc)
+	h := handler.New(r, cfg, authSvc)
 	md := middleware.New(r, cfg)
 
 	app := &application{
