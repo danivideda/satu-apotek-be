@@ -9,7 +9,7 @@ import (
 )
 
 type Session struct {
-	cacheStore          repository.CacheStore
+	cacheStore          *repository.CacheStore
 	ownerSessionRepo    repository.OwnerSessionsRepository
 	userSessionRepo     repository.UserSessionsRepository
 	pharmacySessionRepo repository.PharmacySessionsRepository
@@ -20,7 +20,7 @@ type Session struct {
 
 func NewSession(repo repository.Repository, authConfig config.AuthConfig) *Session {
 	return &Session{
-		*repo.CacheStore,
+		repo.CacheStore,
 		repo.OwnerSessions,
 		repo.UserSessions,
 		repo.PharmacySessions,

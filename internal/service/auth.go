@@ -17,7 +17,7 @@ type Auth struct {
 
 func NewAuth(repo repository.Repository, sessionSvc *Session) *Auth {
 	return &Auth{
-		Owner:    newOwnerAuth(repo.Owners, repo.OwnerSessions, sessionSvc),
+		Owner:    newOwnerAuth(repo.Owners, sessionSvc),
 		User:     &userAuth{},
 		Pharmacy: &pharmacyAuth{},
 	}
@@ -38,16 +38,14 @@ type PharmacyAuth interface {
 
 type ownerAuth struct {
 	ownerRepo        repository.OwnersRepository
-	ownerSessionRepo repository.OwnerSessionsRepository
 	sessionSvc       *Session
 }
 
 func newOwnerAuth(
 	ownerRepo repository.OwnersRepository,
-	ownerSessionRepo repository.OwnerSessionsRepository,
 	session *Session,
 ) *ownerAuth {
-	return &ownerAuth{ownerRepo, ownerSessionRepo, session}
+	return &ownerAuth{ownerRepo, session}
 }
 
 func (a *ownerAuth) Login(ctx context.Context, email, password string) (ownerSessionID string, expiresAt time.Time, err error) {
