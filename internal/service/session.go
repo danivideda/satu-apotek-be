@@ -40,3 +40,27 @@ func (s *Session) NewOwner(ctx context.Context, ownerID int64) (sessionID string
 	s.cacheStore.OwnerSessions.SetDefault(ownerSessionID, ownerID)
 	return ownerSessionID, ownerSession.ExpiresAt.Time, nil
 }
+
+// ResolveOwner looks up an owner session for middleware.
+// Cache hit returns the cached owner ID without rotating the session
+// (ExpiresAt is zero because the cache only stores ownerID).
+// Cache miss renews the session in the DB (new id + expiry), then caches it.
+// Missing sessions return repository.ErrNotFound.
+func (s *Session) ResolveOwner(ctx context.Context, sessionID string) (ownerID int64, resolvedSessionID string, expiresAt time.Time, err error) {
+	if val, found := s.cacheStore.OwnerSessions.Get(sessionID); found {
+		ownerID, ok := val.(int64)
+		if !ok {
+			return 0, "", time.Time{}, ErrInvalidOwnerSessionCache
+		}
+		return ownerID, sessionID, time.Time{}, nil
+	}
+
+	ownerSession, err := s.ownerSessionRepo.Update(ctx, sessionID, time.Now().Add(s.ownerSessionTTL))
+	if err != nil {
+		return 0, "", time.Time{}, err
+	}
+
+	resolvedSessionID = ownerSession.ID.String()
+	s.cacheStore.OwnerSessions.SetDefault(resolvedSessionID, ownerSession.OwnerID)
+	return ownerSession.OwnerID, resolvedSessionID, ownerSession.ExpiresAt.Time, nil
+}

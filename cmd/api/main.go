@@ -30,7 +30,7 @@ func main() {
 	sessionSvc := service.NewSession(r, cfg.Auth)
 	authSvc := service.NewAuth(r, sessionSvc)
 	h := handler.New(r, cfg, authSvc)
-	md := middleware.New(r, cfg)
+	md := middleware.New(r, cfg, sessionSvc)
 
 	app := &application{
 		config:     cfg,
