@@ -39,7 +39,6 @@ func (m *AppMiddleware) AuthOwner(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		// 1. Get session from cookie
 		sessionCookie, err := r.Cookie("owner_session")
 		if err != nil {
 			json.ResponseUnauthorized(w, r, err)
@@ -48,27 +47,7 @@ func (m *AppMiddleware) AuthOwner(next http.Handler) http.Handler {
 		sessionID := sessionCookie.Value
 		sessionExp := sessionCookie.Expires
 
-		// 2. Check if session exist in cache. If exist, pass the request.
-		if val, found := m.repo.CacheStore.OwnerSessions.Get(sessionID); found {
-			ownerID, ok := val.(int64)
-			if !ok {
-				json.ResponseInternalServerError(w, r, errors.New("type assertion failed, ownerID is not int64"))
-				return
-			}
-
-			authOwner := authOwner{
-				ID:         ownerID,
-				SessionID:  sessionID,
-				SessionExp: sessionExp,
-			}
-			ctx := context.WithValue(ctx, authOwnerCtx, authOwner)
-			next.ServeHTTP(w, r.WithContext(ctx))
-			return
-		}
-
-		// 3. Check if session exist in DB. If exist, renew the session_id and expires_at value. If not exist
-		// or is expired, then the session is invalid
-		ownerSession, err := m.repo.OwnerSessions.Update(ctx, sessionID, time.Now().Add(m.config.Auth.OwnerSessionTTL))
+		ownerID, resolvedSessionID, expiresAt, err := m.sessionSvc.ResolveOwner(ctx, sessionID)
 		if err != nil {
 			if errors.Is(err, repository.ErrNotFound) {
 				cookie.Owner.DeleteSession(w)
@@ -78,11 +57,13 @@ func (m *AppMiddleware) AuthOwner(next http.Handler) http.Handler {
 			}
 			return
 		}
-		ownerID := ownerSession.OwnerID
-		sessionID = ownerSession.ID.String()
-		sessionExp = ownerSession.ExpiresAt.Time
-		m.repo.CacheStore.OwnerSessions.SetDefault(sessionID, ownerID)
-		cookie.Owner.SetSession(w, sessionID, sessionExp)
+
+		// Session was rotated in DB (cache miss). Rewrite cookies with the new id.
+		if resolvedSessionID != sessionID {
+			sessionID = resolvedSessionID
+			sessionExp = expiresAt
+			cookie.Owner.SetSession(w, sessionID, sessionExp)
+		}
 
 		authOwner := authOwner{
 			ID:         ownerID,
