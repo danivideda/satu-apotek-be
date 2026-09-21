@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -59,4 +60,14 @@ func GetBool(key string, fallback bool) bool {
 	default:
 		return fallback
 	}
+}
+
+func GetStringList(key string, fallback []string) []string {
+	val, ok := os.LookupEnv(key)
+	if !ok || val == "" {
+		return fallback
+	}
+	cors := strings.Split(val, ",")
+
+	return cors
 }
