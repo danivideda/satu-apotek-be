@@ -21,7 +21,7 @@ type Repository struct {
 
 type OwnersRepository interface {
 	GetByID(ctx context.Context, id int64) (*dbsqlc.Owner, error)
-	Create(ctx context.Context, username, email, passwordHash string) (ownerID int64, ownerSessionID string, exp time.Time, err error)
+	Create(ctx context.Context, username, email, passwordHash string) (ownerID int64, err error)
 	GetByUsername(ctx context.Context, username string) (*dbsqlc.GetOwnerByUsernameRow, error)
 	GetByEmail(ctx context.Context, email string) (*dbsqlc.GetOwnerByEmailRow, error)
 }

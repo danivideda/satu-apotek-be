@@ -2,11 +2,9 @@ package repository
 
 import (
 	"context"
-	"time"
 
 	"github.com/danivideda/satu-apotek-be/internal/config"
 	"github.com/danivideda/satu-apotek-be/internal/dbsqlc"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -16,15 +14,8 @@ type ownersRepo struct {
 	authConfig config.AuthConfig
 }
 
-func (r *ownersRepo) Create(ctx context.Context, username, email, passwordHash string) (ownerID int64, ownerSessionID string, exp time.Time, err error) {
-	tx, err := r.db.Begin(ctx)
-	if err != nil {
-		return
-	}
-	defer tx.Rollback(ctx)
-	qtx := r.queries.WithTx(tx)
-	// create new owner
-	owner, err := qtx.CreateOwner(ctx, dbsqlc.CreateOwnerParams{
+func (r *ownersRepo) Create(ctx context.Context, username, email, passwordHash string) (ownerID int64, err error) {
+	owner, err := r.queries.CreateOwner(ctx, dbsqlc.CreateOwnerParams{
 		Username:     username,
 		Email:        email,
 		PasswordHash: passwordHash,
@@ -33,22 +24,7 @@ func (r *ownersRepo) Create(ctx context.Context, username, email, passwordHash s
 		return
 	}
 
-	// create new session
-	exp = time.Now().Add(r.authConfig.OwnerSessionTTL)
-	ownerSession, err := qtx.CreateOwnerSession(ctx, dbsqlc.CreateOwnerSessionParams{
-		OwnerID:   owner.ID,
-		ExpiresAt: pgtype.Timestamptz{Time: exp, Valid: true},
-	})
-	if err != nil {
-		return
-	}
-
-	err = tx.Commit(ctx)
-	if err != nil {
-		return
-	}
-
-	return owner.ID, ownerSession.ID.String(), exp, nil
+	return owner.ID, nil
 }
 
 func (r *ownersRepo) GetByID(ctx context.Context, id int64) (*dbsqlc.Owner, error) {

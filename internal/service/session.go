@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/danivideda/satu-apotek-be/internal/config"
@@ -30,13 +32,79 @@ func NewSession(repo repository.Repository, authConfig config.AuthConfig) *Sessi
 	}
 }
 
-func (s *Session) NewOwner(ctx context.Context, ownerID int64) (sessionID string, expiresAt time.Time, err error) {
+type OwnerSession struct {
+	ID      string
+	Exp     time.Time
+	OwnerID int64
+}
+
+func (s *Session) NewOwner(ctx context.Context, ownerID int64) (*OwnerSession, error) {
 	exp := time.Now().Add(s.ownerSessionTTL)
-	ownerSession, err := s.ownerSessionRepo.Create(ctx, ownerID, exp)
+	session, err := s.ownerSessionRepo.Create(ctx, ownerID, exp)
 	if err != nil {
-		return "", time.Time{}, err
+		return nil, err
 	}
-	ownerSessionID := ownerSession.ID.String()
-	s.cacheStore.OwnerSessions.SetDefault(ownerSessionID, ownerID)
-	return ownerSessionID, ownerSession.ExpiresAt.Time, nil
+	s.cacheStore.OwnerSessions.SetDefault(session.ID.String(), ownerID)
+
+	newOwnerSession := &OwnerSession{
+		OwnerID: ownerID,
+		ID:      session.ID.String(),
+		Exp:     exp,
+	}
+
+	return newOwnerSession, nil
+}
+
+// Return the same Owner SessionID if still exist in cache, otherwise checks the DB and rotate sessionID if still valid / not expired
+func (s *Session) ResolveOwner(ctx context.Context, sessionID string) (ownerSession *OwnerSession, rotated bool, err error) {
+	newExp := time.Now().Add(s.ownerSessionTTL)
+
+	// 1. Check session if still in cache
+	if val, found := s.cacheStore.OwnerSessions.Get(sessionID); found {
+		ownerID, ok := val.(int64)
+		if !ok {
+			s.cacheStore.OwnerSessions.Delete(sessionID)
+			return nil, false, fmt.Errorf("%w: int64 expected, got %T", ErrTypeAssertionFailed, ownerID)
+		}
+		ownerSession := &OwnerSession{
+			OwnerID: ownerID,
+			ID:      sessionID,
+			Exp:     time.Time{},
+		}
+		return ownerSession, false, nil
+	}
+
+	// 2. check session in DB
+	ownerSessionItem, err := s.ownerSessionRepo.Update(ctx, sessionID, newExp)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return nil, false, fmt.Errorf("%w: owner %w", err, ErrInvalidSession)
+		}
+		return nil, false, err
+	}
+
+	ownerSession = &OwnerSession{
+		OwnerID: ownerSessionItem.OwnerID,
+		ID:      ownerSessionItem.ID.String(),
+		Exp:     newExp,
+	}
+	s.cacheStore.OwnerSessions.SetDefault(ownerSession.ID, ownerSession.OwnerID)
+
+	return ownerSession, true, nil
+}
+
+func (s *Session) DeleteOwner(ctx context.Context, sessionID string) error {
+	_, err := s.ownerSessionRepo.Delete(ctx, sessionID)
+	if err != nil {
+		switch {
+		case errors.Is(err, repository.ErrNotFound):
+			s.cacheStore.OwnerSessions.Delete(sessionID)
+			return fmt.Errorf("%w: owner %w", err, ErrInvalidSession)
+		default:
+			return err
+		}
+	}
+
+	s.cacheStore.OwnerSessions.Delete(sessionID)
+	return nil
 }

@@ -6,7 +6,6 @@ import (
 
 	"github.com/danivideda/satu-apotek-be/internal/http/csrf"
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
-	"github.com/danivideda/satu-apotek-be/internal/service"
 )
 
 func (m *AppMiddleware) CSRFProtectionOwner(next http.Handler) http.Handler {
@@ -20,12 +19,15 @@ func (m *AppMiddleware) CSRFProtectionOwner(next http.Handler) http.Handler {
 		csrfToken := r.Header.Get("X-CSRF-Token")
 		ownerSessionCookie, _ := r.Cookie("owner_session")
 		err := csrf.VerifyCSRFToken(ownerSessionCookie.Value, csrfToken)
-		if err != nil { 
+		if err != nil {
 			// If any error happen, immediately delete CSRF cookie so it can be refreshed in /check endpoint later
 			cookie.Owner.DeleteCSRF(w)
-			if errors.Is(err, service.ErrMalformedCSRFToken) || errors.Is(err, service.ErrInvalidCSRFToken) {
+			switch {
+			case errors.Is(err, csrf.ErrMalformedCSRFToken):
 				json.ResponseInvalidCSRFToken(w, r, err)
-			} else {
+			case errors.Is(err, csrf.ErrInvalidCSRFToken):
+				json.ResponseInvalidCSRFToken(w, r, err)
+			default:
 				json.ResponseInternalServerError(w, r, err)
 			}
 			return
@@ -48,9 +50,14 @@ func (m *AppMiddleware) CSRFProtectionUser(next http.Handler) http.Handler {
 		userSessionCookie, _ := r.Cookie("user_session")
 		err := csrf.VerifyCSRFToken(userSessionCookie.Value, csrfToken)
 		if err != nil {
-			if errors.Is(err, service.ErrMalformedCSRFToken) || errors.Is(err, service.ErrInvalidCSRFToken) {
+			// If any error happen, immediately delete CSRF cookie so it can be refreshed in /check endpoint later
+			cookie.Owner.DeleteCSRF(w)
+			switch {
+			case errors.Is(err, csrf.ErrMalformedCSRFToken):
 				json.ResponseInvalidCSRFToken(w, r, err)
-			} else {
+			case errors.Is(err, csrf.ErrInvalidCSRFToken):
+				json.ResponseInvalidCSRFToken(w, r, err)
+			default:
 				json.ResponseInternalServerError(w, r, err)
 			}
 			return

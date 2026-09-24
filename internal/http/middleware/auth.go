@@ -48,46 +48,37 @@ func (m *AppMiddleware) AuthOwner(next http.Handler) http.Handler {
 		sessionID := sessionCookie.Value
 		sessionExp := sessionCookie.Expires
 
-		// 2. Check if session exist in cache. If exist, pass the request.
-		if val, found := m.repo.CacheStore.OwnerSessions.Get(sessionID); found {
-			ownerID, ok := val.(int64)
-			if !ok {
-				json.ResponseInternalServerError(w, r, errors.New("type assertion failed, ownerID is not int64"))
-				return
-			}
-
-			authOwner := authOwner{
-				ID:         ownerID,
-				SessionID:  sessionID,
-				SessionExp: sessionExp,
-			}
-			ctx := context.WithValue(ctx, authOwnerCtx, authOwner)
-			next.ServeHTTP(w, r.WithContext(ctx))
-			return
-		}
-
-		// 3. Check if session exist in DB. If exist, renew the session_id and expires_at value. If not exist
-		// or is expired, then the session is invalid
-		ownerSession, err := m.repo.OwnerSessions.Update(ctx, sessionID, time.Now().Add(m.config.Auth.OwnerSessionTTL))
+		// 2. Resolve Owner SessionID
+		ownerSession, rotated, err := m.sessionSvc.ResolveOwner(ctx, sessionID)
 		if err != nil {
-			if errors.Is(err, repository.ErrNotFound) {
+			switch {
+			case errors.Is(err, service.ErrInvalidSession):
 				cookie.Owner.DeleteSession(w)
 				json.ResponseUnauthorized(w, r, err)
-			} else {
+			default:
 				json.ResponseInternalServerError(w, r, err)
 			}
 			return
 		}
-		ownerID := ownerSession.OwnerID
-		sessionID = ownerSession.ID.String()
-		sessionExp = ownerSession.ExpiresAt.Time
-		m.repo.CacheStore.OwnerSessions.SetDefault(sessionID, ownerID)
-		cookie.Owner.SetSession(w, sessionID, sessionExp)
 
+		// 2.1 Use the same SessionID and expiry if not rotated
+		if !rotated {
+			authOwner := authOwner{
+				ID:         ownerSession.OwnerID,
+				SessionID:  sessionID,
+				SessionExp: sessionExp,
+			}
+			ctx = context.WithValue(ctx, authOwnerCtx, authOwner)
+			next.ServeHTTP(w, r.WithContext(ctx))
+			return
+		}
+
+		// 2.2 Otherwise, SessionID is rotated and need to be updated
+		cookie.Owner.SetSession(w, ownerSession.ID, ownerSession.Exp)
 		authOwner := authOwner{
-			ID:         ownerID,
-			SessionID:  sessionID,
-			SessionExp: sessionExp,
+			ID:         ownerSession.OwnerID,
+			SessionID:  ownerSession.ID,
+			SessionExp: ownerSession.Exp,
 		}
 		ctx = context.WithValue(ctx, authOwnerCtx, authOwner)
 		next.ServeHTTP(w, r.WithContext(ctx))

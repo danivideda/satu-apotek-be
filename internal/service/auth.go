@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"errors"
-	"time"
+	"fmt"
 
 	"github.com/alexedwards/argon2id"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
@@ -24,7 +24,7 @@ func NewAuth(repo repository.Repository, sessionSvc *Session) *Auth {
 }
 
 type OwnerAuth interface {
-	Login(ctx context.Context, email, password string) (ownerSessionID string, expiresAt time.Time, err error)
+	Login(ctx context.Context, email, password string) (*OwnerSession, error)
 	Logout(ctx context.Context, sessionID string) error
 	Register(ctx context.Context, username, email, password string) error
 }
@@ -37,8 +37,8 @@ type PharmacyAuth interface {
 }
 
 type ownerAuth struct {
-	ownerRepo        repository.OwnersRepository
-	sessionSvc       *Session
+	ownerRepo  repository.OwnersRepository
+	sessionSvc *Session
 }
 
 func newOwnerAuth(
@@ -48,37 +48,45 @@ func newOwnerAuth(
 	return &ownerAuth{ownerRepo, session}
 }
 
-func (a *ownerAuth) Login(ctx context.Context, email, password string) (ownerSessionID string, expiresAt time.Time, err error) {
+func (a *ownerAuth) Login(ctx context.Context, email, password string) (*OwnerSession, error) {
 	owner, err := a.ownerRepo.GetByEmail(ctx, email)
 	if err != nil {
 		switch {
 		case errors.Is(err, repository.ErrNotFound):
-			return "", time.Time{}, ErrInvalidCredentials
+			return nil, fmt.Errorf("%w: owner %w", err, ErrInvalidCredentials)
 		default:
-			return "", time.Time{}, err
+			return nil, err
 		}
 	}
 
 	match, err := argon2id.ComparePasswordAndHash(password, owner.PasswordHash)
 	if err != nil {
-		return "", time.Time{}, err
+		return nil, err
 	}
 	if !match {
-		return "", time.Time{}, ErrInvalidCredentials
+		return nil, fmt.Errorf("owner %w", ErrInvalidCredentials)
 	}
 
-	ownerSessionID, expiresAt, err = a.sessionSvc.NewOwner(ctx, owner.ID)
+	ownerSession, err := a.sessionSvc.NewOwner(ctx, owner.ID)
 	if err != nil {
-		return "", time.Time{}, err
+		return nil, err
 	}
 
-	return ownerSessionID, expiresAt, nil
+	return ownerSession, nil
 }
 func (a *ownerAuth) Logout(ctx context.Context, sessionID string) error {
-
-	return nil
+	return a.sessionSvc.DeleteOwner(ctx, sessionID)
 }
 func (a *ownerAuth) Register(ctx context.Context, username, email, password string) error {
+	passwordHash, err := argon2id.CreateHash(password, argon2id.DefaultParams)
+	if err != nil {
+		return err
+	}
+	_, err = a.ownerRepo.Create(ctx, username, email, passwordHash)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

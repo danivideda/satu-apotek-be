@@ -37,23 +37,14 @@ func (h *authHandler) OwnerRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create owner and insert owner's session into database
-	passwordHash, err := argon2id.CreateHash(payload.Password, argon2id.DefaultParams)
-	if err != nil {
+	// Handle owner register
+	if err := h.authService.Owner.Register(ctx, payload.Username, payload.Email, payload.Password); err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}
-	ownerID, ownerSessionID, exp, err := h.repo.Owners.Create(ctx, payload.Username, payload.Email, passwordHash)
-	if err != nil {
-		json.ResponseInternalServerError(w, r, err)
-		return
-	}
-
-	cookie.Owner.SetSession(w, ownerSessionID, exp)
 
 	res := map[string]any{
-		"owner_id": ownerID,
-		// "owner_session": ownerSessionID, **SESSION SHOULD NOT BE INCLUDED IN ANY JSON PAYLOAD***
+		"username": payload.Username,
 	}
 
 	if err := json.ResponseCreated(w, res); err != nil {
@@ -75,7 +66,7 @@ func (h *authHandler) OwnerLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Handle Owner Login
-	ownerSessionID, expiresAt, err := h.authService.Owner.Login(ctx, payload.Email, payload.Password)
+	ownerSession, err := h.authService.Owner.Login(ctx, payload.Email, payload.Password)
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrInvalidCredentials):
@@ -85,7 +76,7 @@ func (h *authHandler) OwnerLogin(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	cookie.Owner.SetSession(w, ownerSessionID, expiresAt)
+	cookie.Owner.SetSession(w, ownerSession.ID, ownerSession.Exp)
 
 	if err := json.ResponseNoContent(w); err != nil {
 		json.ResponseInternalServerError(w, r, err)
@@ -101,22 +92,20 @@ func (h *authHandler) OwnerLogout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	deletedOwnerSession, err := h.repo.OwnerSessions.Delete(ctx, authOwner.SessionID)
+	err = h.authService.Owner.Logout(ctx, authOwner.SessionID)
 	if err != nil {
-		if errors.Is(err, repository.ErrNotFound) {
-			h.repo.CacheStore.OwnerSessions.Delete(deletedOwnerSession.ID.String())
-			cookie.Owner.DeleteSession(w)
-			json.ResponseBadRequest(w, r, err)
-			return
+		switch {
+		case errors.Is(err, service.ErrInvalidSession):
+			json.ResponseUnauthorized(w, r, err)
+		default:
+			json.ResponseInternalServerError(w, r, err)
 		}
-		json.ResponseInternalServerError(w, r, err)
+		cookie.Owner.DeleteSession(w)
 		return
 	}
 
-	cookie.Owner.DeleteSession(w)
-
 	res := map[string]string{
-		"deleted_session": deletedOwnerSession.ID.String(),
+		"deleted_session": authOwner.SessionID,
 	}
 	if err := json.ResponseOK(w, res); err != nil {
 		json.ResponseInternalServerError(w, r, err)
@@ -133,8 +122,8 @@ func (h *authHandler) OwnerCheck(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Resend CSRF Cookie if it's missing.
-	// When CSRF cookie is missing, it means the CSRF protection middleware is unable to validate previous request,
-	// hence, it deletes the CSRF cookie with `Set-Cookie` sent from the server.
+	// When CSRF cookie is missing, it means the CSRF protection middleware unable to validate previous request
+	// and deletes the CSRF cookie completely.
 	_, err = r.Cookie("owner_csrf")
 	if err != nil {
 		fmt.Println(err)

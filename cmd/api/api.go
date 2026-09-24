@@ -92,8 +92,10 @@ func (app *application) mount(corsConfig config.CORSConfig) http.Handler {
 			r.Route("/pharmacies", func(r chi.Router) {
 				r.Get("/", app.handler.Pharmacy.GetByOwner)
 				r.Post("/create", app.handler.Pharmacy.Create)
+
 				r.Route("/{appID}", func(r chi.Router) {
 					r.Use(app.middleware.GuardPharmacyDetailByOwner)
+
 					r.Get("/", app.handler.Pharmacy.GetDetailByAppID)
 					r.Route("/code", func(r chi.Router) {
 						r.Get("/", app.handler.Pharmacy.GetCodeByPharmacy)
