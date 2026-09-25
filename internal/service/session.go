@@ -108,3 +108,10 @@ func (s *Session) DeleteOwner(ctx context.Context, sessionID string) error {
 	s.cacheStore.OwnerSessions.Delete(sessionID)
 	return nil
 }
+
+type UserSession struct {
+	ID     string
+	Exp    time.Time
+	UserID int64
+}
+

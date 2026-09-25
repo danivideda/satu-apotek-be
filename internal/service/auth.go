@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/alexedwards/argon2id"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
@@ -18,7 +19,7 @@ type Auth struct {
 func NewAuth(repo repository.Repository, sessionSvc *Session) *Auth {
 	return &Auth{
 		Owner:    newOwnerAuth(repo.Owners, sessionSvc),
-		User:     &userAuth{},
+		User:     newUserAuth(repo.Users, sessionSvc),
 		Pharmacy: &pharmacyAuth{},
 	}
 }
@@ -29,7 +30,7 @@ type OwnerAuth interface {
 	Register(ctx context.Context, username, email, password string) error
 }
 type UserAuth interface {
-	Login(username, password string) (sessionID string, err error)
+	Login(ctx context.Context, userID int64, password string, users []repository.UserCacheValue) (*UserSession, error)
 	Logout(sessionID string) error
 }
 type PharmacyAuth interface {
@@ -90,10 +91,64 @@ func (a *ownerAuth) Register(ctx context.Context, username, email, password stri
 	return nil
 }
 
-type userAuth struct{}
+type userAuth struct {
+	userRepo   repository.UsersRepository
+	sessionSvc *Session
+}
 
-func (a *userAuth) Login(username, password string) (string, error) { return "", nil }
-func (a *userAuth) Logout(session_id string) error                  { return nil }
+func newUserAuth(
+	userRepo repository.UsersRepository,
+	session *Session,
+) *userAuth {
+	return &userAuth{userRepo, session}
+}
+
+func (a *userAuth) Login(ctx context.Context, userID int64, password string, users []repository.UserCacheValue) (*UserSession, error) {
+	// Check UserID exist in Pharmacy
+	if !UserExistsInPharmacy(users, userID) {
+		return nil, ErrUserForbidden
+	}
+
+	// Get User
+	user, err := a.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		switch {
+		case errors.Is(err, repository.ErrNotFound):
+			return nil, fmt.Errorf("%w: user doesn't exist", err)
+		default:
+			return nil, err
+		}
+	}
+
+	// check password hash
+	match, err := argon2id.ComparePasswordAndHash(password, user.PasswordHash)
+	if err != nil {
+		return nil, err
+	}
+
+	if !match {
+		return nil, ErrInvalidCredentials
+	}
+
+	newExp := time.Now().Add(a.sessionSvc.ownerSessionTTL)
+	newSession, err := a.sessionSvc.userSessionRepo.Create(ctx, userID, newExp)
+	if err != nil {
+		return nil, err
+	}
+	userCacheValue := repository.UserCacheValue{
+		ID:       newSession.UserID,
+		Username: user.Username,
+	}
+	a.sessionSvc.cacheStore.UserSessions.SetDefault(newSession.ID.String(), userCacheValue)
+
+	userSession := &UserSession{
+		ID:     newSession.ID.String(),
+		Exp:    newSession.ExpiresAt.Time,
+		UserID: newSession.UserID,
+	}
+	return userSession, nil
+}
+func (a *userAuth) Logout(sessionID string) error { return nil }
 
 type pharmacyAuth struct{}
 

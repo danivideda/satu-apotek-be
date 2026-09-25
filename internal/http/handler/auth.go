@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/alexedwards/argon2id"
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
 	"github.com/danivideda/satu-apotek-be/internal/http/middleware"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
@@ -148,48 +147,24 @@ func (h *authHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get user
-	user, err := h.repo.Users.GetByID(ctx, payload.UserID)
-	if err != nil {
-		json.ResponseBadRequest(w, r, err)
-		return
-	}
-
-	// check password hash to match
-	match, err := argon2id.ComparePasswordAndHash(payload.Password, user.PasswordHash)
-	if err != nil {
-		json.ResponseBadRequest(w, r, err)
-		return
-	}
-
-	if !match {
-		json.ResponseBadRequest(w, r, ErrInvalidPassword)
-		return
-	}
-
-	// Check if current Pharmacy session have the User that tried to login
+	// Handle User Login
 	authPharmacy, err := middleware.AuthPharmacyFromCtx(ctx)
 	if err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}
-	if !service.UserExistsInPharmacy(authPharmacy.Users, user.ID) {
-		json.ResponseForbidden(w, r, fmt.Errorf("user doesn't belong to current authd pharmacy"))
+	newUserSession, err := h.authService.User.Login(ctx, payload.UserID, payload.Password, authPharmacy.Users)
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrUserForbidden):
+			json.ResponseForbidden(w, r, err)
+		default:
+			json.ResponseInternalServerError(w, r, err)
+		}
 		return
 	}
 
-	userSession, err := h.repo.UserSessions.Create(ctx, user.ID, time.Now().Add(h.userSessionTTL))
-	if err != nil {
-		json.ResponseInternalServerError(w, r, err)
-		return
-	}
-	sessionID := userSession.ID.String()
-	userCache := repository.UserCacheValue{
-		ID:       userSession.UserID,
-		Username: user.Username,
-	}
-	cookie.User.SetSession(w, userSession.ID.String(), userSession.ExpiresAt.Time)
-	h.repo.CacheStore.UserSessions.SetDefault(sessionID, userCache)
+	cookie.User.SetSession(w, newUserSession.ID, newUserSession.Exp)
 
 	if err := json.ResponseNoContent(w); err != nil {
 		json.ResponseInternalServerError(w, r, err)
