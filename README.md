@@ -173,6 +173,11 @@ internal/
 bin/ # local tool binaries
 ```
 
+
+## Agent instructions
+
+Coding agents should follow [AGENTS.md](AGENTS.md). Where a file goes, what it is named, and how a route or sqlc query is added lives in [`.agents/skills/backend-structure/SKILL.md`](.agents/skills/backend-structure/SKILL.md).
+
 ## Notes
 
 - Auth uses **HttpOnly session cookies** + **CSRF cookies**. Sessions are stored in Postgres and cached in-memory.
