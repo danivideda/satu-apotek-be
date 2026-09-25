@@ -8,18 +8,18 @@ import (
 	"github.com/danivideda/satu-apotek-be/internal/repository"
 )
 
-func GetUsersFromPharmacyID(ctx context.Context, r repository.Repository, pharmacyID int64) (*[]repository.UserCacheValue, error) {
-	users, err := r.Users.GetByPharmacyID(ctx, pharmacyID)
+func GetUsersFromPharmacyID(ctx context.Context, users repository.UsersRepository, pharmacyID int64) (*[]repository.UserCacheValue, error) {
+	rows, err := users.GetByPharmacyID(ctx, pharmacyID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
-			users = nil
+			rows = nil
 		} else {
 			return nil, err
 		}
 	}
 	var usersCache []repository.UserCacheValue
-	if users != nil {
-		for _, user := range *users {
+	if rows != nil {
+		for _, user := range *rows {
 			userItem := repository.UserCacheValue{
 				ID:       user.ID,
 				Username: user.Username,

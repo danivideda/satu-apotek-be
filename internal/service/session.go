@@ -20,7 +20,8 @@ type Session struct {
 	userSessionTTL     time.Duration
 	pharmacySessionTTL time.Duration
 
-	userRepo repository.UsersRepository
+	userRepo     repository.UsersRepository
+	pharmacyRepo repository.PharmaciesRepository
 }
 
 func NewSession(repo repository.Repository, authConfig config.AuthConfig) *Session {
@@ -33,6 +34,7 @@ func NewSession(repo repository.Repository, authConfig config.AuthConfig) *Sessi
 		authConfig.UserSessionTTL,
 		authConfig.PharmacySessionTTL,
 		repo.Users,
+		repo.Pharmacies,
 	}
 }
 
@@ -207,4 +209,39 @@ func (s *Session) DeleteUser(ctx context.Context, sessionID string) error {
 
 	s.cacheStore.UserSessions.Delete(sessionID)
 	return nil
+}
+
+type PharmacySession struct {
+	ID         string
+	Exp        time.Time
+	PharmacyID int64
+}
+
+func (s *Session) NewPharmacy(ctx context.Context, pharmacyID int64) (*PharmacySession, error) {
+	newExp := time.Now().Add(s.pharmacySessionTTL)
+	newSession, err := s.pharmacySessionRepo.Create(ctx, pharmacyID, newExp)
+	if err != nil {
+		return nil, err
+	}
+
+	users, err := GetUsersFromPharmacyID(ctx, s.userRepo, newSession.PharmacyID)
+	if err != nil {
+		return nil, err
+	}
+	pharmacy, err := s.pharmacyRepo.GetByID(ctx, newSession.PharmacyID)
+	if err != nil {
+		return nil, err
+	}
+
+	s.cacheStore.PharmacySessions.SetDefault(newSession.ID.String(), repository.PharmacyCacheValue{
+		PharmacyID: newSession.PharmacyID,
+		Name:       pharmacy.Name,
+		Users:      *users,
+	})
+
+	return &PharmacySession{
+		ID:         newSession.ID.String(),
+		Exp:        newExp,
+		PharmacyID: newSession.PharmacyID,
+	}, nil
 }

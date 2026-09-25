@@ -191,7 +191,7 @@ func (m *AppMiddleware) AuthPharmacy(next http.Handler) http.Handler {
 		}
 
 		// get Users[] that's associated with PharmacyID
-		usersCache, err := service.GetUsersFromPharmacyID(ctx, m.repo, pharmacySession.PharmacyID)
+		usersCache, err := service.GetUsersFromPharmacyID(ctx, m.repo.Users, pharmacySession.PharmacyID)
 		if err != nil {
 			json.ResponseInternalServerError(w, r, err)
 			return

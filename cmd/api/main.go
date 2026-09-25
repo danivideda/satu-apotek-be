@@ -29,7 +29,7 @@ func main() {
 	r := repository.New(db, c)
 	sessionSvc := service.NewSession(r, cfg.Auth)
 	authSvc := service.NewAuth(r, sessionSvc)
-	h := handler.New(r, cfg, authSvc)
+	h := handler.New(r, authSvc)
 	md := middleware.New(r, cfg)
 
 	app := &application{

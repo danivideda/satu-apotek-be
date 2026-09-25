@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/alexedwards/argon2id"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
@@ -19,7 +20,7 @@ func NewAuth(repo repository.Repository, sessionSvc *Session) *Auth {
 	return &Auth{
 		Owner:    newOwnerAuth(repo.Owners, sessionSvc),
 		User:     newUserAuth(repo.Users, sessionSvc),
-		Pharmacy: &pharmacyAuth{},
+		Pharmacy: newPharmacyAuth(repo.Pharmacies, sessionSvc),
 	}
 }
 
@@ -33,7 +34,7 @@ type UserAuth interface {
 	Logout(ctx context.Context, sessionID string) error
 }
 type PharmacyAuth interface {
-	Connect(code string) error
+	Connect(ctx context.Context, code string) (*PharmacySession, error)
 }
 
 type ownerAuth struct {
@@ -125,10 +126,37 @@ func (a *userAuth) Login(ctx context.Context, userID int64, password string, use
 
 	return a.sessionSvc.NewUser(ctx, user.ID, user.Username)
 }
-func (a *userAuth) Logout(ctx context.Context, sessionID string) error { 
+func (a *userAuth) Logout(ctx context.Context, sessionID string) error {
 	return a.sessionSvc.DeleteUser(ctx, sessionID)
 }
 
-type pharmacyAuth struct{}
+type pharmacyAuth struct {
+	pharmacies repository.PharmaciesRepository
+	sessionSvc *Session
+}
 
-func (a *pharmacyAuth) Connect(code string) error { return nil }
+func newPharmacyAuth(pharmacies repository.PharmaciesRepository, session *Session) *pharmacyAuth {
+	return &pharmacyAuth{pharmacies, session}
+}
+
+func (a *pharmacyAuth) Connect(ctx context.Context, code string) (*PharmacySession, error) {
+	pharmacyCode, err := a.pharmacies.GetCodeByCode(ctx, code)
+	if err != nil {
+		switch {
+		case errors.Is(err, repository.ErrNotFound):
+			return nil, fmt.Errorf("%w: no pharmacy_code matched", err)
+		default:
+			return nil, err
+		}
+	}
+
+	if time.Now().After(pharmacyCode.ExpiresAt.Time) {
+		return nil, ErrPharmacyCodeExpired
+	}
+
+	if _, err := a.pharmacies.DeleteCode(ctx, pharmacyCode.Code); err != nil {
+		return nil, err
+	}
+
+	return a.sessionSvc.NewPharmacy(ctx, pharmacyCode.ApotekID)
+}

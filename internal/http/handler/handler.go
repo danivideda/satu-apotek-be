@@ -4,7 +4,6 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/danivideda/satu-apotek-be/internal/config"
 	c "github.com/danivideda/satu-apotek-be/internal/http/cookie"
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
@@ -21,12 +20,12 @@ type Handler struct {
 
 var cookie = c.New()
 
-func New(repo repository.Repository, cfg config.Config, authSvc *service.Auth) Handler {
+func New(repo repository.Repository, authSvc *service.Auth) Handler {
 	return Handler{
 		Auth:     newAuthHandler(authSvc),
 		Owner:    newOwnerHandler(repo),
 		User:     newUserHandler(repo),
-		Pharmacy: newPharmacyHandler(repo, cfg.Auth.PharmacySessionTTL),
+		Pharmacy: newPharmacyHandler(repo),
 	}
 }
 

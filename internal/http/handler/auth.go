@@ -7,6 +7,7 @@ import (
 
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
 	"github.com/danivideda/satu-apotek-be/internal/http/middleware"
+	"github.com/danivideda/satu-apotek-be/internal/repository"
 	"github.com/danivideda/satu-apotek-be/internal/service"
 )
 
@@ -217,6 +218,35 @@ func (h *authHandler) UserLogout(w http.ResponseWriter, r *http.Request) {
 		"deleted_session": authUser.SessionID,
 	}
 	if err := json.ResponseOK(w, res); err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+}
+
+func (h *authHandler) PharmacyConnect(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var payload struct {
+		Code string `json:"code" validate:"required,hexadecimal,len=6"`
+	}
+	if ok := parseAndValidateJSONPayload(w, r, &payload); !ok {
+		return
+	}
+
+	pharmacySession, err := h.authService.Pharmacy.Connect(ctx, payload.Code)
+	if err != nil {
+		switch {
+		case errors.Is(err, repository.ErrNotFound), errors.Is(err, service.ErrPharmacyCodeExpired):
+			json.ResponseBadRequest(w, r, err)
+		default:
+			json.ResponseInternalServerError(w, r, err)
+		}
+		return
+	}
+
+	cookie.Pharmacy.SetSession(w, pharmacySession.ID, pharmacySession.Exp)
+
+	if err := json.ResponseNoContent(w); err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}
