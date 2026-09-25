@@ -1,7 +1,6 @@
 package cookie
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -83,7 +82,6 @@ func (c *ownerCookie) DeleteCSRF(w http.ResponseWriter) {
 }
 
 func (c *pharmacyCookie) SetSession(w http.ResponseWriter, sessionID string, exp time.Time) {
-	fmt.Println("Runs here")
 	httpCookie := &http.Cookie{
 		Name:     "pharmacy_session",
 		Value:    sessionID,

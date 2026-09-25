@@ -101,78 +101,42 @@ func (m *AppMiddleware) AuthUser(next http.Handler) http.Handler {
 		sessionID := sessionCookie.Value
 		sessionExp := sessionCookie.Expires
 
-		// 2. Check if session exist in cache. If exist, pass the request.
-		if val, found := m.repo.CacheStore.UserSessions.Get(sessionID); found {
-			userCache, ok := val.(repository.UserCacheValue)
-			if !ok {
-				json.ResponseInternalServerError(w, r, errors.New("type assertion failed, userID is not int64"))
-				return
-			}
-
-			// 2.1 check if user exists in the authd pharmacy
-			authPharmacy, err := AuthPharmacyFromCtx(ctx)
-			if err != nil {
-				json.ResponseInternalServerError(w, r, err)
-				return
-			}
-			if !service.UserExistsInPharmacy(authPharmacy.Users, userCache.ID) {
+		// 2. Resolve User Session
+		userSession, rotated, err := m.sessionSvc.ResolveUser(ctx, sessionID)
+		if err != nil {
+			switch {
+			case errors.Is(err, service.ErrInvalidCredentials):
 				cookie.User.DeleteSession(w)
-				json.ResponseForbidden(w, r, fmt.Errorf("user doesn't belong to current authd pharmacy"))
-				return
+				json.ResponseUnauthorized(w, r, err)
+			default:
+				json.ResponseInternalServerError(w, r, err)
 			}
+			return
+		}
 
-			// 2.2 return the context for user
+		userCache := repository.UserCacheValue{
+			ID:       userSession.UserID,
+			Username: userSession.Username,
+		}
+
+		// 2.1 Use the same SessionID and expiry if not rotated
+		if !rotated {
 			authUser := authUser{
 				UserCacheValue: userCache,
 				SessionID:      sessionID,
 				SessionExp:     sessionExp,
 			}
-			ctx := context.WithValue(ctx, authUserCtx, authUser)
+			ctx = context.WithValue(ctx, authUserCtx, authUser)
 			next.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}
 
-		// 3. Check if session exist in DB. If exist, renew the session_id and expires_at value. If not exist
-		// or is expired, then the session is invalid
-		userSession, err := m.repo.UserSessions.Update(ctx, sessionID, time.Now().Add(m.config.Auth.UserSessionTTL))
-		if err != nil {
-			if errors.Is(err, repository.ErrNotFound) {
-				cookie.User.DeleteSession(w)
-				json.ResponseUnauthorized(w, r, err)
-			} else {
-				json.ResponseInternalServerError(w, r, err)
-			}
-			return
-		}
-
-		// 3.1 Check if user exists in the authd pharmacy
-		authPharmacy, err := AuthPharmacyFromCtx(ctx)
-		if err != nil {
-			json.ResponseInternalServerError(w, r, err)
-			return
-		}
-		if !service.UserExistsInPharmacy(authPharmacy.Users, userSession.UserID) {
-			cookie.User.DeleteSession(w)
-			json.ResponseForbidden(w, r, fmt.Errorf("user doesn't belong to current authd pharmacy"))
-			return
-		}
-
-		user, err := m.repo.Users.GetByID(ctx, userSession.UserID)
-		if err != nil {
-			json.ResponseInternalServerError(w, r, err)
-			return
-		}
-		sessionID = userSession.ID.String()
-		userCache := repository.UserCacheValue{
-			ID:       userSession.UserID,
-			Username: user.Username,
-		}
-		m.repo.CacheStore.UserSessions.SetDefault(sessionID, userCache)
-		cookie.User.SetSession(w, sessionID, userSession.ExpiresAt.Time)
-
+		// 2.2 Otherwise, SessionID is rotated and need to be updated
+		cookie.User.SetSession(w, sessionID, userSession.Exp)
 		authUser := authUser{
 			UserCacheValue: userCache,
-			SessionID:      sessionID,
+			SessionID:      userSession.ID,
+			SessionExp:     userSession.Exp,
 		}
 		ctx = context.WithValue(ctx, authUserCtx, authUser)
 		next.ServeHTTP(w, r.WithContext(ctx))

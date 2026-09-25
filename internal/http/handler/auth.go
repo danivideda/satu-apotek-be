@@ -180,7 +180,7 @@ func (h *authHandler) UserCheck(w http.ResponseWriter, r *http.Request) {
 	// Resend CSRF Cookie if it's missing.
 	// When CSRF cookie is missing, it means the CSRF protection middleware unable to validate previous request
 	// and deletes the CSRF cookie completely.
-	_, err = r.Cookie("owner_csrf")
+	_, err = r.Cookie("user_csrf")
 	if err != nil {
 		fmt.Println(err)
 		cookie.User.SetSession(w, authUser.SessionID, authUser.SessionExp)

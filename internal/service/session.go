@@ -15,9 +15,12 @@ type Session struct {
 	ownerSessionRepo    repository.OwnerSessionsRepository
 	userSessionRepo     repository.UserSessionsRepository
 	pharmacySessionRepo repository.PharmacySessionsRepository
-	ownerSessionTTL     time.Duration
-	userSessionTTL      time.Duration
-	pharmacySessionTTL  time.Duration
+
+	ownerSessionTTL    time.Duration
+	userSessionTTL     time.Duration
+	pharmacySessionTTL time.Duration
+
+	userRepo repository.UsersRepository
 }
 
 func NewSession(repo repository.Repository, authConfig config.AuthConfig) *Session {
@@ -29,6 +32,7 @@ func NewSession(repo repository.Repository, authConfig config.AuthConfig) *Sessi
 		authConfig.OwnerSessionTTL,
 		authConfig.UserSessionTTL,
 		authConfig.PharmacySessionTTL,
+		repo.Users,
 	}
 }
 
@@ -56,7 +60,7 @@ func (s *Session) NewOwner(ctx context.Context, ownerID int64) (*OwnerSession, e
 }
 
 // Return the same Owner SessionID if still exist in cache, otherwise checks the DB and rotate sessionID if still valid / not expired
-func (s *Session) ResolveOwner(ctx context.Context, sessionID string) (ownerSession *OwnerSession, rotated bool, err error) {
+func (s *Session) ResolveOwner(ctx context.Context, sessionID string) (newOwnerSession *OwnerSession, rotated bool, err error) {
 	newExp := time.Now().Add(s.ownerSessionTTL)
 
 	// 1. Check session if still in cache
@@ -83,14 +87,14 @@ func (s *Session) ResolveOwner(ctx context.Context, sessionID string) (ownerSess
 		return nil, false, err
 	}
 
-	ownerSession = &OwnerSession{
+	newOwnerSession = &OwnerSession{
 		OwnerID: ownerSessionItem.OwnerID,
 		ID:      ownerSessionItem.ID.String(),
 		Exp:     newExp,
 	}
-	s.cacheStore.OwnerSessions.SetDefault(ownerSession.ID, ownerSession.OwnerID)
+	s.cacheStore.OwnerSessions.SetDefault(newOwnerSession.ID, newOwnerSession.OwnerID)
 
-	return ownerSession, true, nil
+	return newOwnerSession, true, nil
 }
 
 func (s *Session) DeleteOwner(ctx context.Context, sessionID string) error {
@@ -110,9 +114,10 @@ func (s *Session) DeleteOwner(ctx context.Context, sessionID string) error {
 }
 
 type UserSession struct {
-	ID     string
-	Exp    time.Time
-	UserID int64
+	ID       string
+	Exp      time.Time
+	UserID   int64
+	Username string
 }
 
 func (s *Session) NewUser(ctx context.Context, userID int64, username string) (*UserSession, error) {
@@ -128,11 +133,64 @@ func (s *Session) NewUser(ctx context.Context, userID int64, username string) (*
 	s.cacheStore.UserSessions.SetDefault(newSession.ID.String(), userCacheValue)
 
 	newUserSession := &UserSession{
-		ID:     newSession.ID.String(),
-		Exp:    newSession.ExpiresAt.Time,
-		UserID: newSession.UserID,
+		ID:       newSession.ID.String(),
+		Exp:      newSession.ExpiresAt.Time,
+		UserID:   newSession.UserID,
+		Username: username,
 	}
 	return newUserSession, nil
+}
+
+// Return the same User SessionID if still exist in cache, otherwise checks the DB and rotate sessionID if still valid / not expired
+func (s *Session) ResolveUser(ctx context.Context, sessionID string) (newUserSession *UserSession, rotated bool, err error) {
+	newExp := time.Now().Add(s.userSessionTTL)
+
+	// 1. Check session if still in cache
+	if val, found := s.cacheStore.UserSessions.Get(sessionID); found {
+		userCache, ok := val.(repository.UserCacheValue)
+		if !ok {
+			s.cacheStore.UserSessions.Delete(sessionID)
+			return nil, false, fmt.Errorf("%w: UserCacheValue expected, got %T", ErrTypeAssertionFailed, userCache)
+		}
+		userSession := &UserSession{
+			ID:       sessionID,
+			Exp:      time.Time{},
+			UserID:   userCache.ID,
+			Username: userCache.Username,
+		}
+		return userSession, false, nil
+	}
+
+	// 2. check session in DB
+	userSessionItem, err := s.userSessionRepo.Update(ctx, sessionID, newExp)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return nil, false, fmt.Errorf("%w: user %w", err, ErrInvalidSession)
+		}
+		return nil, false, err
+	}
+
+	user, err := s.userRepo.GetByID(ctx, userSessionItem.UserID)
+	if err != nil {
+		switch {
+		case errors.Is(err, repository.ErrNotFound):
+			return nil, false, fmt.Errorf("%w: session exist but user not found", err)
+		default:
+			return nil, false, err
+		}
+	}
+	userCache := repository.UserCacheValue{
+		ID:       userSessionItem.UserID,
+		Username: user.Username,
+	}
+	newUserSession = &UserSession{
+		UserID: userSessionItem.UserID,
+		ID:     userSessionItem.ID.String(),
+		Exp:    newExp,
+	}
+	s.cacheStore.UserSessions.SetDefault(newUserSession.ID, userCache)
+
+	return newUserSession, true, nil
 }
 
 func (s *Session) DeleteUser(ctx context.Context, sessionID string) error {
