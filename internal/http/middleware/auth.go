@@ -26,7 +26,8 @@ type authOwner struct {
 
 type authUser struct {
 	repository.UserCacheValue
-	SessionID string
+	SessionID  string
+	SessionExp time.Time
 }
 
 type authPharmacy struct {
@@ -98,6 +99,7 @@ func (m *AppMiddleware) AuthUser(next http.Handler) http.Handler {
 			return
 		}
 		sessionID := sessionCookie.Value
+		sessionExp := sessionCookie.Expires
 
 		// 2. Check if session exist in cache. If exist, pass the request.
 		if val, found := m.repo.CacheStore.UserSessions.Get(sessionID); found {
@@ -123,6 +125,7 @@ func (m *AppMiddleware) AuthUser(next http.Handler) http.Handler {
 			authUser := authUser{
 				UserCacheValue: userCache,
 				SessionID:      sessionID,
+				SessionExp:     sessionExp,
 			}
 			ctx := context.WithValue(ctx, authUserCtx, authUser)
 			next.ServeHTTP(w, r.WithContext(ctx))

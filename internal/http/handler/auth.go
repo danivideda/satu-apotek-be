@@ -4,23 +4,18 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
 	"github.com/danivideda/satu-apotek-be/internal/http/middleware"
-	"github.com/danivideda/satu-apotek-be/internal/repository"
 	"github.com/danivideda/satu-apotek-be/internal/service"
 )
 
 type authHandler struct {
-	repo            repository.Repository
-	authService     *service.Auth
-	ownerSessionTTL time.Duration
-	userSessionTTL  time.Duration
+	authService *service.Auth
 }
 
-func newAuthHandler(repo repository.Repository, authService *service.Auth, ownerSessionTTL time.Duration, userSessionTTL time.Duration) *authHandler {
-	return &authHandler{repo, authService, ownerSessionTTL, userSessionTTL}
+func newAuthHandler(authService *service.Auth) *authHandler {
+	return &authHandler{authService}
 }
 
 func (h *authHandler) OwnerRegister(w http.ResponseWriter, r *http.Request) {
@@ -95,13 +90,15 @@ func (h *authHandler) OwnerLogout(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrInvalidSession):
+			cookie.Owner.DeleteSession(w)
 			json.ResponseUnauthorized(w, r, err)
 		default:
 			json.ResponseInternalServerError(w, r, err)
 		}
-		cookie.Owner.DeleteSession(w)
 		return
 	}
+
+	cookie.Owner.DeleteSession(w)
 
 	res := map[string]string{
 		"deleted_session": authOwner.SessionID,
@@ -174,10 +171,19 @@ func (h *authHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 
 func (h *authHandler) UserCheck(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	_, err := middleware.AuthUserFromCtx(ctx)
+	authUser, err := middleware.AuthUserFromCtx(ctx)
 	if err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return
+	}
+
+	// Resend CSRF Cookie if it's missing.
+	// When CSRF cookie is missing, it means the CSRF protection middleware unable to validate previous request
+	// and deletes the CSRF cookie completely.
+	_, err = r.Cookie("owner_csrf")
+	if err != nil {
+		fmt.Println(err)
+		cookie.User.SetSession(w, authUser.SessionID, authUser.SessionExp)
 	}
 
 	if err := json.ResponseNoContent(w); err != nil {
@@ -194,24 +200,21 @@ func (h *authHandler) UserLogout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	deletedUserSession, err := h.repo.UserSessions.Delete(ctx, authUser.SessionID)
+	err = h.authService.User.Logout(ctx, authUser.SessionID)
 	if err != nil {
-		if errors.Is(err, repository.ErrNotFound) {
-			h.repo.CacheStore.UserSessions.Delete(deletedUserSession.ID.String())
+		switch {
+		case errors.Is(err, service.ErrInvalidSession):
 			cookie.User.DeleteSession(w)
-			json.ResponseBadRequest(w, r, err)
-			return
-		} else {
+			json.ResponseUnauthorized(w, r, err)
+		default:
 			json.ResponseInternalServerError(w, r, err)
 		}
 		return
 	}
-
-	h.repo.CacheStore.UserSessions.Delete(deletedUserSession.ID.String())
 	cookie.User.DeleteSession(w)
 
 	res := map[string]string{
-		"deleted_session": deletedUserSession.ID.String(),
+		"deleted_session": authUser.SessionID,
 	}
 	if err := json.ResponseOK(w, res); err != nil {
 		json.ResponseInternalServerError(w, r, err)

@@ -23,7 +23,7 @@ var cookie = c.New()
 
 func New(repo repository.Repository, cfg config.Config, authSvc *service.Auth) Handler {
 	return Handler{
-		Auth:     newAuthHandler(repo, authSvc, cfg.Auth.OwnerSessionTTL, cfg.Auth.UserSessionTTL),
+		Auth:     newAuthHandler(authSvc),
 		Owner:    newOwnerHandler(repo),
 		User:     newUserHandler(repo),
 		Pharmacy: newPharmacyHandler(repo, cfg.Auth.PharmacySessionTTL),

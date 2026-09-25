@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/alexedwards/argon2id"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
@@ -31,7 +30,7 @@ type OwnerAuth interface {
 }
 type UserAuth interface {
 	Login(ctx context.Context, userID int64, password string, users []repository.UserCacheValue) (*UserSession, error)
-	Logout(sessionID string) error
+	Logout(ctx context.Context, sessionID string) error
 }
 type PharmacyAuth interface {
 	Connect(code string) error
@@ -68,12 +67,7 @@ func (a *ownerAuth) Login(ctx context.Context, email, password string) (*OwnerSe
 		return nil, fmt.Errorf("owner %w", ErrInvalidCredentials)
 	}
 
-	ownerSession, err := a.sessionSvc.NewOwner(ctx, owner.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	return ownerSession, nil
+	return a.sessionSvc.NewOwner(ctx, owner.ID)
 }
 func (a *ownerAuth) Logout(ctx context.Context, sessionID string) error {
 	return a.sessionSvc.DeleteOwner(ctx, sessionID)
@@ -125,30 +119,15 @@ func (a *userAuth) Login(ctx context.Context, userID int64, password string, use
 	if err != nil {
 		return nil, err
 	}
-
 	if !match {
 		return nil, ErrInvalidCredentials
 	}
 
-	newExp := time.Now().Add(a.sessionSvc.ownerSessionTTL)
-	newSession, err := a.sessionSvc.userSessionRepo.Create(ctx, userID, newExp)
-	if err != nil {
-		return nil, err
-	}
-	userCacheValue := repository.UserCacheValue{
-		ID:       newSession.UserID,
-		Username: user.Username,
-	}
-	a.sessionSvc.cacheStore.UserSessions.SetDefault(newSession.ID.String(), userCacheValue)
-
-	userSession := &UserSession{
-		ID:     newSession.ID.String(),
-		Exp:    newSession.ExpiresAt.Time,
-		UserID: newSession.UserID,
-	}
-	return userSession, nil
+	return a.sessionSvc.NewUser(ctx, user.ID, user.Username)
 }
-func (a *userAuth) Logout(sessionID string) error { return nil }
+func (a *userAuth) Logout(ctx context.Context, sessionID string) error { 
+	return a.sessionSvc.DeleteUser(ctx, sessionID)
+}
 
 type pharmacyAuth struct{}
 

@@ -39,17 +39,17 @@ type OwnerSession struct {
 }
 
 func (s *Session) NewOwner(ctx context.Context, ownerID int64) (*OwnerSession, error) {
-	exp := time.Now().Add(s.ownerSessionTTL)
-	session, err := s.ownerSessionRepo.Create(ctx, ownerID, exp)
+	newExp := time.Now().Add(s.ownerSessionTTL)
+	newSession, err := s.ownerSessionRepo.Create(ctx, ownerID, newExp)
 	if err != nil {
 		return nil, err
 	}
-	s.cacheStore.OwnerSessions.SetDefault(session.ID.String(), ownerID)
+	s.cacheStore.OwnerSessions.SetDefault(newSession.ID.String(), ownerID)
 
 	newOwnerSession := &OwnerSession{
 		OwnerID: ownerID,
-		ID:      session.ID.String(),
-		Exp:     exp,
+		ID:      newSession.ID.String(),
+		Exp:     newExp,
 	}
 
 	return newOwnerSession, nil
@@ -115,3 +115,38 @@ type UserSession struct {
 	UserID int64
 }
 
+func (s *Session) NewUser(ctx context.Context, userID int64, username string) (*UserSession, error) {
+	newExp := time.Now().Add(s.userSessionTTL)
+	newSession, err := s.userSessionRepo.Create(ctx, userID, newExp)
+	if err != nil {
+		return nil, err
+	}
+	userCacheValue := repository.UserCacheValue{
+		ID:       newSession.UserID,
+		Username: username,
+	}
+	s.cacheStore.UserSessions.SetDefault(newSession.ID.String(), userCacheValue)
+
+	newUserSession := &UserSession{
+		ID:     newSession.ID.String(),
+		Exp:    newSession.ExpiresAt.Time,
+		UserID: newSession.UserID,
+	}
+	return newUserSession, nil
+}
+
+func (s *Session) DeleteUser(ctx context.Context, sessionID string) error {
+	_, err := s.userSessionRepo.Delete(ctx, sessionID)
+	if err != nil {
+		switch {
+		case errors.Is(err, repository.ErrNotFound):
+			s.cacheStore.UserSessions.Delete(sessionID)
+			return fmt.Errorf("%w: user %w", err, ErrInvalidSession)
+		default:
+			return err
+		}
+	}
+
+	s.cacheStore.UserSessions.Delete(sessionID)
+	return nil
+}
