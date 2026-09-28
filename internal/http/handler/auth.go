@@ -235,3 +235,31 @@ func (h *authHandler) PharmacyCheck(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+func (h *authHandler) PharmacyConnect(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var payload struct {
+		Code string `json:"code" validate:"required,hexadecimal,len=6"`
+	}
+	if ok := parseAndValidateJSONPayload(w, r, &payload); !ok {
+		return
+	}
+	
+	newPharmacySession, err := h.authService.Pharmacy.Connect(ctx, payload.Code)
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrPharmacyCodeExpiredOrNotFound):
+			json.ResponseBadRequest(w, r, err)
+		default:
+			json.ResponseInternalServerError(w,r,err)
+		}
+		return
+	}
+	cookie.Pharmacy.SetSession(w, newPharmacySession.ID, newPharmacySession.Exp)
+
+	if err := json.ResponseNoContent(w); err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+}

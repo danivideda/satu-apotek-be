@@ -27,6 +27,7 @@ type UserCookie interface {
 
 type PharmacyCookie interface {
 	SetSession(w http.ResponseWriter, sessionID string, exp time.Time)
+	DeleteSession(w http.ResponseWriter)
 }
 
 type ownerCookie struct{}
@@ -81,18 +82,6 @@ func (c *ownerCookie) DeleteCSRF(w http.ResponseWriter) {
 	c.setCSRFCookiesBase(w, "", time.Now())
 }
 
-func (c *pharmacyCookie) SetSession(w http.ResponseWriter, sessionID string, exp time.Time) {
-	httpCookie := &http.Cookie{
-		Name:     "pharmacy_session",
-		Value:    sessionID,
-		Path:     "/",
-		Expires:  exp,
-		Secure:   false,
-		HttpOnly: true,
-	}
-	http.SetCookie(w, httpCookie)
-}
-
 // User sessions
 func (c *userCookie) setCookiesBase(w http.ResponseWriter, sessionID string, csrfToken string, exp time.Time) {
 	httpCookie := &http.Cookie{
@@ -131,4 +120,25 @@ func (c *userCookie) DeleteSession(w http.ResponseWriter) {
 
 func (c *userCookie) DeleteCSRF(w http.ResponseWriter) {
 	c.setCSRFCookiesBase(w, "", time.Now())
+}
+
+// Pharmacy sessions
+func (c *pharmacyCookie) setCookiesBase(w http.ResponseWriter, sessionID string, exp time.Time) {
+	httpCookie := &http.Cookie{
+		Name:     "pharmacy_session",
+		Value:    sessionID,
+		Path:     "/",
+		Expires:  exp,
+		Secure:   false,
+		HttpOnly: true,
+	}
+	http.SetCookie(w, httpCookie)
+}
+
+func (c *pharmacyCookie) SetSession(w http.ResponseWriter, sessionID string, exp time.Time) {
+	c.setCookiesBase(w, sessionID, exp)
+}
+
+func (c *pharmacyCookie) DeleteSession(w http.ResponseWriter) {
+	c.setCookiesBase(w, "", time.Now())
 }

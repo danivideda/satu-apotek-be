@@ -75,7 +75,7 @@ func (app *application) mount(corsConfig config.CORSConfig) http.Handler {
 			})
 
 			r.Route("/pharmacies", func(r chi.Router) {
-				r.Post("/connect", app.handler.Pharmacy.Connect)
+				r.Post("/connect", app.handler.Auth.PharmacyConnect)
 				r.With(app.middleware.AuthPharmacy).Get("/check", app.handler.Auth.PharmacyCheck)
 			})
 		})

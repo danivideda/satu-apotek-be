@@ -20,7 +20,8 @@ type Session struct {
 	userSessionTTL     time.Duration
 	pharmacySessionTTL time.Duration
 
-	userRepo repository.UsersRepository
+	usersRepo      repository.UsersRepository
+	pharmaciesRepo repository.PharmaciesRepository
 }
 
 func NewSession(repo repository.Repository, authConfig config.AuthConfig) *Session {
@@ -33,6 +34,7 @@ func NewSession(repo repository.Repository, authConfig config.AuthConfig) *Sessi
 		authConfig.UserSessionTTL,
 		authConfig.PharmacySessionTTL,
 		repo.Users,
+		repo.Pharmacies,
 	}
 }
 
@@ -170,7 +172,7 @@ func (s *Session) ResolveUser(ctx context.Context, sessionID string) (newUserSes
 		return nil, false, err
 	}
 
-	user, err := s.userRepo.GetByID(ctx, userSessionItem.UserID)
+	user, err := s.usersRepo.GetByID(ctx, userSessionItem.UserID)
 	if err != nil {
 		switch {
 		case errors.Is(err, repository.ErrNotFound):
@@ -207,4 +209,136 @@ func (s *Session) DeleteUser(ctx context.Context, sessionID string) error {
 
 	s.cacheStore.UserSessions.Delete(sessionID)
 	return nil
+}
+
+type PharmacySession struct {
+	ID  string
+	Exp time.Time
+	repository.PharmacyCacheValue
+}
+
+func (s *Session) NewPharmacy(ctx context.Context, pharmacyID int64) (*PharmacySession, error) {
+	// create pharmacy session
+	exp := time.Now().Add(s.pharmacySessionTTL)
+	pharmacySessionItem, err := s.pharmacySessionRepo.Create(ctx, pharmacyID, exp)
+	if err != nil {
+		switch {
+		case errors.Is(err, repository.ErrNotFound):
+			return nil, fmt.Errorf("%w: pharmacyID not found when creating session", err)
+		default:
+			return nil, err
+		}
+	}
+
+	// Gather information for session creation
+	// embed the Users belong in a Pharmacy session (this will be used in login-page)
+	users, err := s.usersRepo.GetByPharmacyID(ctx, pharmacyID)
+	if err != nil {
+		switch {
+		case errors.Is(err, repository.ErrNotFound):
+			users = nil
+		default:
+			return nil, err
+		}
+	}
+
+	var usersCache []repository.UserCacheValue
+	if users != nil {
+		for _, user := range *users {
+			userItem := repository.UserCacheValue{
+				ID:       user.ID,
+				Username: user.Username,
+			}
+			usersCache = append(usersCache, userItem)
+		}
+	}
+
+	pharmacy, err := s.pharmaciesRepo.GetByID(ctx, pharmacyID)
+	if err != nil {
+		return nil, err
+	}
+
+	s.cacheStore.PharmacySessions.SetDefault(pharmacySessionItem.ID.String(), repository.PharmacyCacheValue{
+		PharmacyID: pharmacyID,
+		Name:       pharmacy.Name,
+		Users:      usersCache,
+	})
+
+	newPharmacySession := &PharmacySession{
+		ID:  pharmacySessionItem.ID.String(),
+		Exp: exp,
+	}
+
+	return newPharmacySession, nil
+}
+
+// Return the same Pharmacy SessionID if still exist in cache, otherwise checks the DB and rotate sessionID if still valid / not expired
+func (s *Session) ResolvePharmacy(ctx context.Context, sessionID string) (newPharmacySession *PharmacySession, rotated bool, err error) {
+	newExp := time.Now().Add(s.pharmacySessionTTL)
+
+	// 1. Check session if still in cache
+	if val, found := s.cacheStore.PharmacySessions.Get(sessionID); found {
+		pharmacyCache, ok := val.(repository.PharmacyCacheValue)
+		if !ok {
+			s.cacheStore.PharmacySessions.Delete(sessionID)
+			return nil, false, fmt.Errorf("%w: PharmacyCacheValue expected, got %T", ErrTypeAssertionFailed, pharmacyCache)
+		}
+		pharmacySession := &PharmacySession{
+			ID:  sessionID,
+			Exp: time.Time{},
+			PharmacyCacheValue: pharmacyCache,
+		}
+		return pharmacySession, false, nil
+	}
+
+	// 2. check session in DB
+	pharmacySessionItem, err := s.pharmacySessionRepo.Update(ctx, sessionID, newExp)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return nil, false, fmt.Errorf("%w: pharmachy %w", err, ErrInvalidSession)
+		}
+		return nil, false, err
+	}
+
+	// Get pharmacy name
+	pharmacyItem, err := s.pharmaciesRepo.GetByID(ctx, pharmacySessionItem.PharmacyID)
+	if err != nil {
+		return nil, false, err
+	}
+	// Get users
+	users, err := s.usersRepo.GetByPharmacyID(ctx, pharmacySessionItem.PharmacyID)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			users = nil
+		} else {
+			return nil, false, err
+		}
+	}
+
+	var usersCache []repository.UserCacheValue
+	if users != nil {
+		for _, user := range *users {
+			userItem := repository.UserCacheValue{
+				ID:       user.ID,
+				Username: user.Username,
+			}
+
+			usersCache = append(usersCache, userItem)
+		}
+	}
+	pharmacyCache := repository.PharmacyCacheValue{
+		PharmacyID: pharmacyItem.ID,
+		Name:       pharmacyItem.Name,
+		Users:      usersCache,
+	}
+
+	newPharmacySession = &PharmacySession{
+		ID:  pharmacySessionItem.ID.String(),
+		Exp: newExp,
+		PharmacyCacheValue: pharmacyCache,
+	}
+
+	s.cacheStore.PharmacySessions.SetDefault(newPharmacySession.ID, pharmacyCache)
+
+	return newPharmacySession, true, nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/alexedwards/argon2id"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
@@ -15,11 +16,11 @@ type Auth struct {
 	Pharmacy PharmacyAuth
 }
 
-func NewAuth(repo repository.Repository, sessionSvc *Session) *Auth {
+func NewAuth(repo repository.Repository, session *Session) *Auth {
 	return &Auth{
-		Owner:    newOwnerAuth(repo.Owners, sessionSvc),
-		User:     newUserAuth(repo.Users, sessionSvc),
-		Pharmacy: &pharmacyAuth{},
+		Owner:    newOwnerAuth(repo.Owners, session),
+		User:     newUserAuth(repo.Users, session),
+		Pharmacy: newPharmacyAuth(repo.Pharmacies, repo.Users, session),
 	}
 }
 
@@ -33,12 +34,12 @@ type UserAuth interface {
 	Logout(ctx context.Context, sessionID string) error
 }
 type PharmacyAuth interface {
-	Connect(code string) error
+	Connect(ctx context.Context, code string) (*PharmacySession, error)
 }
 
 type ownerAuth struct {
-	ownerRepo  repository.OwnersRepository
-	sessionSvc *Session
+	ownerRepo repository.OwnersRepository
+	session   *Session
 }
 
 func newOwnerAuth(
@@ -67,10 +68,10 @@ func (a *ownerAuth) Login(ctx context.Context, email, password string) (*OwnerSe
 		return nil, fmt.Errorf("owner %w", ErrInvalidCredentials)
 	}
 
-	return a.sessionSvc.NewOwner(ctx, owner.ID)
+	return a.session.NewOwner(ctx, owner.ID)
 }
 func (a *ownerAuth) Logout(ctx context.Context, sessionID string) error {
-	return a.sessionSvc.DeleteOwner(ctx, sessionID)
+	return a.session.DeleteOwner(ctx, sessionID)
 }
 func (a *ownerAuth) Register(ctx context.Context, username, email, password string) error {
 	passwordHash, err := argon2id.CreateHash(password, argon2id.DefaultParams)
@@ -86,8 +87,8 @@ func (a *ownerAuth) Register(ctx context.Context, username, email, password stri
 }
 
 type userAuth struct {
-	userRepo   repository.UsersRepository
-	sessionSvc *Session
+	userRepo repository.UsersRepository
+	session  *Session
 }
 
 func newUserAuth(
@@ -123,12 +124,53 @@ func (a *userAuth) Login(ctx context.Context, userID int64, password string, use
 		return nil, ErrInvalidCredentials
 	}
 
-	return a.sessionSvc.NewUser(ctx, user.ID, user.Username)
+	return a.session.NewUser(ctx, user.ID, user.Username)
 }
-func (a *userAuth) Logout(ctx context.Context, sessionID string) error { 
-	return a.sessionSvc.DeleteUser(ctx, sessionID)
+func (a *userAuth) Logout(ctx context.Context, sessionID string) error {
+	return a.session.DeleteUser(ctx, sessionID)
 }
 
-type pharmacyAuth struct{}
+type pharmacyAuth struct {
+	pharmaciesRepo repository.PharmaciesRepository
+	usersRepo      repository.UsersRepository
+	session        *Session
+}
 
-func (a *pharmacyAuth) Connect(code string) error { return nil }
+func newPharmacyAuth(
+	pharmaciesRepo repository.PharmaciesRepository,
+	usersRepo repository.UsersRepository,
+	session *Session,
+) *pharmacyAuth {
+	return &pharmacyAuth{pharmaciesRepo, usersRepo, session}
+}
+
+func (a *pharmacyAuth) Connect(ctx context.Context, code string) (*PharmacySession, error) {
+	// Check the code
+	pharmacyCode, err := a.pharmaciesRepo.GetCodeByCode(ctx, code)
+	if err != nil {
+		switch {
+		case errors.Is(err, repository.ErrNotFound):
+			return nil, ErrPharmacyCodeExpiredOrNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	//--check if code expired
+	if time.Now().After(pharmacyCode.ExpiresAt.Time) {
+		return nil, ErrPharmacyCodeExpiredOrNotFound
+	}
+
+	// Delete immediately after being used
+	// doesn't matter if the session creation later have some error
+	if _, err := a.pharmaciesRepo.DeleteCode(ctx, pharmacyCode.Code); err != nil {
+		return nil, err
+	}
+
+	newPharmacySession, err := a.session.NewPharmacy(ctx, pharmacyCode.ApotekID)
+	if err != nil {
+		return nil, err
+	}
+
+	return newPharmacySession, nil
+}
