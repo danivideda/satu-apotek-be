@@ -130,7 +130,7 @@ func (m *AppMiddleware) AuthUser(next http.Handler) http.Handler {
 		}
 
 		// 2.2 Otherwise, SessionID is rotated and need to be updated
-		cookie.User.SetSession(w, sessionID, userSession.Exp)
+		cookie.User.SetSession(w, userSession.ID, userSession.Exp)
 		authUser := authUser{
 			UserCacheValue: userCache,
 			SessionID:      userSession.ID,
