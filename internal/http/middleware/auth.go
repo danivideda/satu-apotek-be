@@ -168,7 +168,6 @@ func (m *AppMiddleware) AuthPharmacy(next http.Handler) http.Handler {
 		}
 
 		if !rotated {
-			fmt.Println("debug: rotated true")
 			authPharmacy := authPharmacy{
 				PharmacySession: service.PharmacySession{
 					ID:  pharmacySession.ID,
@@ -185,8 +184,7 @@ func (m *AppMiddleware) AuthPharmacy(next http.Handler) http.Handler {
 			return
 		}
 
-		fmt.Println("debug: rotated false, new session")
-		cookie.Pharmacy.SetSession(w, sessionID, pharmacySession.Exp)
+		cookie.Pharmacy.SetSession(w, pharmacySession.ID, pharmacySession.Exp)
 		authPharmacy := authPharmacy{
 			PharmacySession: service.PharmacySession{
 				ID:  pharmacySession.ID,
