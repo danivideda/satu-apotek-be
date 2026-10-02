@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/alexedwards/argon2id"
@@ -16,11 +17,11 @@ type Auth struct {
 	Pharmacy PharmacyAuth
 }
 
-func NewAuth(repo repository.Repository, session *Session) *Auth {
+func NewAuth(repo repository.Repository, sessionSvc *Session) *Auth {
 	return &Auth{
-		Owner:    newOwnerAuth(repo.Owners, session),
-		User:     newUserAuth(repo.Users, session),
-		Pharmacy: newPharmacyAuth(repo.Pharmacies, repo.Users, session),
+		Owner:    newOwnerAuth(repo.Owners, sessionSvc),
+		User:     newUserAuth(repo.Users, sessionSvc),
+		Pharmacy: newPharmacyAuth(repo.Pharmacies, repo.Users, sessionSvc),
 	}
 }
 
@@ -44,9 +45,9 @@ type ownerAuth struct {
 
 func newOwnerAuth(
 	ownerRepo repository.OwnersRepository,
-	session *Session,
+	sessionSvc *Session,
 ) *ownerAuth {
-	return &ownerAuth{ownerRepo, session}
+	return &ownerAuth{ownerRepo, sessionSvc}
 }
 
 func (a *ownerAuth) Login(ctx context.Context, email, password string) (*OwnerSession, error) {
@@ -93,14 +94,14 @@ type userAuth struct {
 
 func newUserAuth(
 	userRepo repository.UsersRepository,
-	session *Session,
+	sessionSvc *Session,
 ) *userAuth {
-	return &userAuth{userRepo, session}
+	return &userAuth{userRepo, sessionSvc}
 }
 
 func (a *userAuth) Login(ctx context.Context, userID int64, password string, users []repository.UserCacheValue) (*UserSession, error) {
 	// Check UserID exist in Pharmacy
-	if !UserExistsInPharmacy(users, userID) {
+	if !userExistsInPharmacy(users, userID) {
 		return nil, ErrUserForbidden
 	}
 
@@ -139,9 +140,9 @@ type pharmacyAuth struct {
 func newPharmacyAuth(
 	pharmaciesRepo repository.PharmaciesRepository,
 	usersRepo repository.UsersRepository,
-	session *Session,
+	sessionSvc *Session,
 ) *pharmacyAuth {
-	return &pharmacyAuth{pharmaciesRepo, usersRepo, session}
+	return &pharmacyAuth{pharmaciesRepo, usersRepo, sessionSvc}
 }
 
 func (a *pharmacyAuth) Connect(ctx context.Context, code string) (*PharmacySession, error) {
@@ -173,4 +174,14 @@ func (a *pharmacyAuth) Connect(ctx context.Context, code string) (*PharmacySessi
 	}
 
 	return newPharmacySession, nil
+}
+
+func userExistsInPharmacy(users []repository.UserCacheValue, userID int64) bool {
+	userExists := slices.ContainsFunc(users, func(u repository.UserCacheValue) bool {
+		if u.ID == userID {
+			return true
+		}
+		return false
+	})
+	return userExists
 }
