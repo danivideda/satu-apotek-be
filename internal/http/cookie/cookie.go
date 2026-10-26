@@ -44,11 +44,16 @@ func New() cookie {
 
 // Owner sessions
 func (c *ownerCookie) setCookiesBase(w http.ResponseWriter, sessionID string, csrfToken string, exp time.Time) {
+	expDurationInSeconds := int(time.Until(exp).Seconds())
+	if expDurationInSeconds == 0 {
+		expDurationInSeconds = -1
+	}
 	httpCookie := &http.Cookie{
-		Name:     "owner_session",
-		Value:    sessionID,
-		Path:     "/",
+		Name:  "owner_session",
+		Value: sessionID,
+		Path:  "/",
 		Expires:  exp,
+		MaxAge:   expDurationInSeconds,
 		Secure:   false,
 		HttpOnly: true,
 	}
@@ -58,11 +63,16 @@ func (c *ownerCookie) setCookiesBase(w http.ResponseWriter, sessionID string, cs
 }
 
 func (c *ownerCookie) setCSRFCookiesBase(w http.ResponseWriter, csrfToken string, exp time.Time) {
+	expDurationInSeconds := int(time.Until(exp).Seconds())
+	if expDurationInSeconds == 0 {
+		expDurationInSeconds = -1
+	}
 	csrf := &http.Cookie{
-		Name:     "owner_csrf",
-		Value:    csrfToken,
-		Path:     "/",
+		Name:  "owner_csrf",
+		Value: csrfToken,
+		Path:  "/",
 		Expires:  exp,
+		MaxAge:   expDurationInSeconds,
 		Secure:   false,
 		HttpOnly: false,
 	}
@@ -75,20 +85,27 @@ func (c *ownerCookie) SetSession(w http.ResponseWriter, sessionID string, exp ti
 }
 
 func (c *ownerCookie) DeleteSession(w http.ResponseWriter) {
-	c.setCookiesBase(w, "", "", time.Now())
+	zeroUnix := time.Unix(0, 0).UTC()
+	c.setCookiesBase(w, "", "", zeroUnix)
 }
 
 func (c *ownerCookie) DeleteCSRF(w http.ResponseWriter) {
-	c.setCSRFCookiesBase(w, "", time.Now())
+	zeroUnix := time.Unix(0, 0).UTC()
+	c.setCSRFCookiesBase(w, "", zeroUnix)
 }
 
 // User sessions
 func (c *userCookie) setCookiesBase(w http.ResponseWriter, sessionID string, csrfToken string, exp time.Time) {
+	expDurationInSeconds := int(time.Until(exp).Seconds())
+	if expDurationInSeconds == 0 {
+		expDurationInSeconds = -1
+	}
 	httpCookie := &http.Cookie{
 		Name:     "user_session",
 		Value:    sessionID,
 		Path:     "/",
 		Expires:  exp,
+		MaxAge: expDurationInSeconds,
 		Secure:   false,
 		HttpOnly: true,
 	}
@@ -98,11 +115,16 @@ func (c *userCookie) setCookiesBase(w http.ResponseWriter, sessionID string, csr
 }
 
 func (c *userCookie) setCSRFCookiesBase(w http.ResponseWriter, csrfToken string, exp time.Time) {
+	expDurationInSeconds := int(time.Until(exp).Seconds())
+	if expDurationInSeconds == 0 {
+		expDurationInSeconds = -1
+	}
 	csrf := &http.Cookie{
 		Name:     "user_csrf",
 		Value:    csrfToken,
 		Path:     "/",
 		Expires:  exp,
+		MaxAge: expDurationInSeconds,
 		Secure:   false,
 		HttpOnly: false,
 	}
@@ -115,11 +137,13 @@ func (c *userCookie) SetSession(w http.ResponseWriter, sessionID string, exp tim
 }
 
 func (c *userCookie) DeleteSession(w http.ResponseWriter) {
-	c.setCookiesBase(w, "", "", time.Now())
+	zeroUnix := time.Unix(0, 0).UTC()
+	c.setCookiesBase(w, "", "", zeroUnix)
 }
 
 func (c *userCookie) DeleteCSRF(w http.ResponseWriter) {
-	c.setCSRFCookiesBase(w, "", time.Now())
+	zeroUnix := time.Unix(0, 0).UTC()
+	c.setCSRFCookiesBase(w, "", zeroUnix)
 }
 
 // Pharmacy sessions
