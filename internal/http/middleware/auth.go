@@ -40,7 +40,7 @@ func (m *AppMiddleware) AuthOwner(next http.Handler) http.Handler {
 
 		// 1. Get session from cookie
 		sessionCookie, err := r.Cookie("owner_session")
-		if err != nil {
+		if err != nil || sessionCookie.Value == "" {
 			json.ResponseUnauthorized(w, r, err)
 			return
 		}
@@ -92,7 +92,7 @@ func (m *AppMiddleware) AuthUser(next http.Handler) http.Handler {
 
 		// 1. Get session from cookie
 		sessionCookie, err := r.Cookie("user_session")
-		if err != nil {
+		if err != nil || sessionCookie.Value == "" {
 			json.ResponseUnauthorized(w, r, err)
 			return
 		}
@@ -148,7 +148,7 @@ func (m *AppMiddleware) AuthPharmacy(next http.Handler) http.Handler {
 		ctx := r.Context()
 
 		sessionCookie, err := r.Cookie("pharmacy_session")
-		if err != nil {
+		if err != nil || sessionCookie.Value == "" {
 			json.ResponseUnauthorized(w, r, fmt.Errorf("%w: no pharmacy session", err))
 			return
 		}
