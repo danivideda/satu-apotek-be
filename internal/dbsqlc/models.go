@@ -51,6 +51,71 @@ type PharmacySession struct {
 	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
 }
 
+type Product struct {
+	ID            int64              `json:"id"`
+	PharmacyID    int64              `json:"pharmacy_id"`
+	Name          string             `json:"name"`
+	Sku           pgtype.Text        `json:"sku"`
+	Barcode       pgtype.Text        `json:"barcode"`
+	CategoryID    pgtype.Int8        `json:"category_id"`
+	BaseUnitID    pgtype.Int8        `json:"base_unit_id"`
+	MinStock      int32              `json:"min_stock"`
+	BaseSellPrice pgtype.Numeric     `json:"base_sell_price"`
+	IsActive      bool               `json:"is_active"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+}
+
+type ProductCategory struct {
+	ID         int64              `json:"id"`
+	PharmacyID int64              `json:"pharmacy_id"`
+	Code       string             `json:"code"`
+	Name       string             `json:"name"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+}
+
+type ProductUnit struct {
+	ID         int64              `json:"id"`
+	PharmacyID int64              `json:"pharmacy_id"`
+	Label      string             `json:"label"`
+	Name       string             `json:"name"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+}
+
+type ProductUnitConversion struct {
+	ID                 int64              `json:"id"`
+	PharmacyID         int64              `json:"pharmacy_id"`
+	ProductID          pgtype.Int8        `json:"product_id"`
+	UnitID             pgtype.Int8        `json:"unit_id"`
+	QuantityInBaseUnit int32              `json:"quantity_in_base_unit"`
+	CreatedAt          pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt          pgtype.Timestamptz `json:"updated_at"`
+}
+
+type Sale struct {
+	ID         int64              `json:"id"`
+	PharmacyID int64              `json:"pharmacy_id"`
+	TotalPrice pgtype.Numeric     `json:"total_price"`
+	IsPending  bool               `json:"is_pending"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+}
+
+type SaleItem struct {
+	ID                   int64          `json:"id"`
+	PharmacyID           int64          `json:"pharmacy_id"`
+	SaleID               int64          `json:"sale_id"`
+	ProductID            pgtype.Int8    `json:"product_id"`
+	ProductName          string         `json:"product_name"`
+	QtyInBaseUnit        int32          `json:"qty_in_base_unit"`
+	PricePerBaseUnit     pgtype.Numeric `json:"price_per_base_unit"`
+	SelectedUnit         string         `json:"selected_unit"`
+	QtyInSelectedUnit    int32          `json:"qty_in_selected_unit"`
+	PricePerSelectedUnit pgtype.Numeric `json:"price_per_selected_unit"`
+}
+
 type SqidsConfig struct {
 	Alphabets string `json:"alphabets"`
 }

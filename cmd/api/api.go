@@ -125,6 +125,10 @@ func (app *application) mount(corsConfig config.CORSConfig) http.Handler {
 			r.Use(app.middleware.AuthUser)
 			r.Use(app.middleware.CSRFProtectionUser)
 
+			r.Route("/products", func(r chi.Router) {
+				r.Get("/", app.handler.Product.GetByPharmacy)
+			})
+
 			r.Route("/users", func(r chi.Router) {
 				r.Get("/profile", app.handler.User.GetProfile)
 				r.Post("/profile/edit/save", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("edit profile save")) })

@@ -17,6 +17,7 @@ type Handler struct {
 	Auth     *authHandler
 	User     *userHandler
 	Pharmacy *pharmacyHandler
+	Product  *productHandler
 }
 
 var cookie = c.New()
@@ -27,6 +28,7 @@ func New(repo repository.Repository, cfg config.Config, authSvc *service.Auth) H
 		Owner:    newOwnerHandler(repo),
 		User:     newUserHandler(repo),
 		Pharmacy: newPharmacyHandler(repo, cfg.Auth.PharmacySessionTTL),
+		Product:  newProductHandler(repo),
 	}
 }
 

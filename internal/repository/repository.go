@@ -9,12 +9,13 @@ import (
 )
 
 type Repository struct {
-	Owners OwnersRepository
-	Users UsersRepository
-	OwnerSessions OwnerSessionsRepository
-	UserSessions UserSessionsRepository
+	Owners           OwnersRepository
+	Users            UsersRepository
+	OwnerSessions    OwnerSessionsRepository
+	UserSessions     UserSessionsRepository
 	PharmacySessions PharmacySessionsRepository
-	Pharmacies PharmaciesRepository
+	Pharmacies       PharmaciesRepository
+	Products         ProductsRepository
 
 	CacheStore *CacheStore
 }
@@ -70,6 +71,10 @@ type PharmaciesRepository interface {
 	DeleteCode(ctx context.Context, code string) (*dbsqlc.PharmacyCode, error)
 }
 
+type ProductsRepository interface {
+	GetByPharmacyID(ctx context.Context, pharmacyID int64) (*[]dbsqlc.Product, error)
+}
+
 func New(db *pgxpool.Pool, cs *CacheStore) Repository {
 	q := dbsqlc.New(db)
 
@@ -80,6 +85,7 @@ func New(db *pgxpool.Pool, cs *CacheStore) Repository {
 		UserSessions:     &userSessionsRepo{queries: q},
 		PharmacySessions: &pharmacySessionsRepo{queries: q},
 		Pharmacies:       &pharmaciesRepo{db: db, queries: q},
+		Products:         &productsRepo{queries: q},
 		CacheStore:       cs,
 	}
 }
