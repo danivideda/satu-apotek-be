@@ -27,9 +27,12 @@ func main() {
 	}
 
 	r := repository.New(db, c)
-	sessionSvc := service.NewSession(r, cfg.Auth)
-	authSvc := service.NewAuth(r, sessionSvc)
-	h := handler.New(r, cfg, authSvc)
+
+	sessionSvc := service.NewSession(cfg.Auth, r.CacheStore, r.OwnerSessions, r.UserSessions, r.PharmacySessions, r.Users, r.Pharmacies)
+	authSvc := service.NewAuth(r.Owners, r.Users, r.Pharmacies, sessionSvc)
+	productSvc := service.NewProduct(r.Products)
+
+	h := handler.New(r, cfg, authSvc, productSvc)
 	md := middleware.New(r, cfg)
 
 	app := &application{

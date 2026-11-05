@@ -17,11 +17,16 @@ type Auth struct {
 	Pharmacy PharmacyAuth
 }
 
-func NewAuth(repo repository.Repository, sessionSvc *Session) *Auth {
+func NewAuth(
+	ownerRepo repository.OwnersRepository,
+	userRepo repository.UsersRepository,
+	pharmacyRepo repository.PharmaciesRepository,
+	sessionSvc *Session,
+) *Auth {
 	return &Auth{
-		Owner:    newOwnerAuth(repo.Owners, sessionSvc),
-		User:     newUserAuth(repo.Users, sessionSvc),
-		Pharmacy: newPharmacyAuth(repo.Pharmacies, repo.Users, sessionSvc),
+		Owner:    newOwnerAuth(ownerRepo, sessionSvc),
+		User:     newUserAuth(userRepo, sessionSvc),
+		Pharmacy: newPharmacyAuth(pharmacyRepo, userRepo, sessionSvc),
 	}
 }
 

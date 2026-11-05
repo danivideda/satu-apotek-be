@@ -24,17 +24,25 @@ type Session struct {
 	pharmaciesRepo repository.PharmaciesRepository
 }
 
-func NewSession(repo repository.Repository, authConfig config.AuthConfig) *Session {
+func NewSession(
+	authConfig config.AuthConfig,
+	cacheStore *repository.CacheStore,
+	ownerSessionRepo repository.OwnerSessionsRepository,
+	userSessionRepo repository.UserSessionsRepository,
+	pharmacySessionRepo repository.PharmacySessionsRepository,
+	usersRepo repository.UsersRepository,
+	pharmaciesRepo repository.PharmaciesRepository,
+) *Session {
 	return &Session{
-		repo.CacheStore,
-		repo.OwnerSessions,
-		repo.UserSessions,
-		repo.PharmacySessions,
+		cacheStore,
+		ownerSessionRepo,
+		userSessionRepo,
+		pharmacySessionRepo,
 		authConfig.OwnerSessionTTL,
 		authConfig.UserSessionTTL,
 		authConfig.PharmacySessionTTL,
-		repo.Users,
-		repo.Pharmacies,
+		usersRepo,
+		pharmaciesRepo,
 	}
 }
 

@@ -11,24 +11,34 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const createProduct = `-- name: CreateProduct :one
-INSERT INTO products (pharmacy_id, "name", min_stock, base_sell_price)
-VALUES ($1, $2, $3, $4) RETURNING id, pharmacy_id, name, sku, barcode, category_id, base_unit_id, min_stock, base_sell_price, is_active, created_at, updated_at
+const productsCreate = `-- name: ProductsCreate :one
+INSERT INTO products (pharmacy_id, "name", sku, barcode, category_id, base_unit_id, min_stock, base_sell_price, is_active)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, pharmacy_id, name, sku, barcode, category_id, base_unit_id, min_stock, base_sell_price, is_active, created_at, updated_at
 `
 
-type CreateProductParams struct {
+type ProductsCreateParams struct {
 	PharmacyID    int64          `json:"pharmacy_id"`
 	Name          string         `json:"name"`
+	Sku           pgtype.Text    `json:"sku"`
+	Barcode       pgtype.Text    `json:"barcode"`
+	CategoryID    pgtype.Int8    `json:"category_id"`
+	BaseUnitID    pgtype.Int8    `json:"base_unit_id"`
 	MinStock      int32          `json:"min_stock"`
 	BaseSellPrice pgtype.Numeric `json:"base_sell_price"`
+	IsActive      bool           `json:"is_active"`
 }
 
-func (q *Queries) CreateProduct(ctx context.Context, arg CreateProductParams) (Product, error) {
-	row := q.db.QueryRow(ctx, createProduct,
+func (q *Queries) ProductsCreate(ctx context.Context, arg ProductsCreateParams) (Product, error) {
+	row := q.db.QueryRow(ctx, productsCreate,
 		arg.PharmacyID,
 		arg.Name,
+		arg.Sku,
+		arg.Barcode,
+		arg.CategoryID,
+		arg.BaseUnitID,
 		arg.MinStock,
 		arg.BaseSellPrice,
+		arg.IsActive,
 	)
 	var i Product
 	err := row.Scan(
@@ -48,13 +58,13 @@ func (q *Queries) CreateProduct(ctx context.Context, arg CreateProductParams) (P
 	return i, err
 }
 
-const getProductsByPharmacyID = `-- name: GetProductsByPharmacyID :many
+const productsGetByPharmacyID = `-- name: ProductsGetByPharmacyID :many
 SELECT id, pharmacy_id, name, sku, barcode, category_id, base_unit_id, min_stock, base_sell_price, is_active, created_at, updated_at FROM products
 WHERE pharmacy_id = $1
 `
 
-func (q *Queries) GetProductsByPharmacyID(ctx context.Context, pharmacyID int64) ([]Product, error) {
-	rows, err := q.db.Query(ctx, getProductsByPharmacyID, pharmacyID)
+func (q *Queries) ProductsGetByPharmacyID(ctx context.Context, pharmacyID int64) ([]Product, error) {
+	rows, err := q.db.Query(ctx, productsGetByPharmacyID, pharmacyID)
 	if err != nil {
 		return nil, err
 	}

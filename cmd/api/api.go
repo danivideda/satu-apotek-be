@@ -126,7 +126,8 @@ func (app *application) mount(corsConfig config.CORSConfig) http.Handler {
 			r.Use(app.middleware.CSRFProtectionUser)
 
 			r.Route("/products", func(r chi.Router) {
-				r.Get("/", app.handler.Product.GetByPharmacy)
+				r.Get("/", app.handler.Product.GetAllByPharmacyID)
+				r.Post("/create", app.handler.Product.Create)
 			})
 
 			r.Route("/users", func(r chi.Router) {

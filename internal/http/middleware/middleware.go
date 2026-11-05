@@ -16,7 +16,7 @@ type AppMiddleware struct {
 var cookie = c.New()
 
 func New(r repository.Repository, cfg config.Config) AppMiddleware {
-	sessionSvc := service.NewSession(r, cfg.Auth)
+	sessionSvc := service.NewSession(cfg.Auth, r.CacheStore, r.OwnerSessions, r.UserSessions, r.PharmacySessions, r.Users, r.Pharmacies)
 	return AppMiddleware{
 		repo:       r,
 		config:     cfg,

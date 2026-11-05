@@ -73,6 +73,7 @@ type PharmaciesRepository interface {
 
 type ProductsRepository interface {
 	GetByPharmacyID(ctx context.Context, pharmacyID int64) (*[]dbsqlc.Product, error)
+	Create(ctx context.Context, in CreateProductInput) (*dbsqlc.Product, error)
 }
 
 func New(db *pgxpool.Pool, cs *CacheStore) Repository {
@@ -85,7 +86,7 @@ func New(db *pgxpool.Pool, cs *CacheStore) Repository {
 		UserSessions:     &userSessionsRepo{queries: q},
 		PharmacySessions: &pharmacySessionsRepo{queries: q},
 		Pharmacies:       &pharmaciesRepo{db: db, queries: q},
-		Products:         &productsRepo{queries: q},
+		Products:         &productsRepository{queries: q},
 		CacheStore:       cs,
 	}
 }
