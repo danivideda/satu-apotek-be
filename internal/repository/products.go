@@ -7,11 +7,11 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type productsRepository struct {
+type productsRepo struct {
 	queries *dbsqlc.Queries
 }
 
-func (r *productsRepository) GetByPharmacyID(ctx context.Context, pharmacyID int64) (*[]dbsqlc.Product, error) {
+func (r *productsRepo) GetByPharmacyID(ctx context.Context, pharmacyID int64) (*[]dbsqlc.Product, error) {
 	products, err := r.queries.ProductsGetByPharmacyID(ctx, pharmacyID)
 	if err != nil {
 		if isNotFoundError(err) {
@@ -36,7 +36,7 @@ type CreateProductInput struct {
 	IsActive      bool
 }
 
-func (r *productsRepository) Create(ctx context.Context, in CreateProductInput) (*dbsqlc.Product, error) {
+func (r *productsRepo) Create(ctx context.Context, in CreateProductInput) (*dbsqlc.Product, error) {
 	params := dbsqlc.ProductsCreateParams{
 		PharmacyID: in.PharmacyID,
 		Name:       in.Name,

@@ -8,11 +8,12 @@ import (
 )
 
 type Product struct {
-	productsRepo repository.ProductsRepository
+	productsRepo     repository.ProductsRepository
+	productUnitsRepo repository.ProductUnitsRepository
 }
 
-func NewProduct(productsRepo repository.ProductsRepository) *Product {
-	return &Product{productsRepo}
+func NewProduct(productsRepo repository.ProductsRepository, productUnitsRepo repository.ProductUnitsRepository) *Product {
+	return &Product{productsRepo, productUnitsRepo}
 }
 
 func (p *Product) GetAllByPharmacyID(ctx context.Context, pharmacyID int64) (*[]dbsqlc.Product, error) {
@@ -46,4 +47,9 @@ func (p *Product) Create(ctx context.Context, in CreateProductInput) (*dbsqlc.Pr
 	})
 
 	return product, err
+}
+
+func (p *Product) GetAllUnitByPharmacyID(ctx context.Context, pharmacyID int64) (*[]dbsqlc.ProductUnit, error) {
+	productUnits, err := p.productUnitsRepo.GetByPharmacyID(ctx, pharmacyID)
+	return productUnits, err
 }

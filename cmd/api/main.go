@@ -30,7 +30,7 @@ func main() {
 
 	sessionSvc := service.NewSession(cfg.Auth, r.CacheStore, r.OwnerSessions, r.UserSessions, r.PharmacySessions, r.Users, r.Pharmacies)
 	authSvc := service.NewAuth(r.Owners, r.Users, r.Pharmacies, sessionSvc)
-	productSvc := service.NewProduct(r.Products)
+	productSvc := service.NewProduct(r.Products, r.ProductUnits)
 
 	h := handler.New(r, cfg, authSvc, productSvc)
 	md := middleware.New(r, cfg)

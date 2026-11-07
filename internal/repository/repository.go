@@ -16,6 +16,7 @@ type Repository struct {
 	PharmacySessions PharmacySessionsRepository
 	Pharmacies       PharmaciesRepository
 	Products         ProductsRepository
+	ProductUnits     ProductUnitsRepository
 
 	CacheStore *CacheStore
 }
@@ -77,7 +78,7 @@ type ProductsRepository interface {
 }
 
 type ProductUnitsRepository interface {
-	Create(ctx context.Context, in CreateProductInput) (*dbsqlc.ProductUnit, error)
+	GetByPharmacyID(ctx context.Context, pharmacyID int64) (*[]dbsqlc.ProductUnit, error)
 }
 
 func New(db *pgxpool.Pool, cs *CacheStore) Repository {
@@ -90,7 +91,8 @@ func New(db *pgxpool.Pool, cs *CacheStore) Repository {
 		UserSessions:     &userSessionsRepo{queries: q},
 		PharmacySessions: &pharmacySessionsRepo{queries: q},
 		Pharmacies:       &pharmaciesRepo{db: db, queries: q},
-		Products:         &productsRepository{queries: q},
+		Products:         &productsRepo{queries: q},
+		ProductUnits:     &productUnitsRepo{queries: q},
 		CacheStore:       cs,
 	}
 }

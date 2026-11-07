@@ -61,7 +61,7 @@ func (h *productHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	newProduct, err := h.productService.Create(ctx, service.CreateProductInput{
-		PharmacyID: authPharmacy.PharmacyID, 
+		PharmacyID:    authPharmacy.PharmacyID,
 		Name:          payload.Name,
 		SKU:           payload.SKU,
 		Barcode:       payload.Barcode,
@@ -78,6 +78,26 @@ func (h *productHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	res := newProduct
 	if err := json.ResponseOK(w, res); err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+}
+
+func (h *productHandler) GetAllUnitByPharmacyID(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	authPharmacy, err := middleware.AuthPharmacyFromCtx(ctx)
+	if err != nil {
+		json.ResponseUnauthorized(w, r, err)
+		return
+	}
+
+	productUnits, err := h.productService.GetAllUnitByPharmacyID(ctx, authPharmacy.PharmacyID)
+	if err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+
+	if err := json.ResponseOK(w, productUnits); err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}
