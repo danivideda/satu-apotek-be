@@ -76,6 +76,10 @@ type ProductsRepository interface {
 	Create(ctx context.Context, in CreateProductInput) (*dbsqlc.Product, error)
 }
 
+type ProductUnitsRepository interface {
+	Create(ctx context.Context, in CreateProductInput) (*dbsqlc.ProductUnit, error)
+}
+
 func New(db *pgxpool.Pool, cs *CacheStore) Repository {
 	q := dbsqlc.New(db)
 
