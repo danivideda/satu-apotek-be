@@ -139,7 +139,7 @@ func (app *application) mount(corsConfig config.CORSConfig) http.Handler {
 
 				r.Route("/units", func(r chi.Router) {
 					r.Get("/", app.handler.Product.GetAllUnitByPharmacyID)
-					// r.Post("/create", nil)
+					r.Post("/create", app.handler.Product.CreateUnit)
 					// r.Route("/{unitID}", func(r chi.Router) {
 					// 	// ...
 					// 	r.Post("/edit", nil)

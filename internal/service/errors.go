@@ -11,4 +11,6 @@ var (
 	ErrUserForbidden       = errors.New("user doesn't belong in current pharmacy session")
 
 	ErrPharmacyCodeExpiredOrNotFound = errors.New("code not found or expired")
+
+	ErrCreateItem = errors.New("cannot create new item")
 )

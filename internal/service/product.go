@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/danivideda/satu-apotek-be/internal/dbsqlc"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
@@ -52,4 +54,15 @@ func (p *Product) Create(ctx context.Context, in CreateProductInput) (*dbsqlc.Pr
 func (p *Product) GetAllUnitByPharmacyID(ctx context.Context, pharmacyID int64) (*[]dbsqlc.ProductUnit, error) {
 	productUnits, err := p.productUnitsRepo.GetByPharmacyID(ctx, pharmacyID)
 	return productUnits, err
+}
+
+func (p *Product) CreateUnitByPharmacyID(ctx context.Context, pharmacyID int64, name, label string) (*dbsqlc.ProductUnit, error) {
+	productUnit, err := p.productUnitsRepo.Create(ctx, pharmacyID, name, label)
+	if err != nil {
+		if errors.Is(err, repository.ErrDuplicateValue) {
+			return nil, fmt.Errorf("%w: %w", ErrCreateItem, err)
+		}
+		return nil, err
+	}
+	return productUnit, nil
 }

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
@@ -98,6 +99,37 @@ func (h *productHandler) GetAllUnitByPharmacyID(w http.ResponseWriter, r *http.R
 	}
 
 	if err := json.ResponseOK(w, productUnits); err != nil {
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+}
+
+func (h *productHandler) CreateUnit(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	authPharmacy, err := middleware.AuthPharmacyFromCtx(ctx)
+	if err != nil {
+		json.ResponseUnauthorized(w, r, err)
+		return
+	}
+
+	var payload struct {
+		Name  string `json:"name" validate:"required"`
+		Label string `json:"label" validate:"required"`
+	}
+	if ok := parseAndValidateJSONPayload(w, r, &payload); !ok {
+		return
+	}
+	newUnit, err := h.productService.CreateUnitByPharmacyID(ctx, authPharmacy.PharmacyID, payload.Name, payload.Label)
+	if err != nil {
+		if errors.Is(err, service.ErrCreateItem) {
+			json.ResponseBadRequest(w, r, err)
+			return
+		}
+		json.ResponseInternalServerError(w, r, err)
+		return
+	}
+
+	if err := json.ResponseCreated(w, newUnit); err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}

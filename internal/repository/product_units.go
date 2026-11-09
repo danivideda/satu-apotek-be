@@ -17,9 +17,24 @@ func (r *productUnitsRepo) GetByPharmacyID(ctx context.Context, pharmacyID int64
 			emptyArr := make([]dbsqlc.ProductUnit, 0)
 			return &emptyArr, nil
 		}
-
 		return nil, err
 	}
 
 	return &productUnits, nil
+}
+
+func (r *productUnitsRepo) Create(ctx context.Context, pharmacyID int64, name, label string) (*dbsqlc.ProductUnit, error) {
+	productUnit, err := r.queries.ProductUnitsCreate(ctx, dbsqlc.ProductUnitsCreateParams{
+		PharmacyID: pharmacyID,
+		Name:       name,
+		Label:      label,
+	})
+	if err != nil {
+		if isDuplicateError(err) {
+			return nil, ErrDuplicateValue
+		}
+		return nil, err
+	}
+
+	return &productUnit, nil
 }
