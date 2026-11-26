@@ -103,32 +103,53 @@ func (q *Queries) ProductsGetByID(ctx context.Context, id int64) (ProductsGetByI
 }
 
 const productsGetByPharmacyID = `-- name: ProductsGetByPharmacyID :many
-SELECT id, pharmacy_id, name, sku, barcode, category_id, base_unit_id, min_stock, base_sell_price, is_active, created_at, updated_at FROM products
-WHERE pharmacy_id = $1
+SELECT
+  p.id, p.pharmacy_id, p.name, p.sku, p.barcode, p.category_id, p.base_unit_id, p.min_stock, p.base_sell_price, p.is_active, p.created_at, p.updated_at,
+  pc.code AS category_code,
+  pc.name AS category_name,
+  pu.label AS unit_label,
+  pu.name AS unit_name
+FROM products p
+LEFT JOIN product_categories pc ON pc.id = p.category_id
+LEFT JOIN product_units pu ON pu.id = p.base_unit_id
+WHERE p.pharmacy_id = $1
+ORDER BY p.id ASC
 `
 
-func (q *Queries) ProductsGetByPharmacyID(ctx context.Context, pharmacyID int64) ([]Product, error) {
+type ProductsGetByPharmacyIDRow struct {
+	Product      Product     `json:"product"`
+	CategoryCode pgtype.Text `json:"category_code"`
+	CategoryName pgtype.Text `json:"category_name"`
+	UnitLabel    pgtype.Text `json:"unit_label"`
+	UnitName     pgtype.Text `json:"unit_name"`
+}
+
+func (q *Queries) ProductsGetByPharmacyID(ctx context.Context, pharmacyID int64) ([]ProductsGetByPharmacyIDRow, error) {
 	rows, err := q.db.Query(ctx, productsGetByPharmacyID, pharmacyID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Product
+	var items []ProductsGetByPharmacyIDRow
 	for rows.Next() {
-		var i Product
+		var i ProductsGetByPharmacyIDRow
 		if err := rows.Scan(
-			&i.ID,
-			&i.PharmacyID,
-			&i.Name,
-			&i.Sku,
-			&i.Barcode,
-			&i.CategoryID,
-			&i.BaseUnitID,
-			&i.MinStock,
-			&i.BaseSellPrice,
-			&i.IsActive,
-			&i.CreatedAt,
-			&i.UpdatedAt,
+			&i.Product.ID,
+			&i.Product.PharmacyID,
+			&i.Product.Name,
+			&i.Product.Sku,
+			&i.Product.Barcode,
+			&i.Product.CategoryID,
+			&i.Product.BaseUnitID,
+			&i.Product.MinStock,
+			&i.Product.BaseSellPrice,
+			&i.Product.IsActive,
+			&i.Product.CreatedAt,
+			&i.Product.UpdatedAt,
+			&i.CategoryCode,
+			&i.CategoryName,
+			&i.UnitLabel,
+			&i.UnitName,
 		); err != nil {
 			return nil, err
 		}

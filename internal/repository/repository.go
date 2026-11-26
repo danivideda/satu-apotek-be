@@ -74,7 +74,7 @@ type PharmaciesRepository interface {
 
 type ProductsRepository interface {
 	GetByID(ctx context.Context, productID int64) (*dbsqlc.ProductsGetByIDRow, error)
-	GetByPharmacyID(ctx context.Context, pharmacyID int64) (*[]dbsqlc.Product, error)
+	GetByPharmacyID(ctx context.Context, pharmacyID int64) (*[]dbsqlc.ProductsGetByPharmacyIDRow, error)
 	Create(ctx context.Context, in CreateProductInput) (*dbsqlc.Product, error)
 }
 
