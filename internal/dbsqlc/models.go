@@ -87,8 +87,8 @@ type ProductUnit struct {
 type ProductUnitConversion struct {
 	ID                 int64              `json:"id"`
 	PharmacyID         int64              `json:"pharmacy_id"`
-	ProductID          pgtype.Int8        `json:"product_id"`
-	UnitID             pgtype.Int8        `json:"unit_id"`
+	ProductID          int64              `json:"product_id"`
+	UnitID             int64              `json:"unit_id"`
 	QuantityInBaseUnit int32              `json:"quantity_in_base_unit"`
 	CreatedAt          pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt          pgtype.Timestamptz `json:"updated_at"`

@@ -73,6 +73,7 @@ type PharmaciesRepository interface {
 }
 
 type ProductsRepository interface {
+	GetByID(ctx context.Context, productID int64) (*dbsqlc.ProductsGetByIDRow, error)
 	GetByPharmacyID(ctx context.Context, pharmacyID int64) (*[]dbsqlc.Product, error)
 	Create(ctx context.Context, in CreateProductInput) (*dbsqlc.Product, error)
 }
@@ -80,6 +81,7 @@ type ProductsRepository interface {
 type ProductUnitsRepository interface {
 	GetByPharmacyID(ctx context.Context, pharmacyID int64) (*[]dbsqlc.ProductUnit, error)
 	Create(ctx context.Context, pharmacyID int64, name, label string) (*dbsqlc.ProductUnit, error)
+	CreateConversionForProduct(ctx context.Context, pharamcyID, productID, unitID int64, quantityInBaseUnit int32) (*dbsqlc.ProductUnitConversion, error)
 }
 
 func New(db *pgxpool.Pool, cs *CacheStore) Repository {

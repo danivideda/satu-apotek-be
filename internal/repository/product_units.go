@@ -38,3 +38,20 @@ func (r *productUnitsRepo) Create(ctx context.Context, pharmacyID int64, name, l
 
 	return &productUnit, nil
 }
+
+func (r *productUnitsRepo) CreateConversionForProduct(ctx context.Context, pharamcyID, productID, unitID int64, quantityInBaseUnit int32) (*dbsqlc.ProductUnitConversion, error) {
+	productUnitConversions, err := r.queries.ProductUnitConversionsCreate(ctx, dbsqlc.ProductUnitConversionsCreateParams{
+		PharmacyID:         pharamcyID,
+		ProductID:          productID,
+		UnitID:             unitID,
+		QuantityInBaseUnit: quantityInBaseUnit,
+	})
+	if err != nil {
+		if isDuplicateError(err) {
+			return nil, ErrDuplicateValue
+		}
+		return nil, err
+	}
+
+	return &productUnitConversions, nil
+}

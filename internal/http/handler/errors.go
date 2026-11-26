@@ -12,4 +12,6 @@ var (
 
 	ErrAppIDNotAllowed = errors.New("appID not allowed for current auth'd owner")
 	ErrPharmacyCodeExpired = errors.New("code is expired")
+
+	ErrProductWrongFormat = errors.New("product id not formatted correctly")
 )

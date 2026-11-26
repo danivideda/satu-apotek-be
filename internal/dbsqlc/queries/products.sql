@@ -1,3 +1,18 @@
+-- name: ProductsGetByID :one
+SELECT 
+  p.id,
+  p.pharmacy_id, 
+  p.name, 
+  p.sku, 
+  p.barcode, 
+  p.min_stock, 
+  p.base_sell_price, pu.name AS base_unit_name, 
+  pu.label AS base_unit_label
+FROM products p
+LEFT JOIN product_units pu ON pu.id = p.base_unit_id
+WHERE p.id = @id;
+
+
 -- name: ProductsGetByPharmacyID :many
 SELECT * FROM products
 WHERE pharmacy_id = @pharmacy_id;

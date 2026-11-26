@@ -130,11 +130,14 @@ func (app *application) mount(corsConfig config.CORSConfig) http.Handler {
 				r.Post("/create", app.handler.Product.Create)
 
 				r.Route("/{productID}", func(r chi.Router) {
+					r.Use(app.handler.Product.ProductCtx)
 					// TODO:
 					// Add guard to check the product belongs to current authd pharmacyID
-					// r.Use(nil)
-					// r.Get("/", nil)
-					// r.Post("/edit", nil)
+					r.Get("/", app.handler.Product.GetByID)
+
+					r.Route("/conversions", func(r chi.Router) {
+						r.Post("/create", app.handler.Product.CreateUnitConversion)
+					})
 				})
 
 				r.Route("/units", func(r chi.Router) {
@@ -144,6 +147,10 @@ func (app *application) mount(corsConfig config.CORSConfig) http.Handler {
 					// 	// ...
 					// 	r.Post("/edit", nil)
 					// })
+
+					r.Route("/conversions", func(r chi.Router) {
+						r.Post("/create", app.handler.Product.CreateUnitConversion)
+					})
 				})
 			})
 

@@ -58,6 +58,50 @@ func (q *Queries) ProductsCreate(ctx context.Context, arg ProductsCreateParams) 
 	return i, err
 }
 
+const productsGetByID = `-- name: ProductsGetByID :one
+SELECT 
+  p.id,
+  p.pharmacy_id, 
+  p.name, 
+  p.sku, 
+  p.barcode, 
+  p.min_stock, 
+  p.base_sell_price, pu.name AS base_unit_name, 
+  pu.label AS base_unit_label
+FROM products p
+LEFT JOIN product_units pu ON pu.id = p.base_unit_id
+WHERE p.id = $1
+`
+
+type ProductsGetByIDRow struct {
+	ID            int64          `json:"id"`
+	PharmacyID    int64          `json:"pharmacy_id"`
+	Name          string         `json:"name"`
+	Sku           pgtype.Text    `json:"sku"`
+	Barcode       pgtype.Text    `json:"barcode"`
+	MinStock      int32          `json:"min_stock"`
+	BaseSellPrice pgtype.Numeric `json:"base_sell_price"`
+	BaseUnitName  pgtype.Text    `json:"base_unit_name"`
+	BaseUnitLabel pgtype.Text    `json:"base_unit_label"`
+}
+
+func (q *Queries) ProductsGetByID(ctx context.Context, id int64) (ProductsGetByIDRow, error) {
+	row := q.db.QueryRow(ctx, productsGetByID, id)
+	var i ProductsGetByIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.PharmacyID,
+		&i.Name,
+		&i.Sku,
+		&i.Barcode,
+		&i.MinStock,
+		&i.BaseSellPrice,
+		&i.BaseUnitName,
+		&i.BaseUnitLabel,
+	)
+	return i, err
+}
+
 const productsGetByPharmacyID = `-- name: ProductsGetByPharmacyID :many
 SELECT id, pharmacy_id, name, sku, barcode, category_id, base_unit_id, min_stock, base_sell_price, is_active, created_at, updated_at FROM products
 WHERE pharmacy_id = $1

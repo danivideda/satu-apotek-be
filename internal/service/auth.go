@@ -106,7 +106,7 @@ func newUserAuth(
 
 func (a *userAuth) Login(ctx context.Context, userID int64, password string, users []repository.UserCacheValue) (*UserSession, error) {
 	// Check UserID exist in Pharmacy
-	if !userExistsInPharmacy(users, userID) {
+	if !UserExistsInPharmacy(users, userID) {
 		return nil, ErrUserForbidden
 	}
 
@@ -181,7 +181,7 @@ func (a *pharmacyAuth) Connect(ctx context.Context, code string) (*PharmacySessi
 	return newPharmacySession, nil
 }
 
-func userExistsInPharmacy(users []repository.UserCacheValue, userID int64) bool {
+func UserExistsInPharmacy(users []repository.UserCacheValue, userID int64) bool {
 	userExists := slices.ContainsFunc(users, func(u repository.UserCacheValue) bool {
 		if u.ID == userID {
 			return true

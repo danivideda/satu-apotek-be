@@ -11,10 +11,21 @@ type productsRepo struct {
 	queries *dbsqlc.Queries
 }
 
+func (r *productsRepo) GetByID(ctx context.Context, productID int64) (*dbsqlc.ProductsGetByIDRow, error) {
+	product, err := r.queries.ProductsGetByID(ctx, productID)
+	if err != nil {
+		if isNotFoundError(err) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	return &product, nil
+}
+
 func (r *productsRepo) GetByPharmacyID(ctx context.Context, pharmacyID int64) (*[]dbsqlc.Product, error) {
 	products, err := r.queries.ProductsGetByPharmacyID(ctx, pharmacyID)
 	if err != nil {
-		if isNotFoundError(err) {
+		if isNotFoundError(err) { // Not found means either PharmacyID doesn't exist or Products is empty
 			emptyArr := make([]dbsqlc.Product, 0)
 			return &emptyArr, nil
 		}
