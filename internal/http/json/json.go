@@ -60,3 +60,12 @@ func WriteResponse(w http.ResponseWriter, status int, data any) error {
 
 	return Write(w, status, &envelope{Data: data})
 }
+
+func WriteResponseWithMeta( w http.ResponseWriter, status int, data, meta any) error {
+	type envelope struct {
+		Data any `json:"data"`
+		Meta any `json:"meta"`
+	}
+
+	return Write(w, status, &envelope{Data: data, Meta: meta})
+}

@@ -167,3 +167,14 @@ func (q *Queries) ProductsGetByPharmacyID(ctx context.Context, arg ProductsGetBy
 	}
 	return items, nil
 }
+
+const productsGetTotalByPharmacyID = `-- name: ProductsGetTotalByPharmacyID :one
+SELECT COUNT(*) FROM products WHERE pharmacy_id = $1
+`
+
+func (q *Queries) ProductsGetTotalByPharmacyID(ctx context.Context, pharmacyID int64) (int64, error) {
+	row := q.db.QueryRow(ctx, productsGetTotalByPharmacyID, pharmacyID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}

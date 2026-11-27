@@ -38,6 +38,14 @@ func (r *productsRepo) GetByPharmacyID(ctx context.Context, pharmacyID int64, of
 	return &products, nil
 }
 
+func (r *productsRepo) GetTotalByPharmacyID(ctx context.Context, pharmacyID int64) (*int64, error) {
+	count, err := r.queries.ProductsGetTotalByPharmacyID(ctx, pharmacyID)
+	if err != nil {
+		return nil, err
+	}
+	return &count, nil
+}
+
 type CreateProductInput struct {
 	PharmacyID    int64
 	Name          string

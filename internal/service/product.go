@@ -58,10 +58,12 @@ type BaseUnitItem struct {
 	Name  string `json:"name,omitempty"`
 }
 
-func (p *Product) GetAllByPharmacyID(ctx context.Context, pharmacyID int64, offset, limit int32) (*[]ProductItem, error) {
+func (p *Product) GetAllByPharmacyID(ctx context.Context, pharmacyID int64, page, size int) (*[]ProductItem, *int64, error) {
+	offset := int32((page - 1) * size)
+	limit := int32(size)
 	products, err := p.productsRepo.GetByPharmacyID(ctx, pharmacyID, offset, limit)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	var productList []ProductItem
@@ -107,7 +109,12 @@ func (p *Product) GetAllByPharmacyID(ctx context.Context, pharmacyID int64, offs
 		productList = append(productList, productItem)
 	}
 
-	return &productList, err
+	total, err := p.productsRepo.GetTotalByPharmacyID(ctx, pharmacyID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return &productList, total, nil
 }
 
 type CreateProductInput struct {

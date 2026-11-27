@@ -9,6 +9,10 @@ func ResponseOK(w http.ResponseWriter, data any) error {
 	return WriteResponse(w, http.StatusOK, data)
 }
 
+func ResponseOKWithMeta(w http.ResponseWriter, data, meta any) error {
+	return WriteResponseWithMeta(w, http.StatusOK, data, meta)
+}
+
 func ResponseCreated(w http.ResponseWriter, data any) error {
 	return WriteResponse(w, http.StatusCreated, data)
 }

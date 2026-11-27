@@ -8,6 +8,7 @@ import (
 
 	"github.com/danivideda/satu-apotek-be/internal/http/json"
 	"github.com/danivideda/satu-apotek-be/internal/http/middleware"
+	"github.com/danivideda/satu-apotek-be/internal/pagination"
 	"github.com/danivideda/satu-apotek-be/internal/repository"
 	"github.com/danivideda/satu-apotek-be/internal/service"
 	"github.com/go-chi/chi/v5"
@@ -90,25 +91,23 @@ func (h *productHandler) GetAllByPharmacyID(w http.ResponseWriter, r *http.Reque
 
 	// Get URL query for pagination
 	query := r.URL.Query()
-	var offset int32 = 0
-	var limit int32 = 10
-	if query.Has("offset") && query.Has("limit") {
-		offsetInt, err := strconv.Atoi(query.Get("offset"))
+	var page int
+	var size int
+	if query.Has("page") && query.Has("size") {
+		page, err = strconv.Atoi(query.Get("page"))
 		if err != nil {
-			json.ResponseInternalServerError(w, r, err)
+			json.ResponseBadRequest(w, r, err)
 			return
 		}
-		offset = int32(offsetInt)
 
-		limitInt, err := strconv.Atoi(query.Get("limit"))
+		size, err = strconv.Atoi(query.Get("size"))
 		if err != nil {
-			json.ResponseInternalServerError(w, r, err)
+			json.ResponseBadRequest(w, r ,err)
 			return
 		}
-		limit = int32(limitInt)
 	}
 
-	products, err := h.productService.GetAllByPharmacyID(ctx, authPharmacy.PharmacyID, offset, limit)
+	products, total, err := h.productService.GetAllByPharmacyID(ctx, authPharmacy.PharmacyID, page, size)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			json.ResponseNotFound(w, r, err)
@@ -119,7 +118,8 @@ func (h *productHandler) GetAllByPharmacyID(w http.ResponseWriter, r *http.Reque
 	}
 
 	res := products
-	if err := json.ResponseOK(w, res); err != nil {
+	meta := pagination.NewMeta(page, size, *total)
+	if err := json.ResponseOKWithMeta(w, res, meta); err != nil {
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}
