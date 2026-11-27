@@ -24,7 +24,8 @@ FROM products p
 LEFT JOIN product_categories pc ON pc.id = p.category_id
 LEFT JOIN product_units pu ON pu.id = p.base_unit_id
 WHERE p.pharmacy_id = @pharmacy_id
-ORDER BY p.id ASC;
+ORDER BY p.id ASC
+LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 
 -- name: ProductsCreate :one
 INSERT INTO products (pharmacy_id, "name", sku, barcode, category_id, base_unit_id, min_stock, base_sell_price, is_active)

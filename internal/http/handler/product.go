@@ -88,8 +88,32 @@ func (h *productHandler) GetAllByPharmacyID(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	products, err := h.productService.GetAllByPharmacyID(ctx, authPharmacy.PharmacyID)
+	// Get URL query for pagination
+	query := r.URL.Query()
+	var offset int32 = 0
+	var limit int32 = 10
+	if query.Has("offset") && query.Has("limit") {
+		offsetInt, err := strconv.Atoi(query.Get("offset"))
+		if err != nil {
+			json.ResponseInternalServerError(w, r, err)
+			return
+		}
+		offset = int32(offsetInt)
+
+		limitInt, err := strconv.Atoi(query.Get("limit"))
+		if err != nil {
+			json.ResponseInternalServerError(w, r, err)
+			return
+		}
+		limit = int32(limitInt)
+	}
+
+	products, err := h.productService.GetAllByPharmacyID(ctx, authPharmacy.PharmacyID, offset, limit)
 	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			json.ResponseNotFound(w, r, err)
+			return
+		}
 		json.ResponseInternalServerError(w, r, err)
 		return
 	}
@@ -201,11 +225,6 @@ func (h *productHandler) CreateUnit(w http.ResponseWriter, r *http.Request) {
 
 func (h *productHandler) CreateUnitConversion(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	authPharmacy, err := middleware.AuthPharmacyFromCtx(ctx)
-	if err != nil {
-		json.ResponseInternalServerError(w, r, err)
-		return
-	}
 
 	productDetail, err := h.ProductFromCtx(ctx)
 	if err != nil {
@@ -222,7 +241,6 @@ func (h *productHandler) CreateUnitConversion(w http.ResponseWriter, r *http.Req
 	}
 
 	productUnitConversion, err := h.productService.CreateConversionForProduct(ctx, service.CreateConversionForProductInput{
-		PharmacyID:         authPharmacy.PharmacyID,
 		ProductID:          productDetail.ID,
 		UnitID:             payload.UnitID,
 		QuantityInBaseUnit: payload.QuantityInBaseUnit,

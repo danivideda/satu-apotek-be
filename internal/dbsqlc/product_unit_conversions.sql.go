@@ -10,28 +10,21 @@ import (
 )
 
 const productUnitConversionsCreate = `-- name: ProductUnitConversionsCreate :one
-INSERT INTO product_unit_conversions (pharmacy_id, product_id, unit_id, quantity_in_base_unit)
-VALUES ($1, $2, $3, $4) RETURNING id, pharmacy_id, product_id, unit_id, quantity_in_base_unit, created_at, updated_at
+INSERT INTO product_unit_conversions (product_id, unit_id, quantity_in_base_unit)
+VALUES ($1, $2, $3) RETURNING id, product_id, unit_id, quantity_in_base_unit, created_at, updated_at
 `
 
 type ProductUnitConversionsCreateParams struct {
-	PharmacyID         int64 `json:"pharmacy_id"`
 	ProductID          int64 `json:"product_id"`
 	UnitID             int64 `json:"unit_id"`
 	QuantityInBaseUnit int32 `json:"quantity_in_base_unit"`
 }
 
 func (q *Queries) ProductUnitConversionsCreate(ctx context.Context, arg ProductUnitConversionsCreateParams) (ProductUnitConversion, error) {
-	row := q.db.QueryRow(ctx, productUnitConversionsCreate,
-		arg.PharmacyID,
-		arg.ProductID,
-		arg.UnitID,
-		arg.QuantityInBaseUnit,
-	)
+	row := q.db.QueryRow(ctx, productUnitConversionsCreate, arg.ProductID, arg.UnitID, arg.QuantityInBaseUnit)
 	var i ProductUnitConversion
 	err := row.Scan(
 		&i.ID,
-		&i.PharmacyID,
 		&i.ProductID,
 		&i.UnitID,
 		&i.QuantityInBaseUnit,

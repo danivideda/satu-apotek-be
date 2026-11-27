@@ -22,12 +22,15 @@ func (r *productsRepo) GetByID(ctx context.Context, productID int64) (*dbsqlc.Pr
 	return &product, nil
 }
 
-func (r *productsRepo) GetByPharmacyID(ctx context.Context, pharmacyID int64) (*[]dbsqlc.ProductsGetByPharmacyIDRow, error) {
-	products, err := r.queries.ProductsGetByPharmacyID(ctx, pharmacyID)
+func (r *productsRepo) GetByPharmacyID(ctx context.Context, pharmacyID int64, offset, limit int32) (*[]dbsqlc.ProductsGetByPharmacyIDRow, error) {
+	products, err := r.queries.ProductsGetByPharmacyID(ctx, dbsqlc.ProductsGetByPharmacyIDParams{
+		PharmacyID: pharmacyID,
+		Offset:     offset,
+		Limit:      limit,
+	})
 	if err != nil {
 		if isNotFoundError(err) {
-			emptyArr := make([]dbsqlc.ProductsGetByPharmacyIDRow, 0)
-			return &emptyArr, ErrNotFound
+			return nil, ErrNotFound
 		}
 		return nil, err
 	}

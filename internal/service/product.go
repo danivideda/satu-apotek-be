@@ -58,8 +58,11 @@ type BaseUnitItem struct {
 	Name  string `json:"name,omitempty"`
 }
 
-func (p *Product) GetAllByPharmacyID(ctx context.Context, pharmacyID int64) (*[]ProductItem, error) {
-	products, err := p.productsRepo.GetByPharmacyID(ctx, pharmacyID)
+func (p *Product) GetAllByPharmacyID(ctx context.Context, pharmacyID int64, offset, limit int32) (*[]ProductItem, error) {
+	products, err := p.productsRepo.GetByPharmacyID(ctx, pharmacyID, offset, limit)
+	if err != nil {
+		return nil, err
+	}
 
 	var productList []ProductItem
 	for _, item := range *products {
@@ -152,14 +155,13 @@ func (p *Product) CreateUnitByPharmacyID(ctx context.Context, pharmacyID int64, 
 }
 
 type CreateConversionForProductInput struct {
-	PharmacyID         int64 `json:"pharmacy_id" validate:"required,number"`
 	ProductID          int64 `json:"product_id" validate:"required,number"`
 	UnitID             int64 `json:"unit_id" validate:"required,number"`
 	QuantityInBaseUnit int32 `json:"quantity_in_base_unit" validate:"required,number"`
 }
 
 func (p *Product) CreateConversionForProduct(ctx context.Context, input CreateConversionForProductInput) (*dbsqlc.ProductUnitConversion, error) {
-	productUnitConversions, err := p.productUnitsRepo.CreateConversionForProduct(ctx, input.PharmacyID, input.ProductID, input.UnitID, input.QuantityInBaseUnit)
+	productUnitConversions, err := p.productUnitsRepo.CreateConversionForProduct(ctx, input.ProductID, input.UnitID, input.QuantityInBaseUnit)
 	if err != nil {
 		if errors.Is(err, repository.ErrDuplicateValue) {
 			return nil, fmt.Errorf("%w: %w", ErrCreateItem, err)

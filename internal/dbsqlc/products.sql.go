@@ -114,7 +114,14 @@ LEFT JOIN product_categories pc ON pc.id = p.category_id
 LEFT JOIN product_units pu ON pu.id = p.base_unit_id
 WHERE p.pharmacy_id = $1
 ORDER BY p.id ASC
+LIMIT $3 OFFSET $2
 `
+
+type ProductsGetByPharmacyIDParams struct {
+	PharmacyID int64 `json:"pharmacy_id"`
+	Offset     int32 `json:"offset"`
+	Limit      int32 `json:"limit"`
+}
 
 type ProductsGetByPharmacyIDRow struct {
 	Product      Product     `json:"product"`
@@ -124,8 +131,8 @@ type ProductsGetByPharmacyIDRow struct {
 	UnitName     pgtype.Text `json:"unit_name"`
 }
 
-func (q *Queries) ProductsGetByPharmacyID(ctx context.Context, pharmacyID int64) ([]ProductsGetByPharmacyIDRow, error) {
-	rows, err := q.db.Query(ctx, productsGetByPharmacyID, pharmacyID)
+func (q *Queries) ProductsGetByPharmacyID(ctx context.Context, arg ProductsGetByPharmacyIDParams) ([]ProductsGetByPharmacyIDRow, error) {
+	rows, err := q.db.Query(ctx, productsGetByPharmacyID, arg.PharmacyID, arg.Offset, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
